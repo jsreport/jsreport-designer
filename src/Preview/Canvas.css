@@ -1,0 +1,18 @@
+
+.Canvas {
+  position: relative;
+  outline-width: 1px;
+  outline-style: dashed;
+  outline-color: rgba(0, 0, 0, 0.25);
+}
+
+.Canvas-area {
+  position: relative;
+  height: 100%;
+  width: 100%;
+}
+
+.Canvas-area-position {
+  outline: none;
+  position: absolute;
+}

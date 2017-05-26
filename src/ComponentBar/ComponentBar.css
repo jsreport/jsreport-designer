@@ -1,0 +1,58 @@
+
+/*$primarySelectionColor: #FFFFFF;*/
+/*$tertiaryColor: $primarySelectionColor;*/
+/*$tertiaryBackgroundColor:rgb(85, 85, 85);*/
+
+.ComponentBar {
+  background-color: rgb(85, 85, 85);
+  color: #FFFFFF;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
+  min-height: 0;
+  min-width: 0;
+  padding-top: 1.35rem;
+  padding-bottom: 0.9rem;
+}
+
+.ComponentBar-component-list {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  user-select: none;
+}
+
+.ComponentBar-component-list.collapsed {
+  max-height: 0;
+  overflow: hidden;
+  transition: .15s;
+}
+
+.ComponentBar-component-list > .ComponentBar-component-container:last-child {
+  margin-bottom: 0;
+}
+
+.ComponentBar-component-container {
+  display: block;
+  margin-bottom: 0.3rem;
+  padding-left: 0.9rem;
+  padding-right: 0.9rem;
+  text-align: center;
+}
+
+.ComponentBar-component-group {
+  background-color: rgba(0, 0, 0, 0.5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: block;
+  font-size: 1rem;
+  padding-bottom: 0.3rem;
+  padding-top: 0.3rem;
+  text-align: center;
+}
+
+.ComponentBar-component-group:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+}

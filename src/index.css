@@ -1,6 +1,33 @@
+/*$primaryColor: #2f2f2f*/
 
-body {
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+html, body {
+  box-sizing: border-box;
+  color: #2f2f2f;
+  font-family: proxima-nova, Helvetica Neue, Helvetica, Arial, sans-serif;
+  font-size: 0.9em;
+  height: 100%;
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  width: 100%;
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+}
+
+.block {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
 }

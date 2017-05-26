@@ -2,12 +2,19 @@
   "name": "jsreport-designer",
   "version": "0.1.0",
   "private": true,
+  "main": "index.js",
   "dependencies": {
-    "react": "^15.5.4",
-    "react-dom": "^15.5.4"
+    "bluebird": "3.5.0",
+    "lodash": "4.17.4",
+    "prop-types": "^15.5.10",
+    "react": "15.5.4",
+    "react-dnd": "2.4.0",
+    "react-dnd-html5-backend": "2.4.1",
+    "react-dom": "15.5.4",
+    "shortid": "2.2.8"
   },
   "devDependencies": {
-    "react-scripts": "0.9.5"
+    "react-scripts": "1.0.6"
   },
   "scripts": {
     "start": "react-scripts start",

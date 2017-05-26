@@ -1,0 +1,31 @@
+
+.Grid {
+  display: inline-block;
+  position: absolute;
+  /*ensuring that grid never stack in front of other elements in canvas*/
+  /*https://philipwalton.com/articles/what-no-one-told-you-about-z-index*/
+  opacity: 0.99;
+  top: 0;
+  left: 0;
+}
+
+.Grid > .Grid-row:first-child > .Grid-cell {
+  border-top-width: 0px;
+}
+
+.Grid-row {
+  font-size: 0;
+  white-space: nowrap;
+}
+
+.Grid-row > .Grid-cell:first-child {
+  border-left-width: 0px;
+}
+
+.Grid-cell {
+  position: relative;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-bottom-width: 0px;
+  border-right-width: 0px;
+}
