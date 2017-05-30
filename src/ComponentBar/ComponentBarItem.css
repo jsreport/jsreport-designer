@@ -5,6 +5,7 @@
   display: block;
   cursor: pointer;
   font-size: 0.8rem;
+  position: relative;
   padding: 1.3rem 0.7rem;
   width: 100%;
 }
