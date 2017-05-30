@@ -12,11 +12,21 @@
   /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
   min-height: 0;
   min-width: 0;
-  padding-top: 1.35rem;
-  padding-bottom: 0.9rem;
+  overflow: auto;
+}
+
+.ComponentBar:before {
+  flex: 0 0 1.35rem;
+  content: '';
+}
+
+.ComponentBar:after {
+  flex: 0 0 0.9rem;
+  content: '';
 }
 
 .ComponentBar-component-list {
+  flex: 0 0 auto;
   margin: 0;
   padding: 0;
   list-style-type: none;
