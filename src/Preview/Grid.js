@@ -3,62 +3,54 @@ import PropTypes from 'prop-types'
 import './Grid.css'
 
 class Grid extends Component {
-  renderCols({ width, height }) {
-    const {
-      cols
-    } = this.props
-
-    let gridCols = []
-
-    for (let i = 1; i <= cols; i++) {
-      gridCols.push(
+  renderCols(cols) {
+    let gridCols = cols.map((col, i) => {
+      return (
         <div
           className="Grid-cell"
-          style={{ width: width + 'px', height: height + 'px' }}
+          style={{ width: col.width + col.unit, height: '100%' }}
           key={'Grid-cell-' + i}
         />
       )
-    }
-
+    })
     return gridCols
   }
 
   renderRows() {
     const {
-      baseWidth,
-      baseHeight,
-      rows,
-      cols
+      rows
     } = this.props
 
-    let gridRows = []
-    let colWidth = baseWidth / cols
-    let colHeight = baseHeight / rows
+    let gridRows = rows.map((row, i) => {
+      let rowStyles = {
+        height: row.height + row.unit
+      }
 
-    for (let i = 1; i <= rows; i++) {
-      gridRows.push(
+      if (row.placeholder === true) {
+        rowStyles.backgroundColor = 'rgba(87, 191, 216, 0.3)'
+      }
+
+      return (
         <div
           className="Grid-row"
-          style={{ width: baseWidth + 'px' }}
+          style={rowStyles}
           key={'Grid-row-' + i}
         >
-          {this.renderCols({ width: colWidth, height: colHeight })}
+          {this.renderCols(row.cols)}
         </div>
       )
-    }
+    })
 
     return gridRows
   }
 
   render () {
     const {
-      baseWidth,
-      baseHeight
+      baseWidth
     } = this.props
 
     const gridStyles = {
-      width: baseWidth,
-      height: baseHeight
+      width: baseWidth
     }
 
     return (
@@ -71,9 +63,7 @@ class Grid extends Component {
 
 Grid.propTypes = {
   baseWidth: PropTypes.number.isRequired,
-  baseHeight: PropTypes.number.isRequired,
-  cols: PropTypes.number.isRequired,
-  rows: PropTypes.number.isRequired
+  rows: PropTypes.array.isRequired
 }
 
 export default Grid

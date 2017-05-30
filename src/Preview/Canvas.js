@@ -60,8 +60,8 @@ function collect (connect, monitor) {
 }
 
 class Canvas extends Component {
-  shouldShowGrid(grid) {
-    if (grid && grid.rows != null && grid.cols != null) {
+  shouldShowGrid(gridRows) {
+    if (gridRows.length > 0) {
       return true
     }
 
@@ -131,15 +131,15 @@ class Canvas extends Component {
     const {
       width,
       height,
-      grid,
+      gridRows,
       connectDropTarget,
       isOver,
       canDrop
     } = this.props
 
     let canvasStyles = {
-      width,
-      height
+      width: width + 'px',
+      height: height + 'px'
     }
 
     if (!isOver && canDrop) {
@@ -153,12 +153,10 @@ class Canvas extends Component {
 
     return connectDropTarget(
       <div className="Canvas" style={canvasStyles}>
-        {this.shouldShowGrid(grid) && (
+        {this.shouldShowGrid(gridRows) && (
           <Grid
             baseWidth={width}
-            baseHeight={height}
-            rows={grid.rows}
-            cols={grid.cols}
+            rows={gridRows}
           />
         )}
         {this.renderItems()}
@@ -170,10 +168,7 @@ class Canvas extends Component {
 Canvas.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
-  grid: PropTypes.shape({
-    rows: PropTypes.number,
-    cols: PropTypes.number
-  }),
+  gridRows: PropTypes.array.isRequired,
   components: PropTypes.array.isRequired,
   canDrop: PropTypes.bool.isRequired,
   isOver: PropTypes.bool.isRequired

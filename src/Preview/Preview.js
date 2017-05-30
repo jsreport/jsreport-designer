@@ -10,16 +10,19 @@ import './Preview.css'
 */
 // values as constants for now
 const BASE_WIDTH = 980
-const BASE_HEIGHT = 980 * 1.414
-const COLS = 12
-const ROWS = 18
+const NUMBER_OF_COLS = 12
+const DEFAULT_ROW_HEIGHT = 78
 
 class Preview extends Component {
   constructor (props) {
     super(props)
 
     this.state = {
-      components: []
+      components: [],
+      gridRows: this.getInitialGridRows({
+        numberOfCols: NUMBER_OF_COLS,
+        defaultRowHeight: DEFAULT_ROW_HEIGHT
+      })
     }
 
     this.onBeginHoverCanvas = this.onBeginHoverCanvas.bind(this)
@@ -27,7 +30,51 @@ class Preview extends Component {
     this.onDropCanvas = this.onDropCanvas.bind(this)
   }
 
-  addComponentToCanvas(comp) {
+  getInitialGridRows ({ defaultRowHeight, numberOfCols }) {
+    let rows = []
+    let defaultNumberOfRows = 6
+
+    for (let i = 0; i < defaultNumberOfRows; i++) {
+      rows.push({
+        index: i,
+        height: defaultRowHeight,
+        unit: 'px',
+        cols: this.getInitialGridCols(i, numberOfCols)
+      })
+    }
+
+    // plus one for
+    rows.push({
+      index: rows.length,
+      height: defaultRowHeight,
+      unit: 'px',
+      cols: this.getInitialGridCols(rows.length, numberOfCols),
+      placeholder: true
+    })
+
+    return rows
+  }
+
+  getInitialGridCols (rowIndex, numberOfCols) {
+    let cols = []
+
+    for (let i = 0; i < numberOfCols; i++) {
+      cols.push({
+        row: rowIndex,
+        index: i,
+        width: 100/numberOfCols,
+        unit: '%'
+      })
+    }
+
+    return cols
+  }
+
+  getTotalHeightOfRows (rows) {
+    return rows.reduce((acu, row) => acu + row.height, 0)
+  }
+
+  addComponentToCanvas (comp) {
     let compProps = comp.props || {}
 
     // call here a function to get a default props depending of the component type
@@ -54,8 +101,7 @@ class Preview extends Component {
     this.setState({
       inspectMeta: JSON.stringify({
         grid: {
-          width: BASE_WIDTH,
-          height: BASE_HEIGHT
+          width: BASE_WIDTH
         },
         components: this.state.components
       }, null, 2)
@@ -104,23 +150,14 @@ class Preview extends Component {
 
   render () {
     const baseWidth = BASE_WIDTH
-    const baseHeight = BASE_HEIGHT
-    const gridCols = COLS
-    const gridRows = ROWS
 
     const {
-      components
+      components,
+      gridRows
     } = this.state
 
+    let totalHeight = this.getTotalHeightOfRows(gridRows)
     let paddingLeftRight = 25
-    let grid
-
-    if (gridRows != null && gridCols != null) {
-      grid = {
-        rows: gridRows,
-        cols: gridCols
-      }
-    }
 
     let inspectButton = (
       <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
@@ -153,8 +190,8 @@ class Preview extends Component {
           <Canvas
             ref={(el) => this.canvasRef = el}
             width={baseWidth}
-            height={baseHeight}
-            grid={grid}
+            height={totalHeight}
+            gridRows={gridRows}
             components={components}
             onBeginHover={this.onBeginHoverCanvas}
             onHover={this.onHoverCanvas}
