@@ -58,10 +58,100 @@ class ComponentBar extends Component {
     super(props)
 
     this.state = {}
+
+    this.ensureInitialPositionOfComponentItem = this.ensureInitialPositionOfComponentItem.bind(this)
+    this.cleanInitialPositionOfComponentItem = this.cleanInitialPositionOfComponentItem.bind(this)
+    this.cloneComponentItem = this.cloneComponentItem.bind(this)
+    this.keepComponentItemCloneAspect = this.keepComponentItemCloneAspect.bind(this)
+    this.removeComponentItemClone = this.removeComponentItemClone.bind(this)
+  }
+
+  componentDidMount () {
+    this.initialComponentBarScroll = this.componentBar.scrollTop
   }
 
   collapse (collectionId) {
     this.setState({ [collectionId]: !this.state[collectionId] })
+  }
+
+  ensureInitialPositionOfComponentItem (ev) {
+    let componentItem
+
+    // don't recalculate the initial value if we are dragging still
+    if (
+      this.componentItemClone != null
+    ) {
+      return
+    }
+
+    componentItem = ev.target
+
+    this.initialTopComponentItemClone = componentItem.getBoundingClientRect().top
+  }
+
+  cleanInitialPositionOfComponentItem () {
+    // don't clean the value if we are dragging still
+    if (this.componentItemClone != null) {
+      return
+    }
+
+    this.initialTopComponentItemClone = null
+  }
+
+  keepComponentItemCloneAspect (ev) {
+    let componentBar = ev.target
+    let scrollDifference
+
+    // if we are not dragging only recalculate the initial scroll on scroll
+    if (this.componentItemClone == null) {
+      this.initialComponentBarScroll = componentBar.scrollTop
+      return
+    }
+
+    // while dragging and scrolling keep the aspect of dragged component relative in the viewport
+    scrollDifference = (componentBar.scrollTop - this.initialComponentBarScroll)
+    this.componentItemReplacement.style.top = `${this.initialTopComponentItemClone - scrollDifference}px`
+  }
+
+  /**
+   * Clone the dragged ComponentBarItem an insert a
+   * replacement in the same position
+   */
+  cloneComponentItem (node) {
+    let { top, left, width, height } = node.getBoundingClientRect()
+    let componentItemClone = node.cloneNode(true)
+
+    // recalculate position and scroll when dragging starts
+    this.initialTopComponentItemClone = top
+    this.initialComponentBarScroll = this.componentBar.scrollTop
+
+    this.componentItemReplacement.style.display = 'block'
+    this.componentItemReplacement.style.top = `${top}px`
+    this.componentItemReplacement.style.left = `${left}px`
+    this.componentItemReplacement.style.width = `${width}px`
+    this.componentItemReplacement.style.height = `${height}px`
+
+    // NOTE: this color should be equal to background color of ComponentBarItem on hover
+    componentItemClone.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
+    componentItemClone.style.color = 'inherit'
+    componentItemClone.style.opacity = '0.7'
+
+    this.componentItemClone = componentItemClone
+    this.componentItemReplacement.appendChild(componentItemClone)
+  }
+
+  /**
+   * Remove the ComponentBarItem replacement when dragging has finished
+   */
+  removeComponentItemClone () {
+    this.componentItemReplacement.style.display = 'none'
+
+    if (this.componentItemClone) {
+      this.componentItemReplacement.removeChild(this.componentItemClone)
+      this.componentItemClone = null
+      this.initialTopComponentItemClone = null
+      this.initialComponentBarScroll = null
+    }
   }
 
   groupAndSortComponents (components) {
@@ -88,20 +178,22 @@ class ComponentBar extends Component {
       collectionId = 'ComponentsGroupStandard'
 
       return (
-        <ul key={collectionId} className="ComponentBar-component-list">
-          {components.map(comp => (
-            <li key={comp.id} className="ComponentBar-component-container">
-              <ComponentBarItem component={comp} />
-            </li>
-          ))}
-        </ul>
+        <div key={collectionId} className="ComponentBar-component-list">
+          {this.renderComponentBarList({
+            collapsed: false,
+            components
+          })}
+        </div>
       )
     }
 
     collectionId = 'ComponentsGroup-' + collection
 
     return (
-      <div key={collectionId} className="ComponentBar-component-list">
+      <div
+        key={collectionId}
+        className="ComponentBar-component-list"
+      >
         <div
           className="ComponentBar-component-group"
           onClick={() => this.collapse(collectionId)}
@@ -112,14 +204,29 @@ class ComponentBar extends Component {
             <i>{collection}</i>
           </span>
         </div>
-        <ul className={'ComponentBar-component-list' + (this.state[collectionId] ? ' collapsed' : '')}>
-          {components.map(comp => (
-            <li key={comp.id} className="ComponentBar-component-container">
-              <ComponentBarItem component={comp} />
-            </li>
-          ))}
-        </ul>
+        {this.renderComponentBarList({
+          collapsed: this.state[collectionId],
+          components
+        })}
       </div>
+    )
+  }
+
+  renderComponentBarList ({ components, collapsed }) {
+    return (
+      <ul className={'ComponentBar-component-list' + (collapsed ? ' collapsed' : '')}>
+        {components.map(comp => (
+          <li key={comp.id} className="ComponentBar-component-container">
+            <ComponentBarItem
+              onMouseOver={this.ensureInitialPositionOfComponentItem}
+              onMouseLeave={this.cleanInitialPositionOfComponentItem}
+              onDragStart={this.cloneComponentItem}
+              onDragEnd={this.removeComponentItemClone}
+              component={comp}
+            />
+          </li>
+        ))}
+      </ul>
     )
   }
 
@@ -127,10 +234,25 @@ class ComponentBar extends Component {
     const components = COMPONENTS
 
     return (
-      <div className="ComponentBar">
+      <div
+        ref={(el) => this.componentBar = el}
+        className="ComponentBar"
+        onScroll={this.keepComponentItemCloneAspect}
+      >
         {this.groupAndSortComponents(components).map((group) => {
           return this.renderComponentCollection(group)
         })}
+        {/* placeholder for the ComponentBarItem replacement while dragging */}
+        <div
+          draggable="false"
+          key='ComponentItem-replacement'
+          ref={(el) => this.componentItemReplacement = el}
+          style={{
+            display: 'none',
+            pointerEvents: 'none',
+            position: 'fixed'
+          }}
+        />
       </div>
     )
   }
