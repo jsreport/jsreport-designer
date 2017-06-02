@@ -12,8 +12,9 @@ class Designer extends Component {
       <div className="Designer container">
         <div className="block">
           <SplitPane
-            defaultSize='88%'
-            primary="second"
+            defaultSize='175px'
+            minSize={150}
+            primary="first"
             collapsable="first"
             collapsedText="Components"
             split="vertical"
