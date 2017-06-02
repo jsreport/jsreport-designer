@@ -4,6 +4,7 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import SplitPane from './SplitPane'
 import ComponentBar from './ComponentBar'
 import Preview from './Preview'
+import { ComponentDragLayer } from './ComponentDragPreview'
 import './Designer.css'
 
 class Designer extends Component {
@@ -23,6 +24,7 @@ class Designer extends Component {
             <ComponentBar />
             <Preview />
           </SplitPane>
+          <ComponentDragLayer />
         </div>
       </div>
     );

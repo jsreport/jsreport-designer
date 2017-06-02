@@ -9,6 +9,10 @@ const COMPONENTS = [
     id: 1,
     name: 'Text',
     icon: 'font',
+    defaultSize: {
+      width: 100,
+      height: 100
+    },
     props: {
       text: 'Sample text'
     }
@@ -17,6 +21,10 @@ const COMPONENTS = [
     id: 2,
     name: 'Image',
     icon: 'image',
+    defaultSize: {
+      width: 138.34,
+      height: 87.83
+    },
     props: {
       url: 'http://www.euneighbours.eu/sites/default/files/2017-01/placeholder.png',
       width: '138.34px',

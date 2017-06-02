@@ -7,11 +7,30 @@ import './ComponentBarItem.css'
 
 const componentSource = {
   beginDrag (props, monitor, component) {
+    let item
+
     if (props.onDragStart) {
       props.onDragStart(findDOMNode(component))
     }
 
-    return props.component;
+    item = {
+      ...props.component
+    }
+
+    // ensure a default size if not present
+    if (!item.defaultSize) {
+      item.defaultSize = {}
+    }
+
+    if (item.defaultSize.width == null) {
+      item.defaultSize.width = 150
+    }
+
+    if (item.defaultSize.height == null) {
+      item.defaultSize.height = 100
+    }
+
+    return item;
   },
   endDrag (props) {
     if (props.onDragEnd) {

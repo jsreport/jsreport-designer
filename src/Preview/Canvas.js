@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { DropTarget } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
 import Grid from './Grid'
+import ComponentItem from '../ComponentItem'
 import './Canvas.css'
 
 function logMonitorData(monitor) {
@@ -68,40 +69,15 @@ class Canvas extends Component {
     return false
   }
 
-  renderComponent (comp) {
-    // default content for now
-    let content = comp.componentType + '-' + comp.id
-
-    // create here some logic to create a component depending of the component type
-    if (comp.componentType === 'Text') {
-      // faking getting component content, just for now
-      content = '<span>' + comp.props.text + '</span>'
-    } else if (comp.componentType === 'Image') {
-      // faking getting component content, just for now
-      content = '<img src="' + comp.props.url +  '" style="width: ' + comp.props.width + '; height: ' + comp.props.height + '" />'
-    } else {
-      // default fake content
-      content = '<span>' + content + '</span>'
-    }
-
+  renderComponentItem (componentItem) {
     return (
-      <div
-        style={{
-          display: 'inline-block',
-          border: '1px dashed rgba(0, 0, 0, 0.3)'
-        }}
-        dangerouslySetInnerHTML={{ __html: content }}
+      <ComponentItem
+        type={componentItem.componentType}
+        width={componentItem.defaultSize.width}
+        height={componentItem.defaultSize.height}
+        componentProps={componentItem.props}
       />
     )
-
-    {/* <div
-      style={{
-        display: 'inline-block',
-        border: '1px dashed rgba(0, 0, 0, 0.3)'
-      }}
-    >
-      {content}
-    </div> */}
   }
 
   renderItems () {
@@ -111,16 +87,16 @@ class Canvas extends Component {
 
     return (
       <div className="Canvas-area">
-        {components.map((comp) => (
+        {components.map((componentItem) => (
           <div
-            key={'Component-' + comp.id}
+            key={'ComponentItem-' + componentItem.id}
             className="Canvas-area-position"
             style={{
-              top: comp.position.top,
-              left: comp.position.left
+              top: componentItem.position.top,
+              left: componentItem.position.left
             }}
           >
-            {this.renderComponent(comp)}
+            {this.renderComponentItem(componentItem)}
           </div>
         ))}
       </div>

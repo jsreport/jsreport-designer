@@ -77,7 +77,6 @@ class Preview extends Component {
   addComponentToCanvas (comp) {
     let compProps = comp.props || {}
 
-    // call here a function to get a default props depending of the component type
     if (comp.componentType === 'Text') {
       compProps = {
         ...compProps,
@@ -137,6 +136,7 @@ class Preview extends Component {
     this.addComponentToCanvas({
       componentType: item.name,
       componentTypeId: item.id,
+      defaultSize: item.defaultSize,
       position: {
         top: top,
         left: left
