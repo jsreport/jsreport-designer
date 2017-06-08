@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
+    "array.from": "1.0.3",
     "bluebird": "3.5.0",
     "lodash": "4.17.4",
     "prop-types": "^15.5.10",

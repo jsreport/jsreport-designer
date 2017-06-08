@@ -1,24 +1,46 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import GridCol from './GridCol'
 import './Grid.css'
 
 class Grid extends Component {
-  renderCols(cols) {
+  renderCols(cols, { isDragOverParent, selectedArea, onDragOver }) {
     let gridCols = cols.map((col, i) => {
+      let selected = null
+
+      if (
+        selectedArea &&
+        selectedArea.area[col.index + ',' + col.row] != null
+      ) {
+        selected = {}
+
+        if (selectedArea.filled) {
+          selected.color = 'rgba(194, 236, 203, 0.6)'
+        } else {
+          selected.color = 'rgba(226, 145, 145, 0.6)'
+        }
+      }
+
       return (
-        <div
-          className="Grid-cell"
-          style={{ width: col.width + col.unit, height: '100%' }}
-          key={'Grid-cell-' + i}
+        <GridCol
+          key={'Grid-col-' + i}
+          isDragOverParent={isDragOverParent}
+          selected={selected}
+          col={col}
+          onDragOver={onDragOver}
         />
       )
     })
+
     return gridCols
   }
 
   renderRows() {
     const {
-      rows
+      rows,
+      selectedArea,
+      isDragOver,
+      onColDragOver
     } = this.props
 
     let gridRows = rows.map((row, i) => {
@@ -36,7 +58,11 @@ class Grid extends Component {
           style={rowStyles}
           key={'Grid-row-' + i}
         >
-          {this.renderCols(row.cols)}
+          {this.renderCols(row.cols, {
+            isDragOverParent: isDragOver,
+            selectedArea,
+            onDragOver: onColDragOver
+          })}
         </div>
       )
     })
@@ -45,11 +71,14 @@ class Grid extends Component {
   }
 
   render () {
+    let customStyle = this.props.style || {}
+
     const {
       baseWidth
     } = this.props
 
     const gridStyles = {
+      ...customStyle,
       width: baseWidth
     }
 
@@ -62,8 +91,11 @@ class Grid extends Component {
 }
 
 Grid.propTypes = {
+  isDragOver: PropTypes.bool.isRequired,
   baseWidth: PropTypes.number.isRequired,
-  rows: PropTypes.array.isRequired
+  rows: PropTypes.array.isRequired,
+  selectedArea: PropTypes.object,
+  onColDragOver: PropTypes.func
 }
 
 export default Grid

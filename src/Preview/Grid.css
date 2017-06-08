@@ -9,7 +9,7 @@
   left: 0;
 }
 
-.Grid > .Grid-row:first-child > .Grid-cell {
+.Grid > .Grid-row:first-child > .Grid-col {
   border-top-width: 0px;
 }
 
@@ -18,11 +18,11 @@
   white-space: nowrap;
 }
 
-.Grid-row > .Grid-cell:first-child {
+.Grid-row > .Grid-col:first-child {
   border-left-width: 0px;
 }
 
-.Grid-cell {
+.Grid-col {
   position: relative;
   display: inline-block;
   border: 1px solid rgba(0, 0, 0, 0.15);

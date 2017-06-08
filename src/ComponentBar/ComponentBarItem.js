@@ -32,6 +32,7 @@ const componentSource = {
 
     return item;
   },
+
   endDrag (props) {
     if (props.onDragEnd) {
       props.onDragEnd()

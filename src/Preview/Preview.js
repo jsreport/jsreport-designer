@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import shortid from 'shortid'
+import { isInsideOfCol, findFilledArea } from './gridUtils'
 import Canvas from './Canvas'
 import './Preview.css'
 
@@ -17,17 +18,22 @@ class Preview extends Component {
   constructor (props) {
     super(props)
 
+    this.numberOfCols = NUMBER_OF_COLS
+
     this.state = {
       components: [],
       gridRows: this.getInitialGridRows({
-        numberOfCols: NUMBER_OF_COLS,
+        numberOfCols: this.numberOfCols,
         defaultRowHeight: DEFAULT_ROW_HEIGHT
-      })
+      }),
+      selectedArea: null
     }
 
-    this.onBeginHoverCanvas = this.onBeginHoverCanvas.bind(this)
-    this.onHoverCanvas = this.onHoverCanvas.bind(this)
+    this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
+    this.onDragLeaveCanvas = this.onDragLeaveCanvas.bind(this)
+    this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
     this.onDropCanvas = this.onDropCanvas.bind(this)
+    this.getSelectedAreaFromCol = this.getSelectedAreaFromCol.bind(this)
   }
 
   getInitialGridRows ({ defaultRowHeight, numberOfCols }) {
@@ -74,6 +80,96 @@ class Preview extends Component {
     return rows.reduce((acu, row) => acu + row.height, 0)
   }
 
+  getSelectedAreaFromCol ({ col, colDimensions, item, clientOffset }) {
+    let rowsCount = this.state.gridRows.length
+    let colsCount = this.numberOfCols
+    let isInside = true
+    let { x: cursorOffsetX, y: cursorOffsetY } = clientOffset
+    let { width, height, top, left } = colDimensions
+    let colCenter = {}
+    let maxFilledCols
+    let maxFilledRows
+    let projectedOffsetLimits
+
+    let colInfo = {
+      col: col.index,
+      row: col.row,
+      width,
+      height,
+      top,
+      left
+    }
+
+    isInside = isInsideOfCol({ x: cursorOffsetX, y: cursorOffsetY }, colInfo)
+
+    if (!isInside) {
+      return
+    }
+
+    maxFilledCols = Math.ceil(item.defaultSize.width / width)
+    maxFilledRows = Math.ceil(item.defaultSize.height / height)
+
+    projectedOffsetLimits = {
+      left: {
+        x: cursorOffsetX - (item.defaultSize.width / 2),
+        y: cursorOffsetY
+      },
+      top: {
+        x: cursorOffsetX,
+        y: cursorOffsetY - (item.defaultSize.height / 2)
+      },
+      right: {
+        x: cursorOffsetX + (item.defaultSize.width / 2),
+        y: cursorOffsetY
+      },
+      bottom: {
+        x: cursorOffsetX,
+        y: cursorOffsetY + (item.defaultSize.height / 2)
+      }
+    }
+
+    // TODO: calculate limits/constraints
+    // (if we should start to count for selected area from left/right/top/bottom
+    // based on the orientation of the cursor to prevent placing items in
+    // more cols/rows that they need to be)
+
+    // TODO: test dragging while there is the scrollbar on viewport, just to see that
+    // everything is behaving and placed correctly
+
+    // TODO: add more rows when dropping something on the last row (placeholder row)
+    // (maybe while dragging too)
+
+    // TODO: make selected area calculation ignore filled cols
+
+    colCenter.x = left + (item.defaultSize.width / 2)
+    colCenter.y = top + (item.defaultSize.height / 2)
+
+    let isOnRightSide = (cursorOffsetX >= (colCenter.x + 2))
+    let isOnBottomSide = (cursorOffsetY >= (colCenter.y + 2))
+
+    // console.log('===============')
+    // console.log('MAX FILLED ROWS:', maxFilledRows)
+    // console.log('MAX FILLED COLS:', maxFilledCols)
+    // console.log('IS ON RIGHT SIDE:', isOnRightSide)
+    // console.log('IS ON BOTTOM SIDE:', isOnBottomSide)
+    // console.log('===============')
+
+    let selectedArea = findFilledArea(projectedOffsetLimits, colInfo, {
+      colsCount,
+      rowsCount
+    })
+
+    // console.log('SELECTED AREA:', selectedArea)
+
+    // saving selectedArea in instance because it will be reset later
+    // and we want to access this value later
+    this.selectedArea = selectedArea
+
+    this.setState({
+      selectedArea
+    })
+  }
+
   addComponentToCanvas (comp) {
     let compProps = comp.props || {}
 
@@ -85,6 +181,8 @@ class Preview extends Component {
     }
 
     this.setState({
+      // clean selectedArea when adding a component
+      selectedArea: null,
       components: [
         ...this.state.components,
         {
@@ -107,8 +205,11 @@ class Preview extends Component {
     })
   }
 
-  onBeginHoverCanvas ({ item, clientOffset, initialSourceClientOffset, initialClientOffset }) {
+  onDragEnterCanvas ({ item, clientOffset, initialSourceClientOffset, initialClientOffset }) {
     const canvasOffset = findDOMNode(this.canvasRef).getBoundingClientRect()
+
+    // clean selected area when dragging starts on canvas
+    this.selectedArea = null
 
     this.startPosition = {
       x: clientOffset.x,
@@ -124,28 +225,39 @@ class Preview extends Component {
     // console.log('original calculus left:', (this.startPosition.x - canvasOffset.left) - (item.defaultSize.width / 2))
   }
 
-  onHoverCanvas ({ clientOffset }) {
-    console.log('while hover top:', this.startRect.top + ((clientOffset.y - this.startPosition.y)))
-    console.log('while hover left:', this.startRect.left + ((clientOffset.x - this.startPosition.x)))
+  onDragLeaveCanvas () {
+    // clean selected area (visually) when dragging outside canvas
+    this.setState({
+      selectedArea: null
+    })
   }
 
-  onDropCanvas ({ item, clientOffset }) {
+  onDragEndCanvas () {
+    // clean selected area (visually) when dragging ends
+    this.setState({
+      selectedArea: null
+    })
+  }
+
+  onDropCanvas ({ item, clientOffset, col }) {
     const top = this.startRect.top + (clientOffset.y - this.startPosition.y)
     const left = this.startRect.left + (clientOffset.x - this.startPosition.x)
 
-    this.addComponentToCanvas({
-      componentType: item.name,
-      componentTypeId: item.id,
-      defaultSize: item.defaultSize,
-      position: {
-        top: top,
-        left: left
-      },
-      props: item.props
-    })
-
     this.startPosition = null
     this.startRect = null
+
+    if (this.selectedArea && this.selectedArea.filled) {
+      this.addComponentToCanvas({
+        componentType: item.name,
+        componentTypeId: item.id,
+        defaultSize: item.defaultSize,
+        position: {
+          top: top,
+          left: left
+        },
+        props: item.props
+      })
+    }
   }
 
   render () {
@@ -153,7 +265,8 @@ class Preview extends Component {
 
     const {
       components,
-      gridRows
+      gridRows,
+      selectedArea
     } = this.state
 
     let totalHeight = this.getTotalHeightOfRows(gridRows)
@@ -192,10 +305,13 @@ class Preview extends Component {
             width={baseWidth}
             height={totalHeight}
             gridRows={gridRows}
+            selectedArea={selectedArea}
             components={components}
-            onBeginHover={this.onBeginHoverCanvas}
-            onHover={this.onHoverCanvas}
+            onDragEnter={this.onDragEnterCanvas}
+            onDragLeave={this.onDragLeaveCanvas}
+            onDragEnd={this.onDragEndCanvas}
             onDrop={this.onDropCanvas}
+            onColDragOver={this.getSelectedAreaFromCol}
           />
         </div>
       </div>
