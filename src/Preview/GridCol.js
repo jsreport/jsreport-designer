@@ -72,7 +72,7 @@ class GridCol extends Component {
       height: '100%'
     }
 
-    if (canDrop && selected && selected.color) {
+    if (selected && selected.color) {
       colStyles.backgroundColor = selected.color
     }
 

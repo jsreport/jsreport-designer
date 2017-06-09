@@ -1,6 +1,6 @@
 import arrayFrom from 'array.from'
 
-function isInsideOfCol (point, colInfo) {
+function isInsideOfCol ({ point, colInfo }) {
   const { x, y } = point
   const { width, height, top, left } = colInfo
 
@@ -12,12 +12,17 @@ function isInsideOfCol (point, colInfo) {
   return result
 }
 
-function findStartCol (point, baseCol, { step, limit }) {
+function findStartCol ({ rows, point, baseCol, step }) {
   let complete = false
   let filled = false
   let currentCol = { ...baseCol }
   let startCol
   let propertyToEvaluate
+  let limit
+
+  if (point.side === 'top' || point.side === 'left') {
+    limit = 0
+  }
 
   if (point.side === 'top' || point.side === 'bottom') {
     propertyToEvaluate = 'row'
@@ -26,10 +31,18 @@ function findStartCol (point, baseCol, { step, limit }) {
   }
 
   while (!complete) {
-    let isInside = isInsideOfCol(point, currentCol)
+    let isInside = isInsideOfCol({ point, colInfo: currentCol })
 
     if (isInside) {
       filled = true
+    }
+
+    if (limit == null) {
+      if (propertyToEvaluate === 'row') {
+        limit = rows.length - 1
+      } else {
+        limit = rows[currentCol.row].cols.length - 1
+      }
     }
 
     if (currentCol[propertyToEvaluate] === limit || isInside) {
@@ -59,33 +72,38 @@ function findStartCol (point, baseCol, { step, limit }) {
   }
 }
 
-const findFilledArea = (projectedLimits, startColInfo, { colsCount, rowsCount }) => {
+const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInfo }) => {
   let area = {}
   let filled = false
+  let conflict = false
 
-  let foundInTop = findStartCol(
-    { ...projectedLimits.top, side: 'top' },
-    startColInfo,
-    { step: -1, limit: 0 }
-  )
+  let foundInTop = findStartCol({
+    rows,
+    point: { ...projectedLimits.top, side: 'top' },
+    baseCol: baseColInfo,
+    step: -1
+  })
 
-  let foundInBottom = findStartCol(
-    { ...projectedLimits.bottom, side: 'bottom' },
-    startColInfo,
-    { step: 1, limit: rowsCount - 1 }
-  )
+  let foundInBottom = findStartCol({
+    rows,
+    point: { ...projectedLimits.bottom, side: 'bottom' },
+    baseCol: baseColInfo,
+    step: 1
+  })
 
-  let foundInLeft = findStartCol(
-    { ...projectedLimits.left, side: 'left' },
-    startColInfo,
-    { step: -1, limit: 0 }
-  )
+  let foundInLeft = findStartCol({
+    rows,
+    point: { ...projectedLimits.left, side: 'left' },
+    baseCol: baseColInfo,
+    step: -1
+  })
 
-  let foundInRight = findStartCol(
-    { ...projectedLimits.right, side: 'right' },
-    startColInfo,
-    { step: 1, limit: colsCount - 1 }
-  )
+  let foundInRight = findStartCol({
+    rows,
+    point: { ...projectedLimits.right, side: 'right' },
+    baseCol: baseColInfo,
+    step: 1
+  })
 
   // does the projected preview fills inside the selected area of grid?
   filled = (
@@ -110,6 +128,10 @@ const findFilledArea = (projectedLimits, startColInfo, { colsCount, rowsCount })
         continue;
       }
 
+      if (!conflict && filledArea && filledArea[coordinate]) {
+        conflict = true
+      }
+
       area[coordinate] = {
         col: x,
         row: currentY
@@ -121,6 +143,7 @@ const findFilledArea = (projectedLimits, startColInfo, { colsCount, rowsCount })
 
   return {
     filled,
+    conflict,
     area,
     points: {
       top: foundInTop.colCoordinate,
@@ -133,4 +156,4 @@ const findFilledArea = (projectedLimits, startColInfo, { colsCount, rowsCount })
 
 export { isInsideOfCol }
 export { findStartCol }
-export { findFilledArea }
+export { findProjectedFilledArea }

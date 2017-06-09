@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import shortid from 'shortid'
-import { isInsideOfCol, findFilledArea } from './gridUtils'
+import { isInsideOfCol, findProjectedFilledArea } from './gridUtils'
 import Canvas from './Canvas'
 import './Preview.css'
 
@@ -81,8 +81,8 @@ class Preview extends Component {
   }
 
   getSelectedAreaFromCol ({ col, colDimensions, item, clientOffset }) {
-    let rowsCount = this.state.gridRows.length
-    let colsCount = this.numberOfCols
+    let rows = this.state.gridRows
+    let filledArea = this.state.filledArea
     let isInside = true
     let { x: cursorOffsetX, y: cursorOffsetY } = clientOffset
     let { width, height, top, left } = colDimensions
@@ -100,7 +100,10 @@ class Preview extends Component {
       left
     }
 
-    isInside = isInsideOfCol({ x: cursorOffsetX, y: cursorOffsetY }, colInfo)
+    isInside = isInsideOfCol({
+      point: { x: cursorOffsetX, y: cursorOffsetY },
+      colInfo
+    })
 
     if (!isInside) {
       return
@@ -142,6 +145,9 @@ class Preview extends Component {
     // TODO: make selected area calculation ignore filled cols
     // (or make selected area not filled when some part of the area is over filled part)
 
+    // TODO: when dropping (make the row take the size of item dropped,
+    // it should always take the item with the greater size and apply it to the row)
+
     // TODO: make more smart logic about row grouping and limits to not depend on row height
     // for position of components
 
@@ -158,9 +164,11 @@ class Preview extends Component {
     // console.log('IS ON BOTTOM SIDE:', isOnBottomSide)
     // console.log('===============')
 
-    let selectedArea = findFilledArea(projectedOffsetLimits, colInfo, {
-      colsCount,
-      rowsCount
+    let selectedArea = findProjectedFilledArea({
+      rows,
+      filledArea,
+      projectedLimits: projectedOffsetLimits,
+      baseColInfo: colInfo
     })
 
     // console.log('SELECTED AREA:', selectedArea)
@@ -211,6 +219,8 @@ class Preview extends Component {
   }
 
   onClickInspect () {
+    console.log(JSON.stringify(this.state.gridRows, null, 2))
+
     this.setState({
       inspectMeta: JSON.stringify({
         grid: {
@@ -241,7 +251,13 @@ class Preview extends Component {
   }
 
   onDropCanvas ({ item, col }) {
-    if (this.selectedArea && this.selectedArea.filled && this.selectedArea.points && col) {
+    if (
+      this.selectedArea &&
+      !this.selectedArea.conflict &&
+      this.selectedArea.filled &&
+      this.selectedArea.points &&
+      col
+    ) {
       this.addComponentToCanvas({
         componentType: item.name,
         componentTypeId: item.id,

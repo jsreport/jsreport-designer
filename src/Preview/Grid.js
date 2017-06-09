@@ -15,7 +15,7 @@ class Grid extends Component {
       ) {
         selected = {}
 
-        if (selectedArea.filled) {
+        if (!selectedArea.conflict && selectedArea.filled) {
           selected.color = 'rgba(194, 236, 203, 0.6)'
         } else {
           selected.color = 'rgba(226, 145, 145, 0.6)'
