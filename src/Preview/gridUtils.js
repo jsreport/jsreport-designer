@@ -57,13 +57,13 @@ function findStartCol ({ rows, point, baseCol, step }) {
     }
 
     // calculating next col to check
-    currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
-
     if (propertyToEvaluate === 'row') {
-      currentCol.top = currentCol.top + (currentCol.height * step)
+      currentCol.top = currentCol.top + (rows[currentCol.row + step].height * step)
     } else {
-      currentCol.left = currentCol.left + (currentCol.width * step)
+      currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col + step].width * step)
     }
+
+    currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
   }
 
   return {

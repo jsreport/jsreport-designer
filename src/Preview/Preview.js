@@ -22,6 +22,7 @@ class Preview extends Component {
     this.state = {
       components: [],
       gridRows: this.getInitialGridRows({
+        baseWidth: BASE_WIDTH,
         numberOfCols: this.numberOfCols,
         defaultRowHeight: DEFAULT_ROW_HEIGHT
       }),
@@ -36,40 +37,44 @@ class Preview extends Component {
     this.getSelectedAreaFromCol = this.getSelectedAreaFromCol.bind(this)
   }
 
-  getInitialGridRows ({ defaultRowHeight, numberOfCols }) {
+  getInitialGridRows ({ baseWidth, numberOfCols, defaultRowHeight }) {
     let rows = []
-    let defaultNumberOfRows = 6
+    let defaultNumberOfRows = 7
 
     for (let i = 0; i < defaultNumberOfRows; i++) {
-      rows.push({
+      // last row is placeholder
+      let isPlaceholder = (i === defaultNumberOfRows - 1)
+
+      let row = {
         index: i,
         height: defaultRowHeight,
         unit: 'px',
-        cols: this.getInitialGridCols(i, numberOfCols)
-      })
-    }
+        cols: this.getInitialGridCols({
+          baseWidth,
+          rowIndex: rows.length,
+          numberOfCols
+        })
+      }
 
-    // plus one for
-    rows.push({
-      index: rows.length,
-      height: defaultRowHeight,
-      unit: 'px',
-      cols: this.getInitialGridCols(rows.length, numberOfCols),
-      placeholder: true
-    })
+      if (isPlaceholder) {
+        row.placeholder = true
+      }
+
+      rows.push(row)
+    }
 
     return rows
   }
 
-  getInitialGridCols (rowIndex, numberOfCols) {
+  getInitialGridCols ({ baseWidth, rowIndex, numberOfCols }) {
     let cols = []
 
     for (let i = 0; i < numberOfCols; i++) {
       cols.push({
         row: rowIndex,
         index: i,
-        width: 100/numberOfCols,
-        unit: '%'
+        width: baseWidth / numberOfCols,
+        unit: 'px'
       })
     }
 
@@ -219,8 +224,6 @@ class Preview extends Component {
   }
 
   onClickInspect () {
-    console.log(JSON.stringify(this.state.gridRows, null, 2))
-
     this.setState({
       inspectMeta: JSON.stringify({
         grid: {

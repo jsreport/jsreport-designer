@@ -68,7 +68,7 @@ class Canvas extends Component {
     // bad experience while dragging
     this.onColDragOver = throttle(
       this.onColDragOver.bind(this),
-      180,
+      100,
       { leading: true }
     )
   }
