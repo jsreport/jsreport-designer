@@ -1,10 +1,10 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import getComponentFromType from '../getComponentFromType'
+const componentRegistry = require('../shared/componentRegistry')
 
 class ComponentItem extends Component {
   renderComponent (type, componentProps) {
-    let ComponentType = getComponentFromType(type)
+    let ComponentType = componentRegistry.getComponentFromType(type)
 
     return (
       <ComponentType {...componentProps} />

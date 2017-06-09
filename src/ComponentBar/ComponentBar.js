@@ -22,13 +22,13 @@ const COMPONENTS = [
     name: 'Image',
     icon: 'image',
     defaultSize: {
-      width: 138.34,
-      height: 87.83
+      width: 100,
+      height: 100
     },
     props: {
       url: 'http://www.euneighbours.eu/sites/default/files/2017-01/placeholder.png',
-      width: '138.34px',
-      height: '87.83px'
+      width: '100px',
+      height: '100px'
     }
   },
   {
