@@ -20,17 +20,32 @@ const gridColTarget = {
   },
 
   canDrop (props, monitor) {
-    // if (!props.isDragOverParent) {
-    //   return true
-    // }
+    let { col } = props
+    let canDrop = true
 
-    return true
+    if (
+      props.isDragOverParent &&
+      props.filledArea &&
+      props.filledArea[col.index + ',' + col.row]
+    ) {
+      canDrop = false
+    }
+
+    return canDrop
   },
 
-  drop (props, monitor) {
+  drop (props, monitor, component) {
+    let colDimensions = component.node.getBoundingClientRect()
+
     return {
       clientOffset: monitor.getClientOffset(),
-      col: props.col
+      col: {
+        info: props.col,
+        dimensions: {
+          width: colDimensions.width,
+          height: colDimensions.height
+        }
+      }
     }
   }
 }
@@ -46,6 +61,7 @@ function collect (connect, monitor) {
 class GridCol extends Component {
   render () {
     const {
+      canDrop,
       col,
       selected,
       connectDropTarget,
@@ -56,7 +72,7 @@ class GridCol extends Component {
       height: '100%'
     }
 
-    if (selected && selected.color) {
+    if (canDrop && selected && selected.color) {
       colStyles.backgroundColor = selected.color
     }
 
@@ -76,6 +92,7 @@ GridCol.propTypes = {
   selected: PropTypes.shape({
     color: PropTypes.string
   }),
+  filledArea: PropTypes.object,
   connectDropTarget: PropTypes.func.isRequired,
   isDragOver: PropTypes.bool.isRequired,
   canDrop: PropTypes.bool.isRequired,

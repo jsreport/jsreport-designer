@@ -4,13 +4,14 @@ import GridCol from './GridCol'
 import './Grid.css'
 
 class Grid extends Component {
-  renderCols(cols, { isDragOverParent, selectedArea, onDragOver }) {
+  renderCols(cols, { isDragOverParent, selectedArea, filledArea, onDragOver }) {
     let gridCols = cols.map((col, i) => {
+      let coord = col.index + ',' + col.row
       let selected = null
 
       if (
         selectedArea &&
-        selectedArea.area[col.index + ',' + col.row] != null
+        selectedArea.area[coord] != null
       ) {
         selected = {}
 
@@ -26,6 +27,7 @@ class Grid extends Component {
           key={'Grid-col-' + i}
           isDragOverParent={isDragOverParent}
           selected={selected}
+          filledArea={filledArea}
           col={col}
           onDragOver={onDragOver}
         />
@@ -39,9 +41,12 @@ class Grid extends Component {
     const {
       rows,
       selectedArea,
+      filledArea,
       isDragOver,
       onColDragOver
     } = this.props
+
+    const canDropOnCol = this.canDropOnCol
 
     let gridRows = rows.map((row, i) => {
       let rowStyles = {
@@ -60,7 +65,9 @@ class Grid extends Component {
         >
           {this.renderCols(row.cols, {
             isDragOverParent: isDragOver,
+            canDropOnCol,
             selectedArea,
+            filledArea,
             onDragOver: onColDragOver
           })}
         </div>
@@ -95,6 +102,7 @@ Grid.propTypes = {
   baseWidth: PropTypes.number.isRequired,
   rows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
+  filledArea: PropTypes.object,
   onColDragOver: PropTypes.func
 }
 

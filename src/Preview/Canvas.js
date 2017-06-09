@@ -133,10 +133,10 @@ class Canvas extends Component {
         {components.map((componentItem) => (
           <div
             key={'ComponentItem-' + componentItem.id}
-            className="Canvas-area-position"
+            className="Canvas-area-item"
             style={{
-              top: componentItem.position.top,
-              left: componentItem.position.left
+              paddingLeft: `${(componentItem.position.left.col) * componentItem.colWidth}px`,
+              paddingTop: `${(componentItem.position.top.row) * componentItem.colHeight}px`
             }}
           >
             {this.renderComponentItem(componentItem)}
@@ -152,6 +152,7 @@ class Canvas extends Component {
       height,
       gridRows,
       selectedArea,
+      filledArea,
       connectDropTarget,
       isDragOver,
       canDrop,
@@ -188,6 +189,7 @@ class Canvas extends Component {
             baseWidth={width}
             rows={gridRows}
             selectedArea={selectedArea}
+            filledArea={filledArea}
             style={gridStyles}
             onColDragOver={this.onColDragOver}
           />
@@ -202,6 +204,7 @@ Canvas.propTypes = {
   height: PropTypes.number.isRequired,
   gridRows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
+  filledArea: PropTypes.object,
   components: PropTypes.array.isRequired,
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,

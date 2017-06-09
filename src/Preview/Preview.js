@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import { findDOMNode } from 'react-dom'
 import shortid from 'shortid'
 import { isInsideOfCol, findFilledArea } from './gridUtils'
 import Canvas from './Canvas'
@@ -26,7 +25,8 @@ class Preview extends Component {
         numberOfCols: this.numberOfCols,
         defaultRowHeight: DEFAULT_ROW_HEIGHT
       }),
-      selectedArea: null
+      selectedArea: null,
+      filledArea: null
     }
 
     this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
@@ -140,6 +140,10 @@ class Preview extends Component {
     // (maybe while dragging too)
 
     // TODO: make selected area calculation ignore filled cols
+    // (or make selected area not filled when some part of the area is over filled part)
+
+    // TODO: make more smart logic about row grouping and limits to not depend on row height
+    // for position of components
 
     colCenter.x = left + (item.defaultSize.width / 2)
     colCenter.y = top + (item.defaultSize.height / 2)
@@ -170,8 +174,9 @@ class Preview extends Component {
     })
   }
 
-  addComponentToCanvas (comp) {
+  addComponentToCanvas (comp, area) {
     let compProps = comp.props || {}
+    let filledArea = this.state.filledArea || {}
 
     if (comp.componentType === 'Text') {
       compProps = {
@@ -180,9 +185,20 @@ class Preview extends Component {
       }
     }
 
+    filledArea = {
+      ...filledArea,
+    }
+
+    Object.keys(area).forEach((coord) => {
+      if (filledArea[coord] == null) {
+        filledArea[coord] = area[coord]
+      }
+    })
+
     this.setState({
       // clean selectedArea when adding a component
       selectedArea: null,
+      filledArea,
       components: [
         ...this.state.components,
         {
@@ -205,24 +221,9 @@ class Preview extends Component {
     })
   }
 
-  onDragEnterCanvas ({ item, clientOffset, initialSourceClientOffset, initialClientOffset }) {
-    const canvasOffset = findDOMNode(this.canvasRef).getBoundingClientRect()
-
+  onDragEnterCanvas () {
     // clean selected area when dragging starts on canvas
     this.selectedArea = null
-
-    this.startPosition = {
-      x: clientOffset.x,
-      y: clientOffset.y
-    }
-
-    this.startRect = {
-      top: (this.startPosition.y - canvasOffset.top) - (initialClientOffset.y - initialSourceClientOffset.y),
-      left: (this.startPosition.x - canvasOffset.left) - (initialClientOffset.x - initialSourceClientOffset.x)
-    }
-
-    // console.log('original calculus top:', (this.startPosition.y - canvasOffset.top) - (item.defaultSize.height / 2))
-    // console.log('original calculus left:', (this.startPosition.x - canvasOffset.left) - (item.defaultSize.width / 2))
   }
 
   onDragLeaveCanvas () {
@@ -239,24 +240,20 @@ class Preview extends Component {
     })
   }
 
-  onDropCanvas ({ item, clientOffset, col }) {
-    const top = this.startRect.top + (clientOffset.y - this.startPosition.y)
-    const left = this.startRect.left + (clientOffset.x - this.startPosition.x)
-
-    this.startPosition = null
-    this.startRect = null
-
-    if (this.selectedArea && this.selectedArea.filled) {
+  onDropCanvas ({ item, col }) {
+    if (this.selectedArea && this.selectedArea.filled && this.selectedArea.points && col) {
       this.addComponentToCanvas({
         componentType: item.name,
         componentTypeId: item.id,
         defaultSize: item.defaultSize,
         position: {
-          top: top,
-          left: left
+          top: this.selectedArea.points.top,
+          left: this.selectedArea.points.left
         },
+        colWidth: col.dimensions.width,
+        colHeight: col.dimensions.height,
         props: item.props
-      })
+      }, this.selectedArea.area)
     }
   }
 
@@ -266,7 +263,8 @@ class Preview extends Component {
     const {
       components,
       gridRows,
-      selectedArea
+      selectedArea,
+      filledArea
     } = this.state
 
     let totalHeight = this.getTotalHeightOfRows(gridRows)
@@ -301,11 +299,11 @@ class Preview extends Component {
           }}
         >
           <Canvas
-            ref={(el) => this.canvasRef = el}
             width={baseWidth}
             height={totalHeight}
             gridRows={gridRows}
             selectedArea={selectedArea}
+            filledArea={filledArea}
             components={components}
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}

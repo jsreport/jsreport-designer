@@ -121,7 +121,13 @@ const findFilledArea = (projectedLimits, startColInfo, { colsCount, rowsCount })
 
   return {
     filled,
-    area
+    area,
+    points: {
+      top: foundInTop.colCoordinate,
+      left: foundInLeft.colCoordinate,
+      right: foundInRight.colCoordinate,
+      bottom: foundInBottom.colCoordinate
+    }
   }
 }
 
