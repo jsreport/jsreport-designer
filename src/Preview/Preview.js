@@ -145,7 +145,7 @@ class Preview extends Component {
     isInside = isInsideOfCol({
       point: { x: cursorOffsetX, y: cursorOffsetY },
       colInfo
-    })
+    }).isInside
 
     if (!isInside) {
       return

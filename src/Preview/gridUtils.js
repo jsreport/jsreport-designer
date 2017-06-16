@@ -4,12 +4,17 @@ function isInsideOfCol ({ point, colInfo }) {
   const { x, y } = point
   const { width, height, top, left } = colInfo
 
-  const result = (
-    (left <= x && x <= (left + width)) &&
-    (top <= y && y <= (top + height))
-  )
+  const isInsideX = (left <= x && x <= (left + width))
 
-  return result
+  const isInsideY = (top <= y && y <= (top + height))
+
+  const isInside = isInsideX && isInsideY
+
+  return {
+    isInside,
+    isInsideX,
+    isInsideY
+  }
 }
 
 function getProjectedOffsetLimits ({ cursorOffset, itemSize }) {
@@ -73,7 +78,9 @@ function findStartCol ({ rows, point, baseCol, step }) {
   }
 
   while (!complete) {
-    let isInside = isInsideOfCol({ point, colInfo: currentCol })
+    let isInsideInfo = isInsideOfCol({ point, colInfo: currentCol })
+    // we only care if the point is inside of the evaluated side
+    let isInside = isInsideInfo[propertyToEvaluate === 'row' ? 'isInsideY' : 'isInsideX']
 
     if (isInside) {
       filled = true
