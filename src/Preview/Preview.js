@@ -114,6 +114,8 @@ class Preview extends Component {
       item.topSpace = groupMeta.topSpace
     }
 
+    item.row = groupMeta.row
+
     return [
       ...components,
       item
@@ -209,26 +211,40 @@ class Preview extends Component {
 
       let filledArea = this.state.filledArea || {}
       let originalGridRows = this.state.gridRows
-      let components = this.state.components
+      let originalComponents = this.state.components
       let startRow = points.top.row
       let startCol = points.left.col
       let endRow = (startRow + filledRows) - 1
       let centerInCurrentSelectedArea = {}
+      let groupMeta = {}
       // all drops will always merge rows to only one
       let newFilledRows = 1
       let gridRows
+      let components
       let newColInfo
       let newRow
       let newSelectedArea
+      let topSpaceBeforeGroup
 
       // TODO: test calculation of selected area when dropping in row with new height
       // currently it doesn't select perfectly in one row items of same height
 
       // TODO: when dropping (make the row take the size of item dropped,
       // it should always take the item with the greater size and apply it to the row)
+      // test with creating a first group, then dropping a componente with more height inside
+      // that group, the group must adapt to the new height
+
+      // TODO: decide how to add a new row when dropping
+      // (maybe pass the rest of the space to create a other row)
 
       // TODO: make more smart logic about row grouping and limits to not depend on row height
       // for position of components
+
+      // TODO: write proper logic to calculate if there is some filled
+      // handle cases like dropping component between two groups
+
+      // TODO: add more rows when dropping something on the last row (placeholder row)
+      // (maybe while dragging too, but it will feel weird, though)
 
       newRow = {
         ...originalGridRows[startRow],
@@ -273,12 +289,6 @@ class Preview extends Component {
         }
       ]
 
-      // TODO: decide how to add a new row when dropping
-      // (maybe pass the rest of the space to create a other row)
-
-      // TODO: add more rows when dropping something on the last row (placeholder row)
-      // (maybe while dragging too, but it will feel weird, though)
-
       gridRows = [
         ...originalGridRows.slice(0, startRow),
         newRow,
@@ -318,19 +328,21 @@ class Preview extends Component {
         }
       })
 
-      let groupMeta = {}
-      let topSpaceBeforeRow = gridRows.slice(0, newSelectedArea.points.top.row).reduce((acu, row) => {
+      groupMeta.row = newRow.index
+
+      topSpaceBeforeGroup = gridRows.slice(
+        // take the next row after last group
+        originalComponents.length > 0 ? originalComponents[originalComponents.length - 1].row + 1: 0,
+        newSelectedArea.points.top.row
+      ).reduce((acu, row) => {
         return acu + row.height
       }, 0)
 
-      // TODO: write proper logic to calculate if there is some filled
-      // row upside of this new row, for now i'm just assuming that always there will be empty
-      // rows upside of the new row
-      if (topSpaceBeforeRow !== 0) {
-        groupMeta.topSpace = topSpaceBeforeRow
+      if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
+        groupMeta.topSpace = topSpaceBeforeGroup
       }
 
-      components = this.addComponent(components, groupMeta, {
+      components = this.addComponent(originalComponents, groupMeta, {
         componentType: item.name,
         componentTypeId: item.id,
         defaultSize: item.defaultSize,
