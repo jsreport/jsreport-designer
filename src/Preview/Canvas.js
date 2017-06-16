@@ -40,7 +40,8 @@ const canvasTarget = {
       return props.onDrop({
         item: monitor.getItem(),
         clientOffset: dropResult.clientOffset,
-        col: dropResult.col
+        col: dropResult.col,
+        colDimensions: dropResult.colDimensions
       })
     }
 
@@ -123,25 +124,62 @@ class Canvas extends Component {
     )
   }
 
+  renderComponents (components, colWidth) {
+    let lastConsumedCol
+
+    return (
+      <div>
+        {components.map((componentItem) => {
+          let styles = {}
+          let leftSpace
+
+          if (lastConsumedCol == null) {
+            leftSpace = componentItem.col.start * colWidth
+          } else {
+            leftSpace = ((componentItem.col.start - lastConsumedCol) - 1) * colWidth
+          }
+
+          styles.paddingLeft = `${leftSpace}px`
+
+          lastConsumedCol = componentItem.col.end
+
+          return (
+            <div
+              key={'ComponentItem-' + componentItem.id}
+              style={styles}
+            >
+              {this.renderComponentItem(componentItem)}
+            </div>
+          )
+        })}
+      </div>
+    )
+  }
+
   renderItems () {
     const {
+      colWidth,
       components
     } = this.props
 
     return (
       <div className="Canvas-area">
-        {components.map((componentItem) => (
-          <div
-            key={'ComponentItem-' + componentItem.id}
-            className="Canvas-area-item"
-            style={{
-              paddingLeft: `${(componentItem.position.left.col) * componentItem.colWidth}px`,
-              paddingTop: `${(componentItem.position.top.row) * componentItem.colHeight}px`
-            }}
-          >
-            {this.renderComponentItem(componentItem)}
-          </div>
-        ))}
+        {components.map((componentItemMeta, index) => {
+          let styles = {}
+
+          if (componentItemMeta.topSpace != null) {
+            styles.paddingTop = `${componentItemMeta.topSpace}px`
+          }
+
+          return (
+            <div
+              key={'ComponentsGroup-' + index}
+              style={styles}
+            >
+              {this.renderComponents(componentItemMeta.group, colWidth)}
+            </div>
+          )
+        })}
       </div>
     )
   }
@@ -202,6 +240,7 @@ class Canvas extends Component {
 Canvas.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
+  colWidth: PropTypes.number.isRequired,
   gridRows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
   filledArea: PropTypes.object,

@@ -12,6 +12,48 @@ function isInsideOfCol ({ point, colInfo }) {
   return result
 }
 
+function getProjectedOffsetLimits ({ cursorOffset, itemSize }) {
+  // NOTE: this function assumes that cursorOffset is in
+  // the middle (middle top and middle left) of the item, and based on that assumption it calculates
+  // the limits
+  const { x: cursorOffsetX, y: cursorOffsetY } = cursorOffset
+
+  return {
+    left: {
+      x: cursorOffsetX - (itemSize.width / 2),
+      y: cursorOffsetY
+    },
+    top: {
+      x: cursorOffsetX,
+      y: cursorOffsetY - (itemSize.height / 2)
+    },
+    right: {
+      x: cursorOffsetX + (itemSize.width / 2),
+      y: cursorOffsetY
+    },
+    bottom: {
+      x: cursorOffsetX,
+      y: cursorOffsetY + (itemSize.height / 2)
+    }
+  }
+}
+
+function getCenterPointBetweenCols ({ rows, colPrimary, colSecondary }) {
+  // NOTE: this function assumes that colSecondary has values (x, y) greater than
+  // colPrimary, means that colSecondary must be the farthest point from initial x, y (0, 0)
+  let minX = colPrimary.x
+  let maxX = colSecondary.x + rows[colSecondary.row].cols[colSecondary.col].width
+  let minY = colPrimary.y
+  let maxY = colSecondary.y + rows[colSecondary.row].height
+  let distanceX = maxX - minX
+  let distanceY = maxY - minY
+
+  return {
+    x: minX + (distanceX / 2),
+    y: minY + (distanceY / 2)
+  }
+}
+
 function findStartCol ({ rows, point, baseCol, step }) {
   let complete = false
   let filled = false
@@ -48,7 +90,9 @@ function findStartCol ({ rows, point, baseCol, step }) {
     if (currentCol[propertyToEvaluate] === limit || isInside) {
       startCol = {
         col: currentCol.col,
-        row: currentCol.row
+        row: currentCol.row,
+        x: currentCol.left,
+        y: currentCol.top
       }
 
       complete = true
@@ -58,9 +102,9 @@ function findStartCol ({ rows, point, baseCol, step }) {
 
     // calculating next col to check
     if (propertyToEvaluate === 'row') {
-      currentCol.top = currentCol.top + (rows[currentCol.row + step].height * step)
+      currentCol.top = currentCol.top + (rows[currentCol.row].height * step)
     } else {
-      currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col + step].width * step)
+      currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col].width * step)
     }
 
     currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
@@ -115,7 +159,9 @@ const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInf
   let endX = foundInRight.colCoordinate.col
   let startY = foundInTop.colCoordinate.row
   let endY = foundInBottom.colCoordinate.row
-  let toFill = arrayFrom({ length: (endX - startX) + 1 }, (v, i) => startX + i)
+  let filledRows = (endY - startY) + 1
+  let filledCols = (endX - startX) + 1
+  let toFill = arrayFrom({ length: filledCols }, (v, i) => startX + i)
 
   toFill.forEach((x) => {
     let currentY = startY
@@ -144,6 +190,8 @@ const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInf
   return {
     filled,
     conflict,
+    filledRows,
+    filledCols,
     area,
     points: {
       top: foundInTop.colCoordinate,
@@ -155,5 +203,7 @@ const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInf
 }
 
 export { isInsideOfCol }
+export { getCenterPointBetweenCols }
+export { getProjectedOffsetLimits }
 export { findStartCol }
 export { findProjectedFilledArea }

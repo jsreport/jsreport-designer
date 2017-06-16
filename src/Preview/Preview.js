@@ -1,6 +1,10 @@
 import React, { Component } from 'react'
 import shortid from 'shortid'
-import { isInsideOfCol, findProjectedFilledArea } from './gridUtils'
+import {
+  isInsideOfCol,
+  getProjectedOffsetLimits,
+  findProjectedFilledArea
+} from './gridUtils'
 import Canvas from './Canvas'
 import './Preview.css'
 
@@ -17,14 +21,17 @@ class Preview extends Component {
   constructor (props) {
     super(props)
 
+    this.baseWidth = BASE_WIDTH
+    this.defaultRowHeight = DEFAULT_ROW_HEIGHT
     this.numberOfCols = NUMBER_OF_COLS
+    this.colWidth = this.baseWidth / this.numberOfCols
 
     this.state = {
       components: [],
       gridRows: this.getInitialGridRows({
-        baseWidth: BASE_WIDTH,
+        baseWidth: this.baseWidth,
         numberOfCols: this.numberOfCols,
-        defaultRowHeight: DEFAULT_ROW_HEIGHT
+        defaultRowHeight: this.defaultRowHeight
       }),
       selectedArea: null,
       filledArea: null
@@ -33,8 +40,8 @@ class Preview extends Component {
     this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
     this.onDragLeaveCanvas = this.onDragLeaveCanvas.bind(this)
     this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
-    this.onDropCanvas = this.onDropCanvas.bind(this)
-    this.getSelectedAreaFromCol = this.getSelectedAreaFromCol.bind(this)
+    this.calculateSelectedAreaFromCol = this.calculateSelectedAreaFromCol.bind(this)
+    this.addComponentToCanvas = this.addComponentToCanvas.bind(this)
   }
 
   getInitialGridRows ({ baseWidth, numberOfCols, defaultRowHeight }) {
@@ -71,7 +78,6 @@ class Preview extends Component {
 
     for (let i = 0; i < numberOfCols; i++) {
       cols.push({
-        row: rowIndex,
         index: i,
         width: baseWidth / numberOfCols,
         unit: 'px'
@@ -85,7 +91,36 @@ class Preview extends Component {
     return rows.reduce((acu, row) => acu + row.height, 0)
   }
 
-  getSelectedAreaFromCol ({ col, colDimensions, item, clientOffset }) {
+  addComponent (components, groupMeta, component) {
+    let compProps = component.props || {}
+    let item
+
+    if (component.componentType === 'Text') {
+      compProps = {
+        ...compProps,
+        text: 'Sample Text'
+      }
+    }
+
+    item = {
+      group: [{
+        ...component,
+        id: shortid.generate(),
+        props: compProps
+      }]
+    }
+
+    if (groupMeta.topSpace != null) {
+      item.topSpace = groupMeta.topSpace
+    }
+
+    return [
+      ...components,
+      item
+    ]
+  }
+
+  calculateSelectedAreaFromCol ({ row, col, colDimensions, item, clientOffset }) {
     let rows = this.state.gridRows
     let filledArea = this.state.filledArea
     let isInside = true
@@ -98,7 +133,7 @@ class Preview extends Component {
 
     let colInfo = {
       col: col.index,
-      row: col.row,
+      row: row.index,
       width,
       height,
       top,
@@ -117,24 +152,10 @@ class Preview extends Component {
     maxFilledCols = Math.ceil(item.defaultSize.width / width)
     maxFilledRows = Math.ceil(item.defaultSize.height / height)
 
-    projectedOffsetLimits = {
-      left: {
-        x: cursorOffsetX - (item.defaultSize.width / 2),
-        y: cursorOffsetY
-      },
-      top: {
-        x: cursorOffsetX,
-        y: cursorOffsetY - (item.defaultSize.height / 2)
-      },
-      right: {
-        x: cursorOffsetX + (item.defaultSize.width / 2),
-        y: cursorOffsetY
-      },
-      bottom: {
-        x: cursorOffsetX,
-        y: cursorOffsetY + (item.defaultSize.height / 2)
-      }
-    }
+    projectedOffsetLimits = getProjectedOffsetLimits({
+      cursorOffset: clientOffset,
+      itemSize: item.defaultSize
+    })
 
     // TODO: calculate limits/constraints
     // (if we should start to count for selected area from left/right/top/bottom
@@ -143,18 +164,6 @@ class Preview extends Component {
 
     // TODO: test dragging while there is the scrollbar on viewport, just to see that
     // everything is behaving and placed correctly
-
-    // TODO: add more rows when dropping something on the last row (placeholder row)
-    // (maybe while dragging too)
-
-    // TODO: make selected area calculation ignore filled cols
-    // (or make selected area not filled when some part of the area is over filled part)
-
-    // TODO: when dropping (make the row take the size of item dropped,
-    // it should always take the item with the greater size and apply it to the row)
-
-    // TODO: make more smart logic about row grouping and limits to not depend on row height
-    // for position of components
 
     colCenter.x = left + (item.defaultSize.width / 2)
     colCenter.y = top + (item.defaultSize.height / 2)
@@ -187,40 +196,159 @@ class Preview extends Component {
     })
   }
 
-  addComponentToCanvas (comp, area) {
-    let compProps = comp.props || {}
-    let filledArea = this.state.filledArea || {}
+  addComponentToCanvas ({ item, clientOffset, col, colDimensions }) {
+    if (
+      this.selectedArea &&
+      !this.selectedArea.conflict &&
+      this.selectedArea.filled &&
+      this.selectedArea.points &&
+      col &&
+      colDimensions
+    ) {
+      const { area, points, filledCols, filledRows } = this.selectedArea
 
-    if (comp.componentType === 'Text') {
-      compProps = {
-        ...compProps,
-        text: 'Sample Text'
+      let filledArea = this.state.filledArea || {}
+      let originalGridRows = this.state.gridRows
+      let components = this.state.components
+      let startRow = points.top.row
+      let startCol = points.left.col
+      let endRow = (startRow + filledRows) - 1
+      let centerInCurrentSelectedArea = {}
+      // all drops will always merge rows to only one
+      let newFilledRows = 1
+      let gridRows
+      let newColInfo
+      let newRow
+      let newSelectedArea
+
+      // TODO: test calculation of selected area when dropping in row with new height
+      // currently it doesn't select perfectly in one row items of same height
+
+      // TODO: when dropping (make the row take the size of item dropped,
+      // it should always take the item with the greater size and apply it to the row)
+
+      // TODO: make more smart logic about row grouping and limits to not depend on row height
+      // for position of components
+
+      newRow = {
+        ...originalGridRows[startRow],
+        // new height of row is equal to the height of dropped item
+        height: item.defaultSize.height
       }
-    }
 
-    filledArea = {
-      ...filledArea,
-    }
-
-    Object.keys(area).forEach((coord) => {
-      if (filledArea[coord] == null) {
-        filledArea[coord] = area[coord]
+      newColInfo = {
+        col: col.index,
+        width: colDimensions.width,
+        left: colDimensions.left,
+        // since rows will change, we need to update
+        // the row index, top and height of the col
+        row: startRow,
+        top: colDimensions.top,
+        height: colDimensions.height,
       }
-    })
 
-    this.setState({
-      // clean selectedArea when adding a component
-      selectedArea: null,
-      filledArea,
-      components: [
-        ...this.state.components,
+      // new top of col
+      newColInfo.top = points.top.y
+      // new height of col
+      newColInfo.height = newRow.height
+
+      // calculating center of current selected area
+      centerInCurrentSelectedArea = {
+        x: clientOffset.x,
+        // since we are changing the row to match dropped item height
+        // we need to pretend that the cursor is in center of the new row
+        y: points.top.y + (newColInfo.height / 2)
+      }
+
+      let rowsToAdd = [
         {
-          ...comp,
-          id: shortid.generate(),
-          props: compProps
+          index: newRow.index + 1,
+          height: this.defaultRowHeight,
+          unit: 'px',
+          cols: this.getInitialGridCols({ 
+            baseWidth: this.baseWidth,
+            rowIndex: newRow.index + 1,
+            numberOfCols: this.numberOfCols
+          })
         }
       ]
-    })
+
+      // TODO: decide how to add a new row when dropping
+      // (maybe pass the rest of the space to create a other row)
+
+      // TODO: add more rows when dropping something on the last row (placeholder row)
+      // (maybe while dragging too, but it will feel weird, though)
+
+      gridRows = [
+        ...originalGridRows.slice(0, startRow),
+        newRow,
+        ...rowsToAdd,
+        ...originalGridRows.slice(startRow + newFilledRows + rowsToAdd.length).map(function (row) {
+          let newRowIndex = (row.index - (filledRows - 1)) + rowsToAdd.length
+
+          row.index = newRowIndex
+
+          return row
+        })
+      ]
+
+      // calculate new filled area on new rows
+      newSelectedArea = findProjectedFilledArea({
+        rows: gridRows,
+        filledArea: null,
+        projectedLimits: getProjectedOffsetLimits({
+          // get projected limits over center of current selected area
+          cursorOffset: centerInCurrentSelectedArea,
+          itemSize: item.defaultSize
+        }),
+        baseColInfo: newColInfo
+      })
+
+      if (!newSelectedArea.filled || newSelectedArea.conflict) {
+        return
+      }
+
+      filledArea = {
+        ...filledArea
+      }
+
+      Object.keys(newSelectedArea.area).forEach((coord) => {
+        if (filledArea[coord] == null) {
+          filledArea[coord] = newSelectedArea.area[coord]
+        }
+      })
+
+      let groupMeta = {}
+      let topSpaceBeforeRow = gridRows.slice(0, newSelectedArea.points.top.row).reduce((acu, row) => {
+        return acu + row.height
+      }, 0)
+
+      // TODO: write proper logic to calculate if there is some filled
+      // row upside of this new row, for now i'm just assuming that always there will be empty
+      // rows upside of the new row
+      if (topSpaceBeforeRow !== 0) {
+        groupMeta.topSpace = topSpaceBeforeRow
+      }
+
+      components = this.addComponent(components, groupMeta, {
+        componentType: item.name,
+        componentTypeId: item.id,
+        defaultSize: item.defaultSize,
+        col: {
+          start: newSelectedArea.points.left.col,
+          end: newSelectedArea.points.right.col
+        },
+        props: item.props
+      })
+
+      this.setState({
+        // clean selectedArea when adding a component
+        selectedArea: null,
+        filledArea,
+        gridRows,
+        components
+      })
+    }
   }
 
   onClickInspect () {
@@ -251,29 +379,6 @@ class Preview extends Component {
     this.setState({
       selectedArea: null
     })
-  }
-
-  onDropCanvas ({ item, col }) {
-    if (
-      this.selectedArea &&
-      !this.selectedArea.conflict &&
-      this.selectedArea.filled &&
-      this.selectedArea.points &&
-      col
-    ) {
-      this.addComponentToCanvas({
-        componentType: item.name,
-        componentTypeId: item.id,
-        defaultSize: item.defaultSize,
-        position: {
-          top: this.selectedArea.points.top,
-          left: this.selectedArea.points.left
-        },
-        colWidth: col.dimensions.width,
-        colHeight: col.dimensions.height,
-        props: item.props
-      }, this.selectedArea.area)
-    }
   }
 
   render () {
@@ -320,6 +425,7 @@ class Preview extends Component {
           <Canvas
             width={baseWidth}
             height={totalHeight}
+            colWidth={this.colWidth}
             gridRows={gridRows}
             selectedArea={selectedArea}
             filledArea={filledArea}
@@ -327,8 +433,8 @@ class Preview extends Component {
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}
             onDragEnd={this.onDragEndCanvas}
-            onDrop={this.onDropCanvas}
-            onColDragOver={this.getSelectedAreaFromCol}
+            onDrop={this.addComponentToCanvas}
+            onColDragOver={this.calculateSelectedAreaFromCol}
           />
         </div>
       </div>

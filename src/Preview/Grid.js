@@ -4,9 +4,9 @@ import GridCol from './GridCol'
 import './Grid.css'
 
 class Grid extends Component {
-  renderCols(cols, { isDragOverParent, selectedArea, filledArea, onDragOver }) {
+  renderCols(row, cols, { isDragOverParent, selectedArea, filledArea, onDragOver }) {
     let gridCols = cols.map((col, i) => {
-      let coord = col.index + ',' + col.row
+      let coord = col.index + ',' + row.index
       let selected = null
 
       if (
@@ -28,6 +28,7 @@ class Grid extends Component {
           isDragOverParent={isDragOverParent}
           selected={selected}
           filledArea={filledArea}
+          row={row}
           col={col}
           onDragOver={onDragOver}
         />
@@ -63,7 +64,7 @@ class Grid extends Component {
           style={rowStyles}
           key={'Grid-row-' + i}
         >
-          {this.renderCols(row.cols, {
+          {this.renderCols(row, row.cols, {
             isDragOverParent: isDragOver,
             canDropOnCol,
             selectedArea,

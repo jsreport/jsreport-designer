@@ -5,12 +5,14 @@ import { ComponentTypes } from '../Constants'
 
 const gridColTarget = {
   hover (props, monitor, component) {
+    let row = props.row
     let col = props.col
     let colNode = component.node
     let item = monitor.getItem()
 
     if (props.onDragOver) {
       props.onDragOver({
+        row,
         col,
         colDimensions: colNode.getBoundingClientRect(),
         item,
@@ -20,13 +22,13 @@ const gridColTarget = {
   },
 
   canDrop (props, monitor) {
-    let { col } = props
+    let { row, col } = props
     let canDrop = true
 
     if (
       props.isDragOverParent &&
       props.filledArea &&
-      props.filledArea[col.index + ',' + col.row]
+      props.filledArea[col.index + ',' + row.index]
     ) {
       canDrop = false
     }
@@ -35,17 +37,12 @@ const gridColTarget = {
   },
 
   drop (props, monitor, component) {
-    let colDimensions = component.node.getBoundingClientRect()
+    let colNode = component.node
 
     return {
-      clientOffset: monitor.getClientOffset(),
-      col: {
-        info: props.col,
-        dimensions: {
-          width: colDimensions.width,
-          height: colDimensions.height
-        }
-      }
+      col: props.col,
+      colDimensions: colNode.getBoundingClientRect(),
+      clientOffset: monitor.getClientOffset()
     }
   }
 }
@@ -61,7 +58,6 @@ function collect (connect, monitor) {
 class GridCol extends Component {
   render () {
     const {
-      canDrop,
       col,
       selected,
       connectDropTarget,
@@ -87,6 +83,7 @@ class GridCol extends Component {
 }
 
 GridCol.propTypes = {
+  row: PropTypes.object.isRequired,
   col: PropTypes.object.isRequired,
   isDragOverParent: PropTypes.bool.isRequired,
   selected: PropTypes.shape({
