@@ -151,6 +151,7 @@ class Preview extends Component {
       return
     }
 
+    // TODO: update this logic, since rows can be of any size now this logic is wrong now
     maxFilledCols = Math.ceil(item.defaultSize.width / width)
     maxFilledRows = Math.ceil(item.defaultSize.height / height)
 
@@ -217,8 +218,6 @@ class Preview extends Component {
       let endRow = (startRow + filledRows) - 1
       let centerInCurrentSelectedArea = {}
       let groupMeta = {}
-      // all drops will always merge rows to only one
-      let newFilledRows = 1
       let gridRows
       let components
       let newColInfo
@@ -293,11 +292,8 @@ class Preview extends Component {
         ...originalGridRows.slice(0, startRow),
         newRow,
         ...rowsToAdd,
-        ...originalGridRows.slice(startRow + newFilledRows + rowsToAdd.length).map(function (row) {
-          let newRowIndex = (row.index - (filledRows - 1)) + rowsToAdd.length
-
-          row.index = newRowIndex
-
+        ...originalGridRows.slice(startRow + 1).map(function (row) {
+          row.index = row.index + rowsToAdd.length
           return row
         })
       ]
