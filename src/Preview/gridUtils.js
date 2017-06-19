@@ -109,9 +109,23 @@ function findStartCol ({ rows, point, baseCol, step }) {
 
     // calculating next col to check
     if (propertyToEvaluate === 'row') {
-      currentCol.top = currentCol.top + (rows[currentCol.row].height * step)
+      if (step < 0) {
+        // when the step is negative we calculate based on previous row
+        currentCol.top = currentCol.top + (rows[currentCol.row + step].height * step)
+      } else {
+        currentCol.top = currentCol.top + (rows[currentCol.row].height * step)
+      }
+
+      currentCol.height = rows[currentCol.row + step].height
     } else {
-      currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col].width * step)
+      if (step < 0) {
+        // when the step is negative we calculate based on previous col
+        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col + step].width * step)
+      } else {
+        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col].width * step)
+      }
+
+      currentCol.width = rows[currentCol.row].cols[currentCol.col + step].width
     }
 
     currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
