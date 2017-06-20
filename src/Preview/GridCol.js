@@ -40,6 +40,7 @@ const gridColTarget = {
     let colNode = component.node
 
     return {
+      row: props.row,
       col: props.col,
       colDimensions: colNode.getBoundingClientRect(),
       clientOffset: monitor.getClientOffset()

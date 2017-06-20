@@ -91,37 +91,6 @@ class Preview extends Component {
     return rows.reduce((acu, row) => acu + row.height, 0)
   }
 
-  addComponent (components, groupMeta, component) {
-    let compProps = component.props || {}
-    let item
-
-    if (component.componentType === 'Text') {
-      compProps = {
-        ...compProps,
-        text: 'Sample Text'
-      }
-    }
-
-    item = {
-      group: [{
-        ...component,
-        id: shortid.generate(),
-        props: compProps
-      }]
-    }
-
-    if (groupMeta.topSpace != null) {
-      item.topSpace = groupMeta.topSpace
-    }
-
-    item.row = groupMeta.row
-
-    return [
-      ...components,
-      item
-    ]
-  }
-
   calculateSelectedAreaFromCol ({ row, col, colDimensions, item, clientOffset }) {
     let rows = this.state.gridRows
     let filledArea = this.state.filledArea
@@ -160,7 +129,7 @@ class Preview extends Component {
       itemSize: item.defaultSize
     })
 
-    // TODO: calculate limits/constraints
+    // TODO: calculate initial col/row limits
     // (if we should start to count for selected area from left/right/top/bottom
     // based on the orientation of the cursor to prevent placing items in
     // more cols/rows that they need to be)
@@ -174,21 +143,12 @@ class Preview extends Component {
     let isOnRightSide = (cursorOffsetX >= (colCenter.x + 2))
     let isOnBottomSide = (cursorOffsetY >= (colCenter.y + 2))
 
-    // console.log('===============')
-    // console.log('MAX FILLED ROWS:', maxFilledRows)
-    // console.log('MAX FILLED COLS:', maxFilledCols)
-    // console.log('IS ON RIGHT SIDE:', isOnRightSide)
-    // console.log('IS ON BOTTOM SIDE:', isOnBottomSide)
-    // console.log('===============')
-
     let selectedArea = findProjectedFilledArea({
       rows,
       filledArea,
       projectedLimits: projectedOffsetLimits,
       baseColInfo: colInfo
     })
-
-    // console.log('SELECTED AREA:', selectedArea)
 
     // saving selectedArea in instance because it will be reset later
     // and we want to access this value later
@@ -199,7 +159,7 @@ class Preview extends Component {
     })
   }
 
-  addComponentToCanvas ({ item, clientOffset, col, colDimensions }) {
+  addComponentToCanvas ({ item, clientOffset, row, col, colDimensions }) {
     if (
       this.selectedArea &&
       !this.selectedArea.conflict &&
@@ -217,15 +177,13 @@ class Preview extends Component {
       let startCol = points.left.col
       let endRow = (startRow + filledRows) - 1
       let centerInCurrentSelectedArea = {}
-      let groupMeta = {}
       let gridRows
       let components
       let newColInfo
       let newRow
       let newSelectedArea
-      let topSpaceBeforeGroup
 
-      // TODO: test calculation of selected area when dropping in row with new height
+      // TODO: test calculation of selected area when dropping an item with height equal to row height
       // currently it doesn't select perfectly in one row items of same height
 
       // TODO: when dropping (make the row take the size of item dropped,
@@ -245,27 +203,32 @@ class Preview extends Component {
       // TODO: add more rows when dropping something on the last row (placeholder row)
       // (maybe while dragging too, but it will feel weird, though)
 
-      newRow = {
-        ...originalGridRows[startRow],
-        // new height of row is equal to the height of dropped item
-        height: item.defaultSize.height
+      if (filledRows > 1) {
+        newRow = {
+          ...originalGridRows[startRow],
+          // new height of row is equal to the height of dropped item
+          height: item.defaultSize.height
+        }
       }
 
       newColInfo = {
         col: col.index,
         width: colDimensions.width,
         left: colDimensions.left,
-        // since rows will change, we need to update
-        // the row index, top and height of the col
-        row: startRow,
+        row: row.index,
         top: colDimensions.top,
         height: colDimensions.height,
       }
 
-      // new top of col
-      newColInfo.top = points.top.y
-      // new height of col
-      newColInfo.height = newRow.height
+      if (newRow) {
+        // since rows will change, we need to update
+        // the row index, top and height of the col
+        newColInfo.row = startRow
+        // new top of col
+        newColInfo.top = points.top.y
+        // new height of col
+        newColInfo.height = newRow.height
+      }
 
       // calculating center of current selected area
       centerInCurrentSelectedArea = {
@@ -275,8 +238,10 @@ class Preview extends Component {
         y: points.top.y + (newColInfo.height / 2)
       }
 
-      let rowsToAdd = [
-        {
+      let rowsToAdd = []
+
+      if (newRow) {
+        rowsToAdd.push({
           index: newRow.index + 1,
           height: this.defaultRowHeight,
           unit: 'px',
@@ -285,18 +250,25 @@ class Preview extends Component {
             rowIndex: newRow.index + 1,
             numberOfCols: this.numberOfCols
           })
-        }
-      ]
+        })
+      }
 
       gridRows = [
-        ...originalGridRows.slice(0, startRow),
-        newRow,
-        ...rowsToAdd,
-        ...originalGridRows.slice(startRow + 1).map(function (row) {
-          row.index = row.index + rowsToAdd.length
-          return row
-        })
+        ...originalGridRows.slice(0, newRow ? startRow : startRow + 1)
       ]
+
+      if (newRow) {
+        gridRows.push(newRow)
+      }
+
+      if (rowsToAdd.length) {
+        gridRows = gridRows.concat(rowsToAdd)
+      }
+
+      gridRows = gridRows.concat(originalGridRows.slice(startRow + 1).map(function (row) {
+        row.index = row.index + rowsToAdd.length
+        return row
+      }))
 
       // calculate new filled area on new rows
       newSelectedArea = findProjectedFilledArea({
@@ -324,21 +296,11 @@ class Preview extends Component {
         }
       })
 
-      groupMeta.row = newRow.index
-
-      topSpaceBeforeGroup = gridRows.slice(
-        // take the next row after last group
-        originalComponents.length > 0 ? originalComponents[originalComponents.length - 1].row + 1: 0,
-        newSelectedArea.points.top.row
-      ).reduce((acu, row) => {
-        return acu + row.height
-      }, 0)
-
-      if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
-        groupMeta.topSpace = topSpaceBeforeGroup
-      }
-
-      components = this.addComponent(originalComponents, groupMeta, {
+      components = this.addOrUpdateComponentGroup({
+        rows: gridRows,
+        components: originalComponents,
+        referenceRow: newRow ? newRow.index : row.index
+      }, {
         componentType: item.name,
         componentTypeId: item.id,
         defaultSize: item.defaultSize,
@@ -357,6 +319,71 @@ class Preview extends Component {
         components
       })
     }
+  }
+
+  addOrUpdateComponentGroup ({ rows, components, referenceRow }, component) {
+    let compProps = component.props || {}
+    let rowsToGroups = this.rowsToGroups || {}
+    let topSpaceBeforeGroup
+    let newComponent
+    let newGroup
+    let newComponents
+
+    // component information
+    newComponent = {
+      ...component,
+      id: shortid.generate(),
+      props: compProps
+    }
+
+    // check to see if we should create a new group or update an existing one
+    if (rowsToGroups[referenceRow] == null) {
+      // creating a new group with component
+      newGroup = {
+        group: [newComponent]
+      }
+
+      newGroup.row = referenceRow
+
+      // calculating top space before this group
+      topSpaceBeforeGroup = rows.slice(
+        // take the next row after last group
+        components.length > 0 ? components[components.length - 1].row + 1: 0,
+        referenceRow
+      ).reduce((acu, row) => {
+        return acu + row.height
+      }, 0)
+
+      if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
+        newGroup.topSpace = topSpaceBeforeGroup
+      }
+
+      newComponents = [
+        ...components,
+        newGroup
+      ]
+
+      // updating rows-groups map
+      rowsToGroups[referenceRow] = components.length
+    } else {
+      let foundGroupIndex = rowsToGroups[referenceRow]
+
+      // getting existing group
+      newGroup = components[foundGroupIndex]
+
+      // updating an existing group with new component
+      newGroup.group.push(newComponent)
+
+      newComponents = [
+        ...components.slice(0, foundGroupIndex),
+        newGroup,
+        ...components.slice(foundGroupIndex + 1)
+      ]
+    }
+
+    this.rowsToGroups = rowsToGroups
+
+    return newComponents
   }
 
   onClickInspect () {

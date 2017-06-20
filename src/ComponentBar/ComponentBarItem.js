@@ -30,6 +30,13 @@ const componentSource = {
       item.defaultSize.height = 100
     }
 
+    item.props = item.props || {}
+
+    // default props
+    if (item.type === 'Text') {
+      item.props.text = 'Sample Text'
+    }
+
     return item;
   },
 
@@ -138,7 +145,8 @@ ComponentBarItem.propTypes = {
   onMouseOver: PropTypes.func,
   onMouseLeave: PropTypes.func,
   onDragStart: PropTypes.func,
-  onDragEnd: PropTypes.func
+  onDragEnd: PropTypes.func,
+  component: PropTypes.object.isRequired
 };
 
 export default DragSource(ComponentTypes.COMPONENT_TYPE, componentSource, collect)(ComponentBarItem)

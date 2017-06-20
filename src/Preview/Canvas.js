@@ -40,6 +40,7 @@ const canvasTarget = {
       return props.onDrop({
         item: monitor.getItem(),
         clientOffset: dropResult.clientOffset,
+        row: dropResult.row,
         col: dropResult.col,
         colDimensions: dropResult.colDimensions
       })
@@ -130,8 +131,13 @@ class Canvas extends Component {
     return (
       <div>
         {components.map((componentItem) => {
-          let styles = {}
+          let styles = {
+            display: 'inline-block',
+            verticalAlign: 'top'
+          }
+
           let leftSpace
+          let rightSpace
 
           if (lastConsumedCol == null) {
             leftSpace = componentItem.col.start * colWidth
@@ -139,7 +145,10 @@ class Canvas extends Component {
             leftSpace = ((componentItem.col.start - lastConsumedCol) - 1) * colWidth
           }
 
+          rightSpace = (((componentItem.col.end - componentItem.col.start) + 1) * colWidth) - componentItem.defaultSize.width
+
           styles.paddingLeft = `${leftSpace}px`
+          styles.paddingRight = `${rightSpace}px`
 
           lastConsumedCol = componentItem.col.end
 
