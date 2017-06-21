@@ -43,19 +43,59 @@ function getProjectedOffsetLimits ({ cursorOffset, itemSize }) {
   }
 }
 
-function getCenterPointBetweenCols ({ rows, colPrimary, colSecondary }) {
-  // NOTE: this function assumes that colSecondary has values (x, y) greater than
-  // colPrimary, means that colSecondary must be the farthest point from initial x, y (0, 0)
-  let minX = colPrimary.x
-  let maxX = colSecondary.x + rows[colSecondary.row].cols[colSecondary.col].width
-  let minY = colPrimary.y
-  let maxY = colSecondary.y + rows[colSecondary.row].height
-  let distanceX = maxX - minX
-  let distanceY = maxY - minY
+function getCenterPointBetweenCols ({ rows, fromCol, toCol }) {
+  let minX = fromCol.left
+  let minY = fromCol.top
+  let { distanceX, distanceY } = getDistanceFromCol({ rows, fromCol, toCol })
 
   return {
-    x: minX + (distanceX / 2),
-    y: minY + (distanceY / 2)
+    x: (minX + distanceX) / 2,
+    y: (minY + distanceY) / 2
+  }
+}
+
+function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
+  let current = {
+    row: fromCol.row,
+    col: fromCol.col,
+    distanceX: 0,
+    distanceY: 0
+  }
+
+  let stepX = fromCol.col <= toCol.col ? 1 : -1
+  let stepY = fromCol.row <= toCol.row ? 1 : -1
+
+  if (opts.includeFrom === true) {
+    current.distanceY = rows[fromCol.row].height * stepY
+    current.distanceX = rows[fromCol.row].cols[fromCol.col].width * stepX
+  }
+
+  while (current.col !== toCol.col || current.row !== toCol.row) {
+    let originalRow = current.row
+    let originalCol = current.col
+    let nextRow = originalRow + stepY
+    let nextCol = originalCol + stepX
+
+    if (current.row !== toCol.row) {
+      if (nextRow < toCol.row) {
+        current.distanceY += rows[originalRow + stepY].height * stepY
+      }
+
+      current.row += stepY
+    }
+
+    if (current.col !== toCol.col) {
+      if (nextCol < toCol.col) {
+        current.distanceX += rows[originalRow].cols[originalCol + stepX].width * stepX
+      }
+
+      current.col += stepX
+    }
+  }
+
+  return {
+    distanceX: current.distanceX,
+    distanceY: current.distanceY
   }
 }
 
@@ -137,7 +177,7 @@ function findStartCol ({ rows, point, baseCol, step }) {
   }
 }
 
-const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInfo }) => {
+function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColInfo }) {
   let area = {}
   let filled = false
   let conflict = false
@@ -226,5 +266,6 @@ const findProjectedFilledArea = ({ rows, filledArea, projectedLimits, baseColInf
 export { isInsideOfCol }
 export { getCenterPointBetweenCols }
 export { getProjectedOffsetLimits }
+export { getDistanceFromCol }
 export { findStartCol }
 export { findProjectedFilledArea }

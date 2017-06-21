@@ -3,6 +3,7 @@ import shortid from 'shortid'
 import {
   isInsideOfCol,
   getProjectedOffsetLimits,
+  getDistanceFromCol,
   findProjectedFilledArea
 } from './gridUtils'
 import Canvas from './Canvas'
@@ -131,13 +132,13 @@ class Preview extends Component {
       itemSize: item.defaultSize
     })
 
-    // TODO: calculate initial col/row limits
+    // TODO: when dragging if some rows of the projected area of item is over some row that has
+    // components then dropping should not be allowd there
+
+    // TODO: calculate initial filled cols/rows limits
     // (if we should start to count for selected area from left/right/top/bottom
     // based on the orientation of the cursor to prevent placing items in
     // more cols/rows that they need to be)
-
-    // TODO: test dragging while there is the scrollbar on viewport, just to see that
-    // everything is behaving and placed correctly
 
     colCenter.x = left + (item.defaultSize.width / 2)
     colCenter.y = top + (item.defaultSize.height / 2)
@@ -183,17 +184,17 @@ class Preview extends Component {
       let filledArea = {}
       let rowsChanged = []
       let gridRows
-      let newColInfo
-      let newRow
+      let colToUpdateInfo
+      let rowToUpdate
       let newSelectedArea
+
+      // TODO: Safari has a bug, if you drop a component and if that component causes the scroll bar to appear
+      // then when you scroll the page you will see some part of the drag preview or some lines of the grid
+      // getting draw randomly (a painting issue)
+      // see: https://stackoverflow.com/questions/22842992/how-to-force-safari-to-repaint-positionfixed-elements-on-scroll
 
       // TODO: test calculation of selected area when dropping an item with height equal to row height
       // currently it doesn't select perfectly in one row items of same height
-
-      // TODO: when dropping (make the row take the size of item dropped,
-      // it should always take the item with the greater size and apply it to the row)
-      // test with creating a first group, then dropping a componente with more height inside
-      // that group, the group must adapt to the new height
 
       // TODO: decide how to add a new row when dropping
       // (maybe pass the rest of the space to create a other row)
@@ -201,31 +202,45 @@ class Preview extends Component {
       // TODO: add more rows when dropping something on the last row (placeholder row)
       // (maybe while dragging too, but it will feel weird, though)
 
-      if (filledRows > 1) {
-        newRow = {
+      if (filledRows > 1 && item.defaultSize.height > originalGridRows[startRow].height) {
+        // if item fills more than one row and its height is greater than projected row
+        // then we should update the row information (size, etc) with new values,
+        // the rule is that projected row will always take the height of the item when
+        // it is greater than its own height
+        rowToUpdate = {
           ...originalGridRows[startRow],
           // new height of row is equal to the height of dropped item
           height: item.defaultSize.height
         }
       }
 
-      newColInfo = {
-        col: col.index,
-        width: colDimensions.width,
-        left: colDimensions.left,
-        row: row.index,
-        top: colDimensions.top,
-        height: colDimensions.height,
+      colToUpdateInfo = {
+        // instead of taking the information (col, row, top, left, width, height) of the original col (dropped col),
+        // we take the information of the starting points (projected area)
+        // always take the col from the starting points
+        row: startRow,
+        col: startCol,
+        height: originalGridRows[startRow].height,
+        width: originalGridRows[startRow].cols[startCol].width,
+        left: col.index === startCol ? colDimensions.left : colDimensions.left + getDistanceFromCol({
+          rows: originalGridRows,
+          fromCol: { row: row.index, col: col.index },
+          toCol: { row: row.index, col: startCol },
+          opts: { includeFrom: true }
+        }).distanceX,
+        top: row.index === startRow ? colDimensions.top : colDimensions.top + getDistanceFromCol({
+          rows: originalGridRows,
+          fromCol: { row: row.index, col: col.index },
+          toCol: { row: startRow, col: col.index },
+          opts: { includeFrom: true }
+        }).distanceY
       }
 
-      if (newRow) {
+      if (rowToUpdate) {
         // since rows will change, we need to update
-        // the row index, top and height of the col
-        newColInfo.row = startRow
-        // new top of col
-        newColInfo.top = points.top.y
+        // some information of the col.
         // new height of col
-        newColInfo.height = newRow.height
+        colToUpdateInfo.height = rowToUpdate.height
       }
 
       // calculating center of current selected area
@@ -233,48 +248,48 @@ class Preview extends Component {
         x: clientOffset.x,
         // since we are changing the row to match dropped item height
         // we need to pretend that the cursor is in center of the new row
-        y: points.top.y + (newColInfo.height / 2)
+        y: colToUpdateInfo.top + (colToUpdateInfo.height / 2)
       }
 
       let rowsToAdd = []
 
-      if (newRow) {
+      if (rowToUpdate) {
         rowsToAdd.push({
-          index: newRow.index + 1,
+          index: rowToUpdate.index + 1,
           height: this.defaultRowHeight,
           unit: 'px',
           cols: this.getInitialGridCols({ 
             baseWidth: this.baseWidth,
-            rowIndex: newRow.index + 1,
+            rowIndex: rowToUpdate.index + 1,
             numberOfCols: this.numberOfCols
           })
         })
       }
 
       gridRows = [
-        ...originalGridRows.slice(0, newRow ? startRow : startRow + 1)
+        ...originalGridRows.slice(0, rowToUpdate ? startRow : startRow + 1)
       ]
 
-      if (newRow) {
-        gridRows.push(newRow)
+      if (rowToUpdate) {
+        gridRows.push(rowToUpdate)
       }
 
       if (rowsToAdd.length) {
         gridRows = gridRows.concat(rowsToAdd)
       }
 
-      gridRows = gridRows.concat(originalGridRows.slice(startRow + 1).map(function (row) {
-        let newIndex = row.index + rowsToAdd.length
+      gridRows = gridRows.concat(originalGridRows.slice(startRow + 1).map(function (currentRow) {
+        let newIndex = currentRow.index + rowsToAdd.length
 
         // deleting old references in map
-        if (currentRowsToGroups[row.index] != null && row.index !== newIndex) {
-          rowsChanged.push({ old: row.index, new: newIndex })
-          delete currentRowsToGroups[row.index]
+        if (currentRowsToGroups[currentRow.index] != null && currentRow.index !== newIndex) {
+          rowsChanged.push({ old: currentRow.index, new: newIndex })
+          delete currentRowsToGroups[currentRow.index]
         }
 
-        row.index = newIndex
+        currentRow.index = newIndex
 
-        return row
+        return currentRow
       }))
 
       // updating rows to groups map with the new row indexes
@@ -291,7 +306,7 @@ class Preview extends Component {
           cursorOffset: centerInCurrentSelectedArea,
           itemSize: item.defaultSize
         }),
-        baseColInfo: newColInfo
+        baseColInfo: colToUpdateInfo
       })
 
       if (!newSelectedArea.filled || newSelectedArea.conflict) {
@@ -302,7 +317,7 @@ class Preview extends Component {
         rows: gridRows,
         rowsToGroups: currentRowsToGroups,
         components: originalComponents,
-        referenceRow: newRow ? newRow.index : row.index
+        referenceRow: rowToUpdate ? rowToUpdate.index : startRow
       }, {
         componentType: item.name,
         componentTypeId: item.id,
@@ -388,13 +403,12 @@ class Preview extends Component {
       })
 
       // calculating top space before this new group
-      topSpaceBeforeGroup = rows.slice(
-        // take the next row after last group
-        rowGroupBeforeNewIndex != null ? rowGroupBeforeNewIndex + 1: 0,
-        referenceRow
-      ).reduce((acu, row) => {
-        return acu + row.height
-      }, 0)
+      topSpaceBeforeGroup = getDistanceFromCol({
+        rows,
+        fromCol: { row: rowGroupBeforeNewIndex != null ? rowGroupBeforeNewIndex: 0, col: 0 },
+        toCol: { row: referenceRow, col: 0 },
+        opts: { includeFrom: rowGroupBeforeNewIndex == null }
+      }).distanceY
 
       if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
         currentGroup.topSpace = topSpaceBeforeGroup
@@ -429,9 +443,11 @@ class Preview extends Component {
           currentGroup,
           ...components.slice(groupAfterNewIndex, groupAfterNewIndex + 1).map((group) => {
             // updating top space of group after the new one
-            group.topSpace = rows.slice(referenceRow + 1, rowGroupAfterNewIndex).reduce((acu, row) => {
-              return acu + row.height
-            }, 0)
+            group.topSpace = getDistanceFromCol({
+              rows,
+              fromCol: { row: referenceRow, col: 0 },
+              toCol: { row: rowGroupAfterNewIndex, col: 0 }
+            }).distanceY
 
             return group
           }),
