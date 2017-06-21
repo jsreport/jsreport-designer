@@ -3,8 +3,8 @@ import PropTypes from 'prop-types'
 import throttle from 'lodash/throttle'
 import { DropTarget } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
+import CanvasItems from './CanvasItems'
 import Grid from './Grid'
-import ComponentItem from '../ComponentItem'
 import './Canvas.css'
 
 const canvasTarget = {
@@ -114,85 +114,6 @@ class Canvas extends Component {
     this.props.onColDragOver && this.props.onColDragOver(params)
   }
 
-  renderComponentItem (componentItem) {
-    return (
-      <ComponentItem
-        type={componentItem.componentType}
-        width={componentItem.defaultSize.width}
-        height={componentItem.defaultSize.height}
-        componentProps={componentItem.props}
-      />
-    )
-  }
-
-  renderComponents (components, colWidth) {
-    let lastConsumedCol
-
-    return (
-      <div>
-        {components.map((componentItem) => {
-          let styles = {
-            display: 'inline-block',
-            verticalAlign: 'top'
-          }
-
-          let leftSpace
-          let rightSpace
-
-          if (lastConsumedCol == null) {
-            leftSpace = componentItem.col.start * colWidth
-          } else {
-            leftSpace = ((componentItem.col.start - lastConsumedCol) - 1) * colWidth
-          }
-
-          rightSpace = (((componentItem.col.end - componentItem.col.start) + 1) * colWidth) - componentItem.defaultSize.width
-
-          styles.paddingLeft = `${leftSpace}px`
-          styles.paddingRight = `${rightSpace}px`
-
-          lastConsumedCol = componentItem.col.end
-
-          return (
-            <div
-              key={'ComponentItem-' + componentItem.id}
-              style={styles}
-            >
-              {this.renderComponentItem(componentItem)}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
-  renderItems () {
-    const {
-      colWidth,
-      components
-    } = this.props
-
-    return (
-      <div className="Canvas-area">
-        {components.map((componentItemMeta, index) => {
-          let styles = {}
-
-          if (componentItemMeta.topSpace != null) {
-            styles.paddingTop = `${componentItemMeta.topSpace}px`
-          }
-
-          return (
-            <div
-              key={'ComponentsGroup-' + index}
-              style={styles}
-            >
-              {this.renderComponents(componentItemMeta.group, colWidth)}
-            </div>
-          )
-        })}
-      </div>
-    )
-  }
-
   render () {
     const {
       width,
@@ -200,6 +121,8 @@ class Canvas extends Component {
       gridRows,
       selectedArea,
       filledArea,
+      colWidth,
+      components,
       connectDropTarget,
       isDragOver,
       canDrop,
@@ -229,7 +152,10 @@ class Canvas extends Component {
 
     return connectDropTarget(
       <div className="Canvas" style={canvasStyles}>
-        {this.renderItems()}
+        <CanvasItems
+          baseColWidth={colWidth}
+          components={components}
+        />
         {this.shouldShowGrid(gridRows) && (
           <Grid
             isDragOver={isDragOver}

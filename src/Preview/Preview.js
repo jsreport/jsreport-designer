@@ -26,6 +26,8 @@ class Preview extends Component {
     this.numberOfCols = NUMBER_OF_COLS
     this.colWidth = this.baseWidth / this.numberOfCols
 
+    this.rowsToGroups = {}
+
     this.state = {
       components: [],
       gridRows: this.getInitialGridRows({
@@ -170,15 +172,17 @@ class Preview extends Component {
     ) {
       const { area, points, filledCols, filledRows } = this.selectedArea
 
-      let filledArea = this.state.filledArea || {}
       let originalGridRows = this.state.gridRows
       let originalComponents = this.state.components
       let startRow = points.top.row
       let startCol = points.left.col
       let endRow = (startRow + filledRows) - 1
       let centerInCurrentSelectedArea = {}
+      let originalRowsToGroups = this.rowsToGroups || {}
+      let currentRowsToGroups = { ...originalRowsToGroups }
+      let filledArea = {}
+      let rowsChanged = []
       let gridRows
-      let components
       let newColInfo
       let newRow
       let newSelectedArea
@@ -193,12 +197,6 @@ class Preview extends Component {
 
       // TODO: decide how to add a new row when dropping
       // (maybe pass the rest of the space to create a other row)
-
-      // TODO: make more smart logic about row grouping and limits to not depend on row height
-      // for position of components
-
-      // TODO: write proper logic to calculate if there is some filled
-      // handle cases like dropping component between two groups
 
       // TODO: add more rows when dropping something on the last row (placeholder row)
       // (maybe while dragging too, but it will feel weird, though)
@@ -266,9 +264,23 @@ class Preview extends Component {
       }
 
       gridRows = gridRows.concat(originalGridRows.slice(startRow + 1).map(function (row) {
-        row.index = row.index + rowsToAdd.length
+        let newIndex = row.index + rowsToAdd.length
+
+        // deleting old references in map
+        if (currentRowsToGroups[row.index] != null && row.index !== newIndex) {
+          rowsChanged.push({ old: row.index, new: newIndex })
+          delete currentRowsToGroups[row.index]
+        }
+
+        row.index = newIndex
+
         return row
       }))
+
+      // updating rows to groups map with the new row indexes
+      rowsChanged.forEach((changed) => {
+        currentRowsToGroups[changed.new] = originalRowsToGroups[changed.old]
+      })
 
       // calculate new filled area on new rows
       newSelectedArea = findProjectedFilledArea({
@@ -286,18 +298,9 @@ class Preview extends Component {
         return
       }
 
-      filledArea = {
-        ...filledArea
-      }
-
-      Object.keys(newSelectedArea.area).forEach((coord) => {
-        if (filledArea[coord] == null) {
-          filledArea[coord] = newSelectedArea.area[coord]
-        }
-      })
-
-      components = this.addOrUpdateComponentGroup({
+      let { components, rowsToGroups } = this.addOrUpdateComponentGroup({
         rows: gridRows,
+        rowsToGroups: currentRowsToGroups,
         components: originalComponents,
         referenceRow: newRow ? newRow.index : row.index
       }, {
@@ -311,6 +314,25 @@ class Preview extends Component {
         props: item.props
       })
 
+      // getting filled area from components
+      Object.keys(rowsToGroups).forEach((idx) => {
+        let rowIndex = parseInt(idx, 10)
+        let componentGroup = components[rowsToGroups[rowIndex]]
+
+        filledArea = componentGroup.group.reduce((area, comp) => {
+          for (let x = comp.col.start; x <= comp.col.end; x++) {
+            area[x + ',' + rowIndex] = {
+              row: rowIndex,
+              col: x
+            }
+          }
+
+          return area
+        }, filledArea)
+      })
+
+      this.rowsToGroups = rowsToGroups
+
       this.setState({
         // clean selectedArea when adding a component
         selectedArea: null,
@@ -321,13 +343,17 @@ class Preview extends Component {
     }
   }
 
-  addOrUpdateComponentGroup ({ rows, components, referenceRow }, component) {
+  addOrUpdateComponentGroup ({ rows, rowsToGroups, components, referenceRow }, component) {
     let compProps = component.props || {}
-    let rowsToGroups = this.rowsToGroups || {}
     let topSpaceBeforeGroup
+    let currentGroup
     let newComponent
-    let newGroup
     let newComponents
+    let newRowsToGroup
+
+    newRowsToGroup = {
+      ...rowsToGroups
+    }
 
     // component information
     newComponent = {
@@ -338,52 +364,142 @@ class Preview extends Component {
 
     // check to see if we should create a new group or update an existing one
     if (rowsToGroups[referenceRow] == null) {
+      let rowsToGroupsIndexes
+      let rowGroupBeforeNewIndex
+      let rowGroupAfterNewIndex
+      let groupAfterNewIndex
+
       // creating a new group with component
-      newGroup = {
+      currentGroup = {
+        id: shortid.generate(),
         group: [newComponent]
       }
 
-      newGroup.row = referenceRow
+      rowsToGroupsIndexes = Object.keys(rowsToGroups).map((item) => parseInt(item, 10))
 
-      // calculating top space before this group
+      // searching for a group before the new one (sort descending)
+      rowsToGroupsIndexes.slice(0).sort((a, b) => b - a).some((rowIndex) => {
+        if (rowIndex < referenceRow) {
+          rowGroupBeforeNewIndex = rowIndex
+          return true
+        }
+
+        return false
+      })
+
+      // calculating top space before this new group
       topSpaceBeforeGroup = rows.slice(
         // take the next row after last group
-        components.length > 0 ? components[components.length - 1].row + 1: 0,
+        rowGroupBeforeNewIndex != null ? rowGroupBeforeNewIndex + 1: 0,
         referenceRow
       ).reduce((acu, row) => {
         return acu + row.height
       }, 0)
 
       if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
-        newGroup.topSpace = topSpaceBeforeGroup
+        currentGroup.topSpace = topSpaceBeforeGroup
+      }
+
+      // searching for a group after the new one (sort ascending)
+      rowsToGroupsIndexes.slice(0).sort((a, b) => a - b).some((rowIndex) => {
+        if (referenceRow < rowIndex) {
+          rowGroupAfterNewIndex = rowIndex
+          groupAfterNewIndex = rowsToGroups[rowGroupAfterNewIndex]
+          return true
+        }
+
+        return false
+      })
+
+      if (groupAfterNewIndex == null) {
+        // if there is no group after the new group, insert it as the last
+        newComponents = [
+          ...components,
+          currentGroup
+        ]
+
+        // updating rows-groups map
+        newRowsToGroup[referenceRow] = newComponents.length - 1
+      } else {
+        let rowGroupsChanged = []
+
+        // updating group order with the new group
+        newComponents = [
+          ...components.slice(0, groupAfterNewIndex),
+          currentGroup,
+          ...components.slice(groupAfterNewIndex, groupAfterNewIndex + 1).map((group) => {
+            // updating top space of group after the new one
+            group.topSpace = rows.slice(referenceRow + 1, rowGroupAfterNewIndex).reduce((acu, row) => {
+              return acu + row.height
+            }, 0)
+
+            return group
+          }),
+          ...components.slice(groupAfterNewIndex + 1)
+        ]
+
+        // updating rows-groups map
+        // since group order has changed,
+        // we need to update all referenced items in the object map
+        rows.slice(rowGroupAfterNewIndex).forEach((row) => {
+          if (newRowsToGroup[row.index] != null) {
+            rowGroupsChanged.push({ row: row.index })
+            // deleting old references
+            delete newRowsToGroup[row.index]
+          }
+        })
+
+        rowGroupsChanged.forEach((changed) => {
+          // adding + 1 to all groups after the new group
+          newRowsToGroup[changed.row] = rowsToGroups[changed.row] + 1
+        })
+
+        // saving the new group
+        newRowsToGroup[referenceRow] = groupAfterNewIndex
+      }
+    } else {
+      let groupFoundIndex = rowsToGroups[referenceRow]
+      let componentAfterNewIndex
+
+      // getting existing group
+      currentGroup = components[groupFoundIndex]
+
+      // searching for a component after the new one
+      currentGroup.group.some((comp, index) => {
+        if (newComponent.col.end < comp.col.start) {
+          componentAfterNewIndex = index
+          return true
+        }
+
+        return false
+      })
+
+      if (componentAfterNewIndex == null) {
+        // if there is no component after the new component, insert it as the last
+        currentGroup.group = [
+          ...currentGroup.group,
+          newComponent
+        ]
+      } else {
+        // updating components order with the new component
+        currentGroup.group = [
+          ...currentGroup.group.slice(0, componentAfterNewIndex),
+          newComponent,
+          ...currentGroup.group.slice(componentAfterNewIndex)
+        ]
       }
 
       newComponents = [
-        ...components,
-        newGroup
-      ]
-
-      // updating rows-groups map
-      rowsToGroups[referenceRow] = components.length
-    } else {
-      let foundGroupIndex = rowsToGroups[referenceRow]
-
-      // getting existing group
-      newGroup = components[foundGroupIndex]
-
-      // updating an existing group with new component
-      newGroup.group.push(newComponent)
-
-      newComponents = [
-        ...components.slice(0, foundGroupIndex),
-        newGroup,
-        ...components.slice(foundGroupIndex + 1)
+        ...components.slice(0, groupFoundIndex),
+        currentGroup,
+        ...components.slice(groupFoundIndex + 1)
       ]
     }
 
-    this.rowsToGroups = rowsToGroups
-
-    return newComponents
+    return {
+      components: newComponents,
+      rowsToGroups: newRowsToGroup
+    }
   }
 
   onClickInspect () {

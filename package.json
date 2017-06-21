@@ -8,10 +8,10 @@
     "bluebird": "3.5.0",
     "lodash": "4.17.4",
     "prop-types": "^15.5.10",
-    "react": "15.5.4",
+    "react": "15.6.1",
     "react-dnd": "2.4.0",
     "react-dnd-html5-backend": "2.4.1",
-    "react-dom": "15.5.4",
+    "react-dom": "15.6.1",
     "shortid": "2.2.8"
   },
   "devDependencies": {
