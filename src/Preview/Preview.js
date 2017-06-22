@@ -59,6 +59,7 @@ class Preview extends Component {
         index: i,
         height: defaultRowHeight,
         unit: 'px',
+        empty: true,
         cols: this.getInitialGridCols({
           baseWidth,
           rowIndex: rows.length,
@@ -181,12 +182,19 @@ class Preview extends Component {
       let centerInCurrentSelectedArea = {}
       let originalRowsToGroups = this.rowsToGroups || {}
       let currentRowsToGroups = { ...originalRowsToGroups }
-      let filledArea = {}
-      let rowsChanged = []
-      let gridRows
-      let colToUpdateInfo
+      let newFilledArea = {}
+      let rowsToAdd = []
+      let changedRowsInsideGroups = []
+      let rowsToUpdate = []
+      let rowToUpdateWillIncreaseDimensions = false
+      let rowToUpdateWillDecreaseDimensions = false
+      let rowToUpdateWillChangeDimensions = false
       let rowToUpdate
+      let filteredRowsToUpdate
+      let placeholderRow
+      let colToUpdateInfo
       let newSelectedArea
+      let gridRows
 
       // TODO: Safari has a bug, if you drop a component and if that component causes the scroll bar to appear
       // then when you scroll the page you will see some part of the drag preview or some lines of the grid
@@ -196,22 +204,40 @@ class Preview extends Component {
       // TODO: test calculation of selected area when dropping an item with height equal to row height
       // currently it doesn't select perfectly in one row items of same height
 
-      // TODO: decide how to add a new row when dropping
-      // (maybe pass the rest of the space to create a other row)
+      // get placeholder row (last one)
+      placeholderRow = originalGridRows[originalGridRows.length - 1]
 
-      // TODO: add more rows when dropping something on the last row (placeholder row)
-      // (maybe while dragging too, but it will feel weird, though)
+      rowToUpdate = {
+        ...originalGridRows[startRow],
+        // since the row to update will have the dropped item, then the row is not empty anymore
+        empty: false
+      }
 
-      if (filledRows > 1 && item.defaultSize.height > originalGridRows[startRow].height) {
-        // if item fills more than one row and its height is greater than projected row
+      // if start row is a placeholder then update it to a normal row,
+      // later we will change add a new row as the new placeholder
+      if (rowToUpdate.placeholder) {
+        delete rowToUpdate.placeholder
+      }
+
+      rowToUpdateWillDecreaseDimensions = (
+        filledRows === 1 &&
+        originalGridRows[startRow].height > item.defaultSize.height &&
+        originalGridRows[startRow].empty
+      )
+
+      rowToUpdateWillIncreaseDimensions = (
+        filledRows > 1 &&
+        item.defaultSize.height > originalGridRows[startRow].height
+      )
+
+      if (rowToUpdateWillIncreaseDimensions || rowToUpdateWillDecreaseDimensions) {
+        // if item will change the height of the row
         // then we should update the row information (size, etc) with new values,
         // the rule is that projected row will always take the height of the item when
-        // it is greater than its own height
-        rowToUpdate = {
-          ...originalGridRows[startRow],
-          // new height of row is equal to the height of dropped item
-          height: item.defaultSize.height
-        }
+        // it is greater than its own height.
+        rowToUpdateWillChangeDimensions = true
+        // new height of row is equal to the height of dropped item
+        rowToUpdate.height = item.defaultSize.height
       }
 
       colToUpdateInfo = {
@@ -236,7 +262,7 @@ class Preview extends Component {
         }).distanceY
       }
 
-      if (rowToUpdate) {
+      if (rowToUpdateWillChangeDimensions) {
         // since rows will change, we need to update
         // some information of the col.
         // new height of col
@@ -251,39 +277,87 @@ class Preview extends Component {
         y: colToUpdateInfo.top + (colToUpdateInfo.height / 2)
       }
 
-      let rowsToAdd = []
+      if (rowToUpdateWillChangeDimensions) {
+        let newRowHeight = getDistanceFromCol({
+          rows: originalGridRows,
+          fromCol: { row: startRow, col: 0 },
+          toCol: { row: endRow, col: 0 },
+          opts: { includeFrom: true, includeTo: true }
+        }).distanceY
 
-      if (rowToUpdate) {
         rowsToAdd.push({
-          index: rowToUpdate.index + 1,
+          index: rowToUpdate.index + (rowsToAdd.length + 1),
+          // height of new row is equal to the difference between
+          // height of projected area and item's height
+          height: newRowHeight - item.defaultSize.height,
+          unit: 'px',
+          cols: this.getInitialGridCols({ 
+            baseWidth: this.baseWidth,
+            rowIndex: rowToUpdate.index + (rowsToAdd.length + 1),
+            numberOfCols: this.numberOfCols
+          }),
+          // the row to add is empty
+          empty: true
+        })
+      }
+
+      // if placeholder row is inside the projected area then insert a new row
+      if (endRow >= placeholderRow.index) {
+        let newRow = {
+          index: rowToUpdate.index + (rowsToAdd.length + 1),
           height: this.defaultRowHeight,
           unit: 'px',
           cols: this.getInitialGridCols({ 
             baseWidth: this.baseWidth,
-            rowIndex: rowToUpdate.index + 1,
+            rowIndex: rowToUpdate.index + (rowsToAdd.length + 1),
             numberOfCols: this.numberOfCols
-          })
-        })
+          }),
+          // the row to add is empty
+          empty: true
+        }
+
+        // setting the new placeholder row
+        if (placeholderRow.index === rowToUpdate.index) {
+          newRow.placeholder = true
+        }
+
+        rowsToAdd.push(newRow)
       }
 
       gridRows = [
-        ...originalGridRows.slice(0, rowToUpdate ? startRow : startRow + 1)
+        ...originalGridRows.slice(0, rowToUpdate.index),
+        rowToUpdate
       ]
-
-      if (rowToUpdate) {
-        gridRows.push(rowToUpdate)
-      }
 
       if (rowsToAdd.length) {
         gridRows = gridRows.concat(rowsToAdd)
       }
 
-      gridRows = gridRows.concat(originalGridRows.slice(startRow + 1).map(function (currentRow) {
+      rowsToUpdate = originalGridRows.slice(rowToUpdate.index + 1)
+
+      // removing empty rows inside the projected area of item
+      filteredRowsToUpdate = rowsToUpdate.filter((currentRow) => {
+        if (currentRow.placeholder) {
+          return true
+        }
+
+        if (currentRow.empty && startRow <= currentRow.index && currentRow.index <= endRow) {
+          return false
+        }
+
+        return true
+      })
+
+      gridRows = gridRows.concat(filteredRowsToUpdate.map((currentRow) => {
+        // original index plus the amount of rows added
         let newIndex = currentRow.index + rowsToAdd.length
+
+        // minus the amount of items eliminated in the filtering
+        newIndex = newIndex - (rowsToUpdate.length - filteredRowsToUpdate.length)
 
         // deleting old references in map
         if (currentRowsToGroups[currentRow.index] != null && currentRow.index !== newIndex) {
-          rowsChanged.push({ old: currentRow.index, new: newIndex })
+          changedRowsInsideGroups.push({ old: currentRow.index, new: newIndex })
           delete currentRowsToGroups[currentRow.index]
         }
 
@@ -293,7 +367,7 @@ class Preview extends Component {
       }))
 
       // updating rows to groups map with the new row indexes
-      rowsChanged.forEach((changed) => {
+      changedRowsInsideGroups.forEach((changed) => {
         currentRowsToGroups[changed.new] = originalRowsToGroups[changed.old]
       })
 
@@ -317,7 +391,7 @@ class Preview extends Component {
         rows: gridRows,
         rowsToGroups: currentRowsToGroups,
         components: originalComponents,
-        referenceRow: rowToUpdate ? rowToUpdate.index : startRow
+        referenceRow: rowToUpdate.index
       }, {
         componentType: item.name,
         componentTypeId: item.id,
@@ -334,7 +408,7 @@ class Preview extends Component {
         let rowIndex = parseInt(idx, 10)
         let componentGroup = components[rowsToGroups[rowIndex]]
 
-        filledArea = componentGroup.group.reduce((area, comp) => {
+        newFilledArea = componentGroup.group.reduce((area, comp) => {
           for (let x = comp.col.start; x <= comp.col.end; x++) {
             area[x + ',' + rowIndex] = {
               row: rowIndex,
@@ -343,7 +417,7 @@ class Preview extends Component {
           }
 
           return area
-        }, filledArea)
+        }, newFilledArea)
       })
 
       this.rowsToGroups = rowsToGroups
@@ -351,7 +425,7 @@ class Preview extends Component {
       this.setState({
         // clean selectedArea when adding a component
         selectedArea: null,
-        filledArea,
+        filledArea: newFilledArea,
         gridRows,
         components
       })
@@ -407,7 +481,7 @@ class Preview extends Component {
         rows,
         fromCol: { row: rowGroupBeforeNewIndex != null ? rowGroupBeforeNewIndex: 0, col: 0 },
         toCol: { row: referenceRow, col: 0 },
-        opts: { includeFrom: rowGroupBeforeNewIndex == null }
+        opts: { includeFrom: rowGroupBeforeNewIndex == null && referenceRow !== 0 ? true : false }
       }).distanceY
 
       if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {

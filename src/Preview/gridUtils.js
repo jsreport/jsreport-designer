@@ -65,6 +65,7 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
   let stepX = fromCol.col <= toCol.col ? 1 : -1
   let stepY = fromCol.row <= toCol.row ? 1 : -1
 
+  // if `includeFrom` is active include the values of the starting row/col
   if (opts.includeFrom === true) {
     current.distanceY = rows[fromCol.row].height * stepY
     current.distanceX = rows[fromCol.row].cols[fromCol.col].width * stepX
@@ -82,6 +83,12 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
       }
 
       current.row += stepY
+
+      // if next row has reached the limit and `includeTo` is activate then include
+      // the values of the last row
+      if (current.row === toCol.row && opts.includeTo === true) {
+        current.distanceY += rows[current.row].height * stepY
+      }
     }
 
     if (current.col !== toCol.col) {
@@ -90,6 +97,12 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
       }
 
       current.col += stepX
+
+      // if next col has reached the limit and `includeTo` is activate then include
+      // the values of the last col
+      if (current.col === toCol.col && opts.includeTo === true) {
+        current.distanceX += rows[originalRow].cols[current.col] * stepX
+      }
     }
   }
 
