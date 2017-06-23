@@ -596,7 +596,8 @@ class Preview extends Component {
     this.setState({
       inspectMeta: JSON.stringify({
         grid: {
-          width: BASE_WIDTH
+          width: BASE_WIDTH,
+          baseColWidth: this.colWidth
         },
         components: this.state.components
       }, null, 2)

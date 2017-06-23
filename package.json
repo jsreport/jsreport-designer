@@ -19,6 +19,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "run": "jsreport-studio-start --httpPort 5488 --run-only",
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject"
