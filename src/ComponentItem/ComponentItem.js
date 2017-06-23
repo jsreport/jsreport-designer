@@ -21,7 +21,6 @@ class ComponentItem extends Component {
     } = this.props
 
     let styles = {
-      display: 'inline-block',
       width: `${width}px`,
       height: `${height}px`
     }
