@@ -20,6 +20,12 @@ const BASE_WIDTH = 980
 const DEFAULT_NUMBER_OF_ROWS = 7
 const DEFAULT_NUMBER_OF_COLS = 12
 const DEFAULT_ROW_HEIGHT = 78
+const IS_DEV = true
+let DevTools
+
+if (IS_DEV) {
+  DevTools = require('../DevTools').default
+}
 
 class Design extends Component {
   constructor (props) {
@@ -276,18 +282,6 @@ class Design extends Component {
     })
   }
 
-  onClickInspect () {
-    this.setState({
-      inspectMeta: JSON.stringify({
-        grid: {
-          width: BASE_WIDTH,
-          baseColWidth: this.colWidth
-        },
-        components: this.state.components
-      }, null, 2)
-    })
-  }
-
   onDragEnterCanvas () {
     // clean selected area when dragging starts on canvas
     this.selectedArea = null
@@ -313,7 +307,8 @@ class Design extends Component {
   }
 
   render () {
-    const baseWidth = BASE_WIDTH
+    const baseWidth = this.baseWidth
+    const colWidth = this.colWidth
 
     const {
       components,
@@ -325,25 +320,15 @@ class Design extends Component {
     let totalHeight = this.totalHeightOfRows
     let paddingLeftRight = 25
 
-    let inspectButton = (
-      <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
-        <b>TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
-        {' '}
-        <button onClick={() => this.onClickInspect()}>Inspect Designer meta-data</button>
-      </div>
-    )
-
     return (
       <div className="Design-container">
-        {inspectButton}
-        {this.state.inspectMeta && (
-          <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '8px', right: '400px', zIndex: 2 }}>
-            <button onClick={() => this.setState({ inspectMeta: null })}>Close</button>
-            <br/>
-            <textarea rows="25" cols="40" defaultValue={this.state.inspectMeta} />
-            <br />
-            <button onClick={() => this.setState({ inspectMeta: null })}>Close</button>
-          </div>
+        {DevTools && (
+          <DevTools
+            baseWidth={baseWidth}
+            baseColWidth={colWidth}
+            gridRows={gridRows}
+            components={components}
+          />
         )}
         <div
           className="Design-canvas"
@@ -358,7 +343,7 @@ class Design extends Component {
           <Canvas
             width={baseWidth}
             height={totalHeight}
-            colWidth={this.colWidth}
+            colWidth={colWidth}
             gridRows={gridRows}
             selectedArea={selectedArea}
             components={components}
