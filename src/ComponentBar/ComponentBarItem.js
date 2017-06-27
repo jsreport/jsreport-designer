@@ -98,7 +98,7 @@ class ComponentBarItem extends Component {
             left: 0
           }}
         >
-          {`Preview-${component.name}`}
+          {`DragPreview-${component.name}`}
         </div>
       )
     }

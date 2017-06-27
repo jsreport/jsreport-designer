@@ -1,8 +1,8 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import ComponentItem from '../ComponentItem'
+import DesignComponent from '../DesignComponent'
 
-class ComponentPreviewBox extends Component {
+class ComponentDragPreviewBox extends PureComponent {
   render () {
     const {
       width,
@@ -15,7 +15,7 @@ class ComponentPreviewBox extends Component {
         display: 'inline-block',
         opacity: '0.7'
       }}>
-        <ComponentItem
+        <DesignComponent
           type={component.name}
           width={width}
           height={height}
@@ -27,10 +27,10 @@ class ComponentPreviewBox extends Component {
   }
 }
 
-ComponentPreviewBox.propTypes = {
+ComponentDragPreviewBox.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   component: PropTypes.object.isRequired
 }
 
-export default ComponentPreviewBox
+export default ComponentDragPreviewBox

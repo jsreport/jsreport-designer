@@ -75,14 +75,20 @@ class ComponentDragLayer extends Component {
       isDragging
     } = this.props
 
+    let styles
+
     if (!isDragging) {
-      return null
+      styles = {
+        display: 'none'
+      }
+    } else {
+      styles = getPreviewLayerStyles(this.props)
     }
 
     return (
       <div className='ComponentDragLayer'>
-        <div style={getPreviewLayerStyles(this.props)}>
-          {this.renderPreview(itemType, item)}
+        <div style={styles}>
+          {isDragging && this.renderPreview(itemType, item)}
         </div>
       </div>
     )

@@ -190,10 +190,13 @@ function findStartCol ({ rows, point, baseCol, step }) {
   }
 }
 
-function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColInfo }) {
+function findProjectedFilledArea ({ rows, projectedLimits, baseColInfo }) {
   let area = {}
   let filled = false
   let conflict = false
+  let areaTotalWidth = 0
+  let areaTotalHeigth = 0
+  let areaBox
 
   let foundInTop = findStartCol({
     rows,
@@ -223,12 +226,6 @@ function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColIn
     step: 1
   })
 
-  // does the projected preview fills inside the selected area of grid?
-  filled = (
-    foundInTop.filled && foundInBottom.filled &&
-    foundInLeft.filled && foundInRight.filled
-  )
-
   let startX = foundInLeft.colCoordinate.col
   let endX = foundInRight.colCoordinate.col
   let startY = foundInTop.colCoordinate.row
@@ -236,11 +233,15 @@ function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColIn
   let filledRows = (endY - startY) + 1
   let filledCols = (endX - startX) + 1
   let toFill = arrayFrom({ length: filledCols }, (v, i) => startX + i)
+  let savedRows = []
 
   toFill.forEach((x) => {
     let currentY = startY
 
+    areaTotalWidth += rows[currentY].cols[x].width
+
     while (currentY <= endY) {
+      let currentCol = rows[currentY].cols[x]
       let coordinate = x + ',' + currentY
 
       if (area[coordinate]) {
@@ -248,7 +249,7 @@ function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColIn
         continue;
       }
 
-      if (!conflict && filledArea && filledArea[coordinate]) {
+      if (!conflict && !currentCol.empty) {
         conflict = true
       }
 
@@ -257,9 +258,27 @@ function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColIn
         row: currentY
       }
 
+      if (savedRows.indexOf(currentY) === -1) {
+        areaTotalHeigth += rows[currentY].height
+        savedRows.push(currentY)
+      }
+
       currentY++
     }
   })
+
+  areaBox = {
+    width: areaTotalWidth,
+    height: areaTotalHeigth,
+    top: foundInTop.colCoordinate.y,
+    left: foundInLeft.colCoordinate.x
+  }
+
+  // does the projected preview fills inside the selected area of grid?
+  filled = (
+    foundInTop.filled && foundInBottom.filled &&
+    foundInLeft.filled && foundInRight.filled
+  )
 
   return {
     filled,
@@ -267,6 +286,7 @@ function findProjectedFilledArea ({ rows, filledArea, projectedLimits, baseColIn
     filledRows,
     filledCols,
     area,
+    areaBox,
     points: {
       top: foundInTop.colCoordinate,
       left: foundInLeft.colCoordinate,

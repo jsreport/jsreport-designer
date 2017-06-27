@@ -9,7 +9,7 @@
   left: 0;
 }
 
-.Grid > .Grid-row:first-child > .Grid-col {
+.Grid-content > .Grid-row:first-child > .Grid-col {
   border-top-width: 0px;
 }
 

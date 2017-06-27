@@ -1,30 +1,14 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import ComponentItem from '../ComponentItem'
+import ComponentItem from './ComponentItem'
 
-class ComponentsGroup extends Component {
-  renderComponentItem (componentItem) {
-    return (
-      <ComponentItem
-        type={componentItem.componentType}
-        width={componentItem.defaultSize.width}
-        height={componentItem.defaultSize.height}
-        componentProps={componentItem.props}
-      />
-    )
-  }
-
+class ComponentsGroup extends PureComponent {
   renderComponents (components, baseColWidth) {
     let lastConsumedCol
 
     return (
       <div>
         {components.map((componentItem) => {
-          let styles = {
-            display: 'inline-block',
-            verticalAlign: 'top'
-          }
-
           let leftSpace
           let rightSpace
 
@@ -36,18 +20,15 @@ class ComponentsGroup extends Component {
 
           rightSpace = (((componentItem.col.end - componentItem.col.start) + 1) * baseColWidth) - componentItem.defaultSize.width
 
-          styles.paddingLeft = `${leftSpace}px`
-          styles.paddingRight = `${rightSpace}px`
-
           lastConsumedCol = componentItem.col.end
 
           return (
-            <div
+            <ComponentItem
               key={'ComponentItem-' + componentItem.id}
-              style={styles}
-            >
-              {this.renderComponentItem(componentItem)}
-            </div>
+              leftSpace={leftSpace}
+              rightSpace={rightSpace}
+              component={componentItem}
+            />
           )
         })}
       </div>

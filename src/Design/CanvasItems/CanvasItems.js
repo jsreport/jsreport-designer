@@ -1,9 +1,9 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import ComponentsGroup from './ComponentsGroup'
 import './CanvasItems.css'
 
-class CanvasItems extends Component {
+class CanvasItems extends PureComponent {
   render () {
     const {
       baseColWidth,

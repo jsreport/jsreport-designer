@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 const componentRegistry = require('../shared/componentRegistry')
 
-class ComponentItem extends Component {
+class DesignComponent extends Component {
   renderComponent (type, componentProps) {
     let ComponentType = componentRegistry.getComponentFromType(type)
 
@@ -40,11 +40,11 @@ class ComponentItem extends Component {
   }
 }
 
-ComponentItem.propTypes = {
+DesignComponent.propTypes = {
   type: PropTypes.string.isRequired,
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
   componentProps: PropTypes.object.isRequired
 }
 
-export default ComponentItem
+export default DesignComponent

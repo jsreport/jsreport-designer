@@ -1,15 +1,24 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import throttle from 'lodash/throttle'
 import { DropTarget } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
 import CanvasItems from './CanvasItems'
+import CanvasSelectedArea from './CanvasSelectedArea'
 import Grid from './Grid'
 import './Canvas.css'
 
 const canvasTarget = {
-  hover (props, monitor) {
+  hover (props, monitor, component) {
     if (!monitor.isOver() && props.onDragEnter) {
+      // getting canvas position when enter on canvas
+      let position = component.canvasNode.getBoundingClientRect()
+
+      component.canvasPosition = {
+        top: position.top,
+        left: position.left
+      }
+
       // first time hover
       props.onDragEnter({
         item: monitor.getItem(),
@@ -62,7 +71,7 @@ function collect (connect, monitor) {
   }
 }
 
-class Canvas extends Component {
+class Canvas extends PureComponent {
   constructor (props) {
     super(props)
 
@@ -73,12 +82,18 @@ class Canvas extends Component {
       100,
       { leading: true }
     )
+
+    this.getRelativePositionInsideCanvas = this.getRelativePositionInsideCanvas.bind(this)
+    this.isDraggingOver = this.isDraggingOver.bind(this)
   }
 
   componentWillReceiveProps (nextProps) {
     if (this.props.item && nextProps.item && this.props.item.id === nextProps.item.id) {
-      if (this.props.isDragOver === true &&
-        !nextProps.isDragOver
+      if (
+        (this.props.isDragOver === true && !nextProps.isDragOver) &&
+        // ensure that we don't fire the event when dropping
+        // (when dropping canDrop changes to false)
+        (this.props.canDrop === true && nextProps.canDrop === true)
       ) {
         nextProps.onDragLeave && nextProps.onDragLeave({
           item: nextProps.item
@@ -93,12 +108,29 @@ class Canvas extends Component {
     }
   }
 
+  getRelativePositionInsideCanvas (areaPosition, topOrLeft) {
+    const canvasPosition = this.canvasPosition
+    let position
+
+    if (topOrLeft === 'top') {
+      position = areaPosition - canvasPosition.top
+    } else {
+      position = areaPosition - canvasPosition.left
+    }
+
+    return position
+  }
+
   shouldShowGrid(gridRows) {
     if (gridRows.length > 0) {
       return true
     }
 
     return false
+  }
+
+  isDraggingOver () {
+    return this.props.isDragOver
   }
 
   onColDragOver (params) {
@@ -120,7 +152,6 @@ class Canvas extends Component {
       height,
       gridRows,
       selectedArea,
-      filledArea,
       colWidth,
       components,
       connectDropTarget,
@@ -133,14 +164,6 @@ class Canvas extends Component {
       height: height + 'px'
     }
 
-    let gridStyles = {
-      zIndex: -1
-    }
-
-    if (canDrop) {
-      gridStyles.zIndex = 0
-    }
-
     if (!isDragOver && canDrop) {
       canvasStyles.outline = '2px dotted #dede26'
     }
@@ -151,20 +174,27 @@ class Canvas extends Component {
     }
 
     return connectDropTarget(
-      <div className="Canvas" style={canvasStyles}>
+      <div className="Canvas" ref={(el) => this.canvasNode = el} style={canvasStyles}>
         <CanvasItems
           baseColWidth={colWidth}
           components={components}
         />
         {this.shouldShowGrid(gridRows) && (
           <Grid
-            isDragOver={isDragOver}
+            canDrop={canDrop}
             baseWidth={width}
             rows={gridRows}
-            selectedArea={selectedArea}
-            filledArea={filledArea}
-            style={gridStyles}
+            isDraggingInParent={this.isDraggingOver}
             onColDragOver={this.onColDragOver}
+          />
+        )}
+        {selectedArea && (
+          <CanvasSelectedArea
+            width={selectedArea.areaBox.width}
+            height={selectedArea.areaBox.height}
+            top={this.getRelativePositionInsideCanvas(selectedArea.areaBox.top, 'top')}
+            left={this.getRelativePositionInsideCanvas(selectedArea.areaBox.left, 'left')}
+            isValid={!selectedArea.conflict && selectedArea.filled}
           />
         )}
       </div>
@@ -178,7 +208,6 @@ Canvas.propTypes = {
   colWidth: PropTypes.number.isRequired,
   gridRows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
-  filledArea: PropTypes.object,
   components: PropTypes.array.isRequired,
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,

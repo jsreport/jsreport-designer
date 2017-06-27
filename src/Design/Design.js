@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import shortid from 'shortid'
+import memoize from 'lodash/memoize'
 import {
   isInsideOfCol,
   getProjectedOffsetLimits,
@@ -7,7 +8,7 @@ import {
   findProjectedFilledArea
 } from './gridUtils'
 import Canvas from './Canvas'
-import './Preview.css'
+import './Design.css'
 
 /*
   base width and base height depends on the target paper format
@@ -18,7 +19,7 @@ const BASE_WIDTH = 980
 const NUMBER_OF_COLS = 12
 const DEFAULT_ROW_HEIGHT = 78
 
-class Preview extends Component {
+class Design extends Component {
   constructor (props) {
     super(props)
 
@@ -26,6 +27,7 @@ class Preview extends Component {
     this.defaultRowHeight = DEFAULT_ROW_HEIGHT
     this.numberOfCols = NUMBER_OF_COLS
     this.colWidth = this.baseWidth / this.numberOfCols
+    this.totalHeightOfRows = null
 
     this.rowsToGroups = {}
 
@@ -36,15 +38,31 @@ class Preview extends Component {
         numberOfCols: this.numberOfCols,
         defaultRowHeight: this.defaultRowHeight
       }),
-      selectedArea: null,
-      filledArea: null
+      selectedArea: null
     }
+
+    this.totalHeightOfRows = this.getTotalHeightOfRows(this.state.gridRows)
 
     this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
     this.onDragLeaveCanvas = this.onDragLeaveCanvas.bind(this)
     this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
-    this.calculateSelectedAreaFromCol = this.calculateSelectedAreaFromCol.bind(this)
+
+    // memoizing the calculation, only update when the cursor offset has changed
+    this.calculateSelectedAreaFromCol = memoize(
+      this.calculateSelectedAreaFromCol.bind(this),
+      ({ clientOffset }) => {
+        return clientOffset.x + ',' + clientOffset.y
+      }
+    )
+
     this.addComponentToCanvas = this.addComponentToCanvas.bind(this)
+  }
+
+  componentWillUpdate (nextProps, nextState) {
+    // re-calculate computed value "totalHeightOfRows" if rows have changed
+    if (this.state.gridRows !== nextState.gridRows) {
+      this.totalHeightOfRows = this.getTotalHeightOfRows(nextState.gridRows)
+    }
   }
 
   getInitialGridRows ({ baseWidth, numberOfCols, defaultRowHeight }) {
@@ -56,6 +74,7 @@ class Preview extends Component {
       let isPlaceholder = (i === defaultNumberOfRows - 1)
 
       let row = {
+        id: shortid.generate(),
         index: i,
         height: defaultRowHeight,
         unit: 'px',
@@ -82,9 +101,11 @@ class Preview extends Component {
 
     for (let i = 0; i < numberOfCols; i++) {
       cols.push({
+        id: shortid.generate(),
         index: i,
         width: baseWidth / numberOfCols,
-        unit: 'px'
+        unit: 'px',
+        empty: true
       })
     }
 
@@ -97,7 +118,6 @@ class Preview extends Component {
 
   calculateSelectedAreaFromCol ({ row, col, colDimensions, item, clientOffset }) {
     let rows = this.state.gridRows
-    let filledArea = this.state.filledArea
     let isInside = true
     let { x: cursorOffsetX, y: cursorOffsetY } = clientOffset
     let { width, height, top, left } = colDimensions
@@ -149,7 +169,6 @@ class Preview extends Component {
 
     let selectedArea = findProjectedFilledArea({
       rows,
-      filledArea,
       projectedLimits: projectedOffsetLimits,
       baseColInfo: colInfo
     })
@@ -172,7 +191,7 @@ class Preview extends Component {
       col &&
       colDimensions
     ) {
-      const { area, points, filledCols, filledRows } = this.selectedArea
+      const { points, filledCols, filledRows } = this.selectedArea
 
       let originalGridRows = this.state.gridRows
       let originalComponents = this.state.components
@@ -182,7 +201,6 @@ class Preview extends Component {
       let centerInCurrentSelectedArea = {}
       let originalRowsToGroups = this.rowsToGroups || {}
       let currentRowsToGroups = { ...originalRowsToGroups }
-      let newFilledArea = {}
       let rowsToAdd = []
       let changedRowsInsideGroups = []
       let rowsToUpdate = []
@@ -286,6 +304,7 @@ class Preview extends Component {
         }).distanceY
 
         rowsToAdd.push({
+          id: shortid.generate(),
           index: rowToUpdate.index + (rowsToAdd.length + 1),
           // height of new row is equal to the difference between
           // height of projected area and item's height
@@ -304,6 +323,7 @@ class Preview extends Component {
       // if placeholder row is inside the projected area then insert a new row
       if (endRow >= placeholderRow.index) {
         let newRow = {
+          id: shortid.generate(),
           index: rowToUpdate.index + (rowsToAdd.length + 1),
           height: this.defaultRowHeight,
           unit: 'px',
@@ -361,7 +381,12 @@ class Preview extends Component {
           delete currentRowsToGroups[currentRow.index]
         }
 
-        currentRow.index = newIndex
+        if (newIndex !== currentRow.index) {
+          return {
+            ...currentRow,
+            index: newIndex
+          }
+        }
 
         return currentRow
       }))
@@ -374,7 +399,6 @@ class Preview extends Component {
       // calculate new filled area on new rows
       newSelectedArea = findProjectedFilledArea({
         rows: gridRows,
-        filledArea: null,
         projectedLimits: getProjectedOffsetLimits({
           // get projected limits over center of current selected area
           cursorOffset: centerInCurrentSelectedArea,
@@ -403,21 +427,25 @@ class Preview extends Component {
         props: item.props
       })
 
-      // getting filled area from components
+      // updating filled cols from groups information
       Object.keys(rowsToGroups).forEach((idx) => {
         let rowIndex = parseInt(idx, 10)
         let componentGroup = components[rowsToGroups[rowIndex]]
 
-        newFilledArea = componentGroup.group.reduce((area, comp) => {
+        componentGroup.group.forEach((comp) => {
+          let col
+
           for (let x = comp.col.start; x <= comp.col.end; x++) {
-            area[x + ',' + rowIndex] = {
-              row: rowIndex,
-              col: x
+            col = gridRows[rowIndex].cols[x]
+
+            if (col.empty) {
+              gridRows[rowIndex].cols[x] = {
+                ...col,
+                empty: false
+              }
             }
           }
-
-          return area
-        }, newFilledArea)
+        })
       })
 
       this.rowsToGroups = rowsToGroups
@@ -425,7 +453,6 @@ class Preview extends Component {
       this.setState({
         // clean selectedArea when adding a component
         selectedArea: null,
-        filledArea: newFilledArea,
         gridRows,
         components
       })
@@ -516,12 +543,22 @@ class Preview extends Component {
           ...components.slice(0, groupAfterNewIndex),
           currentGroup,
           ...components.slice(groupAfterNewIndex, groupAfterNewIndex + 1).map((group) => {
-            // updating top space of group after the new one
-            group.topSpace = getDistanceFromCol({
+            let newTopSpace = getDistanceFromCol({
               rows,
               fromCol: { row: referenceRow, col: 0 },
               toCol: { row: rowGroupAfterNewIndex, col: 0 }
             }).distanceY
+
+            // updating top space of group after the new one
+            if (
+              (group.topSpace == null && newTopSpace !== 0) ||
+              (group.topSpace != null && group.topSpace !== newTopSpace)
+            ) {
+              return {
+                ...group,
+                topSpace: newTopSpace
+              }
+            }
 
             return group
           }),
@@ -610,17 +647,22 @@ class Preview extends Component {
   }
 
   onDragLeaveCanvas () {
-    // clean selected area (visually) when dragging outside canvas
-    this.setState({
-      selectedArea: null
-    })
+    if (this.state.selectedArea != null) {
+      // clean selected area (visually) when dragging outside canvas (only when necessary)
+      this.setState({
+        selectedArea: null
+      })
+    }
+
   }
 
   onDragEndCanvas () {
-    // clean selected area (visually) when dragging ends
-    this.setState({
-      selectedArea: null
-    })
+    if (this.state.selectedArea != null) {
+      // clean selected area (visually) when dragging ends (only when necessary)
+      this.setState({
+        selectedArea: null
+      })
+    }
   }
 
   render () {
@@ -629,21 +671,23 @@ class Preview extends Component {
     const {
       components,
       gridRows,
-      selectedArea,
-      filledArea
+      selectedArea
     } = this.state
 
-    let totalHeight = this.getTotalHeightOfRows(gridRows)
+    // using computed value "totalHeightOfRows"
+    let totalHeight = this.totalHeightOfRows
     let paddingLeftRight = 25
 
     let inspectButton = (
       <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
+        <b>TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
+        {' '}
         <button onClick={() => this.onClickInspect()}>Inspect Designer meta-data</button>
       </div>
     )
 
     return (
-      <div className="Preview-container">
+      <div className="Design-container">
         {inspectButton}
         {this.state.inspectMeta && (
           <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '8px', right: '400px', zIndex: 2 }}>
@@ -655,7 +699,7 @@ class Preview extends Component {
           </div>
         )}
         <div
-          className="Preview-canvas"
+          className="Design-canvas"
           style={{
             minWidth: baseWidth + (paddingLeftRight * 2) + 'px',
             paddingLeft: paddingLeftRight + 'px',
@@ -670,7 +714,6 @@ class Preview extends Component {
             colWidth={this.colWidth}
             gridRows={gridRows}
             selectedArea={selectedArea}
-            filledArea={filledArea}
             components={components}
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}
@@ -684,4 +727,4 @@ class Preview extends Component {
   }
 }
 
-export default Preview
+export default Design

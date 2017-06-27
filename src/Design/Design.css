@@ -1,5 +1,5 @@
 
-.Preview-container {
+.Design-container {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -9,7 +9,7 @@
   overflow: auto;
 }
 
-.Preview-canvas {
+.Design-canvas {
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;

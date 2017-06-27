@@ -3,7 +3,7 @@ import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 import SplitPane from './SplitPane'
 import ComponentBar from './ComponentBar'
-import Preview from './Preview'
+import Design from './Design'
 import { ComponentDragLayer } from './ComponentDragPreview'
 import './Designer.css'
 
@@ -22,7 +22,7 @@ class Designer extends Component {
             resizerClassName="resizer"
           >
             <ComponentBar />
-            <Preview />
+            <Design />
           </SplitPane>
           <ComponentDragLayer />
         </div>
