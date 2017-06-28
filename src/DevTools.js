@@ -34,10 +34,11 @@ class DevTools extends Component {
     })
   }
 
-  onClickPreview () {
+  onClickPreview (recipe) {
     jsreportClient.render('_blank', {
       template: {
-        designer: this.getDesignMeta()
+        designer: this.getDesignMeta(),
+        recipe: recipe
       }
     })
   }
@@ -56,7 +57,8 @@ class DevTools extends Component {
         <b>TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
         {' '}
         <button onClick={() => this.onClickInspect()}>Inspect Designer meta-data</button>
-        <button onClick={() => this.onClickPreview()}>Preview pdf</button>
+        <button onClick={() => this.onClickPreview('phantom-pdf')}>Preview pdf</button>
+        <button onClick={() => this.onClickPreview('html')}>Preview html</button>
         {
           inspectMeta && (
             <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '320px', zIndex: 100 }}>
