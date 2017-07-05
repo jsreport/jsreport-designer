@@ -15,8 +15,8 @@
     "shortid": "2.2.8"
   },
   "devDependencies": {
-    "jsreport-browser-client-dist": "1.0.3",
-    "react-scripts": "1.0.7"
+    "jsreport-browser-client-dist": "1.0.4",
+    "react-scripts": "1.0.10"
   },
   "scripts": {
     "start": "react-scripts start",
