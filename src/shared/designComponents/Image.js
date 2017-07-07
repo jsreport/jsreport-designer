@@ -1,10 +1,17 @@
-var React = require('react')
+var Handlebars = require('handlebars')
 
-module.exports = function Image (props) {
-  return (
-    React.createElement(
-      'img',
-      { src: props.url, style: { width: props.width, height: props.height } }
-    )
-  )
+var template = Handlebars.compile(`
+  <div style="display: inline-block; width: {{width}}px; height: {{height}}px">
+    <img style="width: 100%; height: 100%; vertical-align: top" src="{{url}}" />
+  </div>
+`)
+
+module.exports.getDefaultProps = function () {
+  return {
+    url: 'http://www.euneighbours.eu/sites/default/files/2017-01/placeholder.png',
+    width: 100,
+    height: 100
+  }
 }
+
+module.exports.template = template

@@ -49,12 +49,13 @@ class DevTools extends Component {
     } = this.state
 
     const {
+      defaultNumberOfCols,
       gridRows
     } = this.props
 
     return (
       <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
-        <b>TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
+        <b>GRID: {defaultNumberOfCols} x {gridRows.length}, TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
         {' '}
         <button onClick={() => this.onClickInspect()}>Inspect Designer meta-data</button>
         <button onClick={() => this.onClickPreview('phantom-pdf')}>Preview pdf</button>

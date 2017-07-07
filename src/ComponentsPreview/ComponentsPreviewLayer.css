@@ -1,0 +1,7 @@
+
+.ComponentsPreviewLayer {
+  position: absolute;
+  pointer-events: none;
+  visibility: hidden;
+  z-index: -1;
+}

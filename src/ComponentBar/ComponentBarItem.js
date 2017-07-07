@@ -7,42 +7,16 @@ import './ComponentBarItem.css'
 
 const componentSource = {
   beginDrag (props, monitor, component) {
-    let item
-
     if (props.onDragStart) {
-      props.onDragStart(findDOMNode(component))
+      return props.onDragStart(props.componentType, findDOMNode(component))
     }
 
-    item = {
-      ...props.component
-    }
-
-    // ensure a default size if not present
-    if (!item.defaultSize) {
-      item.defaultSize = {}
-    }
-
-    if (item.defaultSize.width == null) {
-      item.defaultSize.width = 150
-    }
-
-    if (item.defaultSize.height == null) {
-      item.defaultSize.height = 100
-    }
-
-    item.props = item.props || {}
-
-    // default props
-    if (item.type === 'Text') {
-      item.props.text = 'Sample Text'
-    }
-
-    return item;
+    return {}
   },
 
   endDrag (props) {
     if (props.onDragEnd) {
-      props.onDragEnd()
+      props.onDragEnd(props.componentType)
     }
   }
 };
@@ -74,7 +48,7 @@ class ComponentBarItem extends Component {
   getEmptyPreview (createElement) {
     if (createElement === true) {
       const {
-        component
+        componentType
       } = this.props
 
       /**
@@ -98,7 +72,7 @@ class ComponentBarItem extends Component {
             left: 0
           }}
         >
-          {`DragPreview-${component.name}`}
+          {`DragPreview-${componentType.name}`}
         </div>
       )
     }
@@ -108,7 +82,7 @@ class ComponentBarItem extends Component {
 
   render () {
     const {
-      component,
+      componentType,
       connectDragSource,
       isDragging,
       onMouseOver,
@@ -130,8 +104,8 @@ class ComponentBarItem extends Component {
           opacity: isDragging ? 0.99 : 1
         }}
       >
-        <span className={'ComponentBarItem-icon fa fa-' + component.icon} />
-        <span className="ComponentBarItem-name">{component.name}</span>
+        <span className={'ComponentBarItem-icon fa fa-' + componentType.icon} />
+        <span className="ComponentBarItem-name">{componentType.name}</span>
         {this.getEmptyPreview(true)}
       </div>
     )
@@ -146,7 +120,7 @@ ComponentBarItem.propTypes = {
   onMouseLeave: PropTypes.func,
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
-  component: PropTypes.object.isRequired
+  componentType: PropTypes.object.isRequired
 };
 
 export default DragSource(ComponentTypes.COMPONENT_TYPE, componentSource, collect)(ComponentBarItem)

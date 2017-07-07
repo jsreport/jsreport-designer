@@ -7,7 +7,7 @@ import './ComponentDragLayer.css'
 
 function getPreviewLayerStyles (props) {
   const {
-    item,
+    componentMeta,
     initialSourceOffset,
     currentSourceOffset,
     initialPointerOffset
@@ -22,11 +22,11 @@ function getPreviewLayerStyles (props) {
   let movementX, movementY
 
   let previewItemDistanceXRelativeToSource = (
-    initialPointerOffset.x - (initialSourceOffset.x + (item.defaultSize.width / 2))
+    initialPointerOffset.x - (initialSourceOffset.x + (componentMeta.defaultSize.width / 2))
   )
 
   let previewItemDistanceYRelativeToSource = (
-    initialPointerOffset.y - (initialSourceOffset.y + (item.defaultSize.height / 2))
+    initialPointerOffset.y - (initialSourceOffset.y + (componentMeta.defaultSize.height / 2))
   )
 
   movementX = currentSourceOffset.x + previewItemDistanceXRelativeToSource
@@ -43,8 +43,8 @@ function getPreviewLayerStyles (props) {
 
 function collect (monitor) {
   return {
-    item: monitor.getItem(),
-    itemType: monitor.getItemType(),
+    componentMeta: monitor.getItem(),
+    dragItemType: monitor.getItemType(),
     initialSourceOffset: monitor.getInitialSourceClientOffset(),
     initialPointerOffset: monitor.getInitialClientOffset(),
     currentSourceOffset: monitor.getSourceClientOffset(),
@@ -53,14 +53,13 @@ function collect (monitor) {
 }
 
 class ComponentDragLayer extends Component {
-  renderPreview (type, item) {
-    switch (type) {
+  renderPreview (dragItemType, defaultWidth, componentMeta) {
+    switch (dragItemType) {
       case ComponentTypes.COMPONENT_TYPE:
         return (
           <ComponentDragPreviewBox
-            width={item.defaultSize.width}
-            height={item.defaultSize.height}
-            component={item}
+            defaultWidth={defaultWidth}
+            componentMeta={componentMeta}
           />
         )
       default:
@@ -70,8 +69,9 @@ class ComponentDragLayer extends Component {
 
   render () {
     const {
-      item,
-      itemType,
+      defaultWidth,
+      componentMeta,
+      dragItemType,
       isDragging
     } = this.props
 
@@ -88,7 +88,7 @@ class ComponentDragLayer extends Component {
     return (
       <div className='ComponentDragLayer'>
         <div style={styles}>
-          {isDragging && this.renderPreview(itemType, item)}
+          {isDragging && this.renderPreview(dragItemType, defaultWidth, componentMeta)}
         </div>
       </div>
     )
@@ -96,8 +96,9 @@ class ComponentDragLayer extends Component {
 }
 
 ComponentDragLayer.propTypes = {
-  item: PropTypes.object,
-  itemType: PropTypes.string,
+  defaultWidth: PropTypes.number.isRequired,
+  componentMeta: PropTypes.object,
+  dragItemType: PropTypes.string,
   initialSourceOffset: PropTypes.shape({
     x: PropTypes.number.isRequired,
     y: PropTypes.number.isRequired,

@@ -5,21 +5,18 @@ import DesignComponent from '../DesignComponent'
 class ComponentDragPreviewBox extends PureComponent {
   render () {
     const {
-      width,
-      height,
-      component
+      defaultWidth,
+      componentMeta
     } = this.props
 
     return (
       <div style={{
-        display: 'inline-block',
+        width: `${defaultWidth}px`,
         opacity: '0.7'
       }}>
         <DesignComponent
-          type={component.name}
-          width={width}
-          height={height}
-          componentProps={component.props}
+          type={componentMeta.name}
+          componentProps={componentMeta.props}
           isSelected={true}
         />
       </div>
@@ -28,9 +25,8 @@ class ComponentDragPreviewBox extends PureComponent {
 }
 
 ComponentDragPreviewBox.propTypes = {
-  width: PropTypes.number.isRequired,
-  height: PropTypes.number.isRequired,
-  component: PropTypes.object.isRequired
+  defaultWidth: PropTypes.number.isRequired,
+  componentMeta: PropTypes.object.isRequired
 }
 
 export default ComponentDragPreviewBox

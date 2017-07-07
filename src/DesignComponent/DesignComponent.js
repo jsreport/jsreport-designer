@@ -1,50 +1,63 @@
 import React, { Component } from 'react'
+import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 const componentRegistry = require('../shared/componentRegistry')
 
 class DesignComponent extends Component {
-  renderComponent (type, componentProps) {
-    let ComponentType = componentRegistry.getComponentFromType(type)
+  constructor (props) {
+    super(props)
 
-    return (
-      <ComponentType {...componentProps} />
-    )
+    this.getComponentRef = this.getComponentRef.bind(this)
+  }
+
+  getComponentRef (el) {
+    if (!this.props.componentRef) {
+      return
+    }
+
+    if (!el) {
+      return this.props.componentRef(this.props.type, el)
+    }
+
+    this.props.componentRef(this.props.type, findDOMNode(el))
   }
 
   render () {
     const {
       type,
-      width,
-      height,
       componentProps,
       isSelected
     } = this.props
 
+    const template = componentRegistry.getComponentFromType(type).template
+
     let styles = {
-      width: `${width}px`,
-      height: `${height}px`
+      display: 'inline-block'
     }
 
     if (isSelected) {
       // is important to use outline because outline does not consume
-      // the width of height of element
+      // the width and height of element
       styles.outline = '1px dashed rgba(0, 0, 0, 0.5)'
       styles.pointerEvents = 'none'
     }
 
     return (
-      <div style={styles}>
-        {this.renderComponent(type, componentProps)}
-      </div>
+      <div
+        ref={this.getComponentRef}
+        style={styles}
+        data-component-type={type}
+        dangerouslySetInnerHTML={{ __html: template(componentProps) }}
+      />
     )
   }
 }
 
 DesignComponent.propTypes = {
+  isSelected: PropTypes.bool,
   type: PropTypes.string.isRequired,
-  width: PropTypes.number.isRequired,
-  height: PropTypes.number.isRequired,
-  componentProps: PropTypes.object.isRequired
+  componentProps: PropTypes.object.isRequired,
+  componentRef: PropTypes.func
 }
 
 export default DesignComponent

@@ -4,16 +4,102 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import SplitPane from './SplitPane'
 import ComponentBar from './ComponentBar'
 import Design from './Design'
-import { ComponentDragLayer } from './ComponentDragPreview'
+import { ComponentDragLayer, ComponentsPreviewLayer } from './ComponentsPreview'
 import './Designer.css'
 
+const componentRegistry = require('./shared/componentRegistry')
+
 class Designer extends Component {
+  constructor (props) {
+    super(props)
+
+    /*
+      base width and base height depends on the target paper format
+      A4 -> 980px width, with a factor of 1.414 aprox for height
+    */
+    // values as constants for now
+    this.state = {
+      baseWidth: 980,
+      defaultNumberOfRows: 7,
+      defaultNumberOfCols: 12,
+      defaultRowHeight: 78,
+      componentCollection: componentRegistry.getComponentsDefinition()
+    }
+
+    this.componentPreviewNodes = null
+
+    this.onComponentPreviewNodesChange = this.onComponentPreviewNodesChange.bind(this)
+    this.onComponentBarItemDragStart = this.onComponentBarItemDragStart.bind(this)
+    this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
+  }
+
+  onComponentPreviewNodesChange (previewNodes) {
+    // we are using a preview layer where we are rendering one instance per component type,
+    // these preview nodes will be used to take the dimensions consumed by a component
+    this.componentPreviewNodes = previewNodes
+  }
+
+  onComponentBarItemDragStart (componentType) {
+    let item = {
+      ...componentType
+    }
+
+    let component
+    let componentPreviewNode
+    let componentDimensions
+
+    if (!this.componentPreviewNodes || !this.componentPreviewNodes[item.name]) {
+      return {}
+    }
+
+    component = componentRegistry.getComponentFromType(item.name)
+    componentPreviewNode = this.componentPreviewNodes[item.name]
+
+    // showing preview node when dragging is starting,
+    // this is needed in order to take the dimensions of the component from the DOM
+    componentPreviewNode.container.style.display = 'block'
+
+    // taking the consumed space of component from the DOM
+    componentDimensions = componentPreviewNode.component.getBoundingClientRect()
+
+    item.defaultSize = {
+      width: componentDimensions.width,
+      height: componentDimensions.height
+    }
+
+    item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
+
+    return item;
+  }
+
+  onComponentBarItemDragEnd (componentType) {
+    let componentPreviewNode
+
+    if (!this.componentPreviewNodes || !this.componentPreviewNodes[componentType.name]) {
+      return
+    }
+
+    // hiding preview node when dragging has ended
+    componentPreviewNode = this.componentPreviewNodes[componentType.name]
+    componentPreviewNode.container.style.display = 'none'
+  }
+
   render() {
+    const {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfRows,
+      defaultNumberOfCols,
+      componentCollection
+    } = this.state
+
+    const currentColWidth = baseWidth / defaultNumberOfCols
+
     return (
       <div className="Designer container">
         <div className="block">
           <SplitPane
-            defaultSize='175px'
+            defaultSize={'175px'}
             minSize={150}
             primary="first"
             collapsable="first"
@@ -21,10 +107,24 @@ class Designer extends Component {
             split="vertical"
             resizerClassName="resizer"
           >
-            <ComponentBar />
-            <Design />
+            <ComponentBar
+              componentCollection={componentCollection}
+              onItemDragStart={this.onComponentBarItemDragStart}
+              onItemDragEnd={this.onComponentBarItemDragEnd}
+            />
+            <Design
+              baseWidth={baseWidth}
+              defaultRowHeight={defaultRowHeight}
+              defaultNumberOfRows={defaultNumberOfRows}
+              defaultNumberOfCols={defaultNumberOfCols}
+            />
           </SplitPane>
-          <ComponentDragLayer />
+          <ComponentDragLayer defaultWidth={currentColWidth} />
+          <ComponentsPreviewLayer
+            defaultWidth={currentColWidth}
+            componentCollection={componentCollection}
+            onPreviewNodesChange={this.onComponentPreviewNodesChange}
+          />
         </div>
       </div>
     );

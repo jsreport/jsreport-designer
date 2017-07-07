@@ -1,4 +1,5 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
+import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
   isInsideOfCol,
@@ -11,42 +12,36 @@ import {
 import Canvas from './Canvas'
 import './Design.css'
 
-/*
-  base width and base height depends on the target paper format
-  A4 -> 980px width, with a factor of 1.414 aprox for height
-*/
-// values as constants for now
-const BASE_WIDTH = 980
-const DEFAULT_NUMBER_OF_ROWS = 7
-const DEFAULT_NUMBER_OF_COLS = 12
-const DEFAULT_ROW_HEIGHT = 78
 const IS_DEV = true
+
 let DevTools
 
 if (IS_DEV) {
   DevTools = require('../DevTools').default
 }
 
-class Design extends Component {
+class Design extends PureComponent {
   constructor (props) {
     super(props)
 
+    let {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfRows,
+      defaultNumberOfCols
+    } = this.props
+
     let initialRows
 
-    this.baseWidth = BASE_WIDTH
-    this.defaultRowHeight = DEFAULT_ROW_HEIGHT
-    this.defaultNumberOfRows = DEFAULT_NUMBER_OF_ROWS
-    this.defaultNumberOfCols = DEFAULT_NUMBER_OF_COLS
-    this.colWidth = this.baseWidth / this.defaultNumberOfCols
     this.totalHeightOfRows = null
 
     this.rowsToGroups = {}
 
     initialRows = generateRows({
-      baseWidth: this.baseWidth,
-      numberOfRows: this.defaultNumberOfRows,
-      numberOfCols: this.defaultNumberOfCols,
-      height: this.defaultRowHeight
+      baseWidth: baseWidth,
+      numberOfRows: defaultNumberOfRows,
+      numberOfCols: defaultNumberOfCols,
+      height: defaultRowHeight
     })
 
     // last row is placeholder
@@ -168,6 +163,12 @@ class Design extends Component {
       return
     }
 
+    let {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfCols
+    } = this.props
+
     let originalComponents = this.state.components
     let originalRowsToGroups = this.rowsToGroups || {}
     let currentRowsToGroups = { ...originalRowsToGroups }
@@ -195,9 +196,9 @@ class Design extends Component {
       rows: this.state.gridRows,
       item,
       selectedArea: this.selectedArea,
-      defaultRowHeight: this.defaultRowHeight,
-      defaultNumberOfCols: this.defaultNumberOfCols,
-      totalWidth: this.baseWidth,
+      defaultRowHeight: defaultRowHeight,
+      defaultNumberOfCols: defaultNumberOfCols,
+      totalWidth: baseWidth,
       onRowIndexChange: (currentRow, newIndex) => {
         if (currentRowsToGroups[currentRow.index]) {
           changedRowsInsideGroups.push({ old: currentRow.index, new: newIndex })
@@ -307,14 +308,18 @@ class Design extends Component {
   }
 
   render () {
-    const baseWidth = this.baseWidth
-    const colWidth = this.colWidth
+    const {
+      baseWidth,
+      defaultNumberOfCols
+    } = this.props
 
     const {
       components,
       gridRows,
       selectedArea
     } = this.state
+
+    const colWidth = baseWidth / defaultNumberOfCols
 
     // using computed value "totalHeightOfRows"
     let totalHeight = this.totalHeightOfRows
@@ -326,6 +331,7 @@ class Design extends Component {
           <DevTools
             baseWidth={baseWidth}
             baseColWidth={colWidth}
+            defaultNumberOfCols={defaultNumberOfCols}
             gridRows={gridRows}
             components={components}
           />
@@ -357,6 +363,13 @@ class Design extends Component {
       </div>
     )
   }
+}
+
+Design.propTypes = {
+  baseWidth: PropTypes.number.isRequired,
+  defaultRowHeight: PropTypes.number.isRequired,
+  defaultNumberOfRows: PropTypes.number.isRequired,
+  defaultNumberOfCols: PropTypes.number.isRequired
 }
 
 export default Design

@@ -1,11 +1,13 @@
-var React = require('react')
+var Handlebars = require('handlebars')
 
-module.exports = function Text (props) {
-  return (
-    React.createElement(
-      'span',
-      { style: { backgroundColor: 'darkgreen', display: 'inline-block', width: '100%', height: '100%' } },
-      props.text
-    )
-  )
+var template = Handlebars.compile(`
+  <span style="background-color:green;">{{text}}</span>
+`)
+
+module.exports.getDefaultProps = function () {
+  return {
+    text: 'Sample text'
+  }
 }
+
+module.exports.template = template
