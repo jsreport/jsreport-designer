@@ -1,0 +1,10 @@
+
+.DesignGroup:before,
+.DesignGroup:after {
+  content: " ";
+  display: table;
+}
+
+.DesignGroup[data-layout-grid-mode]:after {
+  clear: both;
+}

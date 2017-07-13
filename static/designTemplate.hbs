@@ -1,0 +1,45 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      * {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+
+      *:before,
+      *:after {
+        -webkit-box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        box-sizing: border-box;
+      }
+
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+      }
+    </style>
+    {{#each styles}}
+      <style>
+      {{{this}}}
+      </style>
+    {{/each}}
+  </head>
+  <body>
+    <div class="DesignContainer" style="width: {{baseWidth}}; margin-left: auto; margin-right: auto;">
+      {{#each groups}}
+        {{#__renderDesignGroup__ this}}
+          {{#__renderDesignItem__ this}}
+            {{#each components}}
+              {{> (lookup . 'type') (__getDefaultPropsForComponent__ type props) }}
+            {{/each}}
+          {{/__renderDesignItem__}}
+        {{/__renderDesignGroup__}}
+      {{/each}}
+    </div>
+  </body>
+</html>

@@ -1,11 +1,11 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import DesignComponent from '../DesignComponent'
-import './ComponentsPreviewLayer.css'
+import './ComponentPreviewLayer.css'
 
 const componentRegistry = require('../shared/componentRegistry')
 
-class ComponentsPreviewLayer extends PureComponent {
+class ComponentPreviewLayer extends PureComponent {
   constructor (props) {
     super(props)
 
@@ -62,7 +62,7 @@ class ComponentsPreviewLayer extends PureComponent {
     } = this.props
 
     return (
-      <div className="ComponentsPreviewLayer">
+      <div className="ComponentPreviewLayer">
         <div style={{width: '50px', height: '50px', overflow: 'hidden'}}>
           {componentCollection.map(this.renderComponentPreview)}
         </div>
@@ -71,10 +71,10 @@ class ComponentsPreviewLayer extends PureComponent {
   }
 }
 
-ComponentsPreviewLayer.propTypes = {
+ComponentPreviewLayer.propTypes = {
   defaultWidth: PropTypes.number.isRequired,
   componentCollection: PropTypes.array.isRequired,
   onPreviewNodesChange: PropTypes.func
 }
 
-export default ComponentsPreviewLayer
+export default ComponentPreviewLayer

@@ -1,8 +1,3 @@
-var Handlebars = require('handlebars')
-
-var template = Handlebars.compile(`
-  <span style="background-color:green;">{{text}}</span>
-`)
 
 module.exports.getDefaultProps = function () {
   return {
@@ -10,4 +5,10 @@ module.exports.getDefaultProps = function () {
   }
 }
 
-module.exports.template = template
+module.exports.template = function () {
+  return (
+    `
+      <span>{{text}}</span>
+    `
+  )
+}

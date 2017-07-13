@@ -1,5 +1,6 @@
 var Promise = require('bluebird')
 var assign = require('lodash/assign')
+var Handlebars = require('handlebars')
 // requiring inline just for now because we don't have any webpack setup yet
 global.designComponents = {}
 global.designComponents.Text = require('../shared/designComponents/Text')
@@ -20,7 +21,31 @@ function loadComponents (_componentsToLoad) {
   var componentRequires = componentsToLoad.map(function (component) {
     // little dumb condition for now
     var isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
-    var exportValue = isBrowser ? global.designComponents[component.name] : require(component.location)
+    var exportValue = isBrowser ? global.designComponents[component.name] : (component.location ? require(component.location) : undefined)
+    var componentTemplate
+
+    // just for now if the component has no source set a default component,
+    // this should probably just throw an error later
+    if (!exportValue) {
+      exportValue = {
+        getDefaultProps: function () {
+          return {}
+        },
+        template: function () {
+          return '<div>Default empty component</div>'
+        }
+      }
+    }
+
+    componentTemplate = exportValue.template()
+
+    exportValue = assign({}, exportValue, {
+      render: Handlebars.compile(componentTemplate, {
+        explicitPartialContext: true
+      })
+    })
+
+    Handlebars.registerPartial(component.name, componentTemplate)
 
     componentsDefinition[component.name] = componentsDefinition[component.name] || component
     components[component.name] = exportValue
@@ -42,14 +67,7 @@ function getComponentFromType (type) {
     return comp
   }
 
-  return {
-    getDefaultProps: function () {
-      return {}
-    },
-    template: function () {
-      return '<div>Default empty component</div>'
-    }
-  }
+  return
 }
 
 module.exports.loadComponents = loadComponents

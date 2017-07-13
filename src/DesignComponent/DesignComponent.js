@@ -29,7 +29,7 @@ class DesignComponent extends Component {
       isSelected
     } = this.props
 
-    const template = componentRegistry.getComponentFromType(type).template
+    const renderComponent = componentRegistry.getComponentFromType(type).render
 
     let styles = {
       display: 'inline-block'
@@ -46,8 +46,8 @@ class DesignComponent extends Component {
       <div
         ref={this.getComponentRef}
         style={styles}
-        data-component-type={type}
-        dangerouslySetInnerHTML={{ __html: template(componentProps) }}
+        data-jsreport-component-type={type}
+        dangerouslySetInnerHTML={{ __html: renderComponent(componentProps) }}
       />
     )
   }

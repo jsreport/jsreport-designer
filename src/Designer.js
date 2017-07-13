@@ -4,7 +4,7 @@ import HTML5Backend from 'react-dnd-html5-backend'
 import SplitPane from './SplitPane'
 import ComponentBar from './ComponentBar'
 import Design from './Design'
-import { ComponentDragLayer, ComponentsPreviewLayer } from './ComponentsPreview'
+import { ComponentDragLayer, ComponentPreviewLayer } from './ComponentPreview'
 import './Designer.css'
 
 const componentRegistry = require('./shared/componentRegistry')
@@ -40,6 +40,8 @@ class Designer extends Component {
   }
 
   onComponentBarItemDragStart (componentType) {
+    let baseColWidth = this.state.baseWidth / this.state.defaultNumberOfCols
+
     let item = {
       ...componentType
     }
@@ -62,12 +64,18 @@ class Designer extends Component {
     // taking the consumed space of component from the DOM
     componentDimensions = componentPreviewNode.component.getBoundingClientRect()
 
-    item.defaultSize = {
+    item.size = {
       width: componentDimensions.width,
       height: componentDimensions.height
     }
 
     item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
+
+    item.consumedRows = 1
+
+    item.consumedCols = Math.ceil(
+      item.size.width < baseColWidth ? 1 : item.size.width / baseColWidth
+    )
 
     return item;
   }
@@ -120,7 +128,7 @@ class Designer extends Component {
             />
           </SplitPane>
           <ComponentDragLayer defaultWidth={currentColWidth} />
-          <ComponentsPreviewLayer
+          <ComponentPreviewLayer
             defaultWidth={currentColWidth}
             componentCollection={componentCollection}
             onPreviewNodesChange={this.onComponentPreviewNodesChange}

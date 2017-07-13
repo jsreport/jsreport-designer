@@ -22,11 +22,11 @@ function getPreviewLayerStyles (props) {
   let movementX, movementY
 
   let previewItemDistanceXRelativeToSource = (
-    initialPointerOffset.x - (initialSourceOffset.x + (componentMeta.defaultSize.width / 2))
+    initialPointerOffset.x - (initialSourceOffset.x + (componentMeta.size.width / 2))
   )
 
   let previewItemDistanceYRelativeToSource = (
-    initialPointerOffset.y - (initialSourceOffset.y + (componentMeta.defaultSize.height / 2))
+    initialPointerOffset.y - (initialSourceOffset.y + (componentMeta.size.height / 2))
   )
 
   movementX = currentSourceOffset.x + previewItemDistanceXRelativeToSource

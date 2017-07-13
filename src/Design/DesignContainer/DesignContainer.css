@@ -1,0 +1,15 @@
+
+.DesignContainer {
+  position: relative;
+  margin: 0;
+}
+
+.DesignContainer:before,
+.DesignContainer:after {
+  content: " ";
+  display: table;
+}
+
+.DesignContainer:after {
+  clear: both;
+}

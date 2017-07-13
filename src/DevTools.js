@@ -8,36 +8,73 @@ class DevTools extends Component {
     super(props)
 
     this.state = {
-      inspectMeta: null
+      inspectDesignGroups: null,
+      inspectDesignPayload: null
     }
   }
 
-  getDesignMeta () {
+  getDesignPayload () {
     const {
       baseWidth,
-      baseColWidth,
-      components
+      numberOfCols,
+      designGroups
     } = this.props
+
+    // filtering unnecessary data
+    var designGroupsPayload = designGroups.map((designGroup) => {
+      var group = {
+        items: designGroup.items.map((designItem) => {
+          var item = {
+            space: designItem.space,
+            components: designItem.components.map((designComponent) => {
+              return {
+                type: designComponent.type,
+                props: designComponent.props
+              }
+            })
+          }
+
+          if (designItem.leftSpace != null) {
+            item.leftSpace = designItem.leftSpace
+          }
+
+          return item
+        }),
+        layoutMode: designGroup.layoutMode
+      }
+
+      if (designGroup.topSpace != null) {
+        group.topSpace = designGroup.topSpace
+      }
+
+      return group
+    })
 
     return {
       grid: {
         width: baseWidth,
-        baseColWidth: baseColWidth
+        numberOfCols: numberOfCols
       },
-      components: components
+      groups: designGroupsPayload
     }
   }
 
-  onClickInspect () {
+  onClickInspectGroups () {
     this.setState({
-      inspectMeta: JSON.stringify(this.getDesignMeta(), null, 2)
+      inspectDesignGroups: JSON.stringify(this.props.designGroups, null, 2)
+    })
+  }
+
+  onClickInspectPayload () {
+    this.setState({
+      inspectDesignPayload: JSON.stringify(this.getDesignPayload(), null, 2)
     })
   }
 
   onClickPreview (recipe) {
     jsreportClient.render('_blank', {
       template: {
-        designer: this.getDesignMeta(),
+        design: this.getDesignPayload(),
         recipe: recipe
       }
     })
@@ -45,29 +82,46 @@ class DevTools extends Component {
 
   render () {
     const {
-      inspectMeta
+      inspectDesignGroups,
+      inspectDesignPayload
     } = this.state
 
     const {
-      defaultNumberOfCols,
+      numberOfCols,
       gridRows
     } = this.props
 
     return (
       <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
-        <b>GRID: {defaultNumberOfCols} x {gridRows.length}, TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
+        <b>GRID: {numberOfCols} x {gridRows.length}, TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
         {' '}
-        <button onClick={() => this.onClickInspect()}>Inspect Designer meta-data</button>
+        <button onClick={() => this.onClickInspectGroups()}>Inspect Design groups</button>
+        <button onClick={() => this.onClickInspectPayload()}>Inspect Design payload</button>
         <button onClick={() => this.onClickPreview('phantom-pdf')}>Preview pdf</button>
         <button onClick={() => this.onClickPreview('html')}>Preview html</button>
         {
-          inspectMeta && (
-            <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '320px', zIndex: 100 }}>
-              <button onClick={() => this.setState({ inspectMeta: null })}>Close</button>
-              <br/>
-              <textarea rows="25" cols="40" defaultValue={inspectMeta} />
+          inspectDesignGroups && (
+            <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '360px', zIndex: 100 }}>
+              <b>Design groups</b>
               <br />
-              <button onClick={() => this.setState({ inspectMeta: null })}>Close</button>
+              <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
+              <br/>
+              <textarea rows="25" cols="40" defaultValue={inspectDesignGroups} />
+              <br />
+              <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
+            </div>
+          )
+        }
+        {
+          inspectDesignPayload && (
+            <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '70px', zIndex: 100 }}>
+              <b>Design payload</b>
+              <br />
+              <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
+              <br/>
+              <textarea rows="25" cols="40" defaultValue={inspectDesignPayload} />
+              <br />
+              <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
             </div>
           )
         }

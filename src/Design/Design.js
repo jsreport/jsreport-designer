@@ -3,12 +3,11 @@ import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
   isInsideOfCol,
-  getProjectedOffsetLimits,
   findProjectedFilledArea,
   generateRows,
   updateRows,
-  addOrUpdateComponentGroup
-} from './gridUtils'
+  addOrUpdateDesignGroup
+} from './designUtils'
 import Canvas from './Canvas'
 import './Design.css'
 
@@ -50,7 +49,7 @@ class Design extends PureComponent {
     }
 
     this.state = {
-      components: [],
+      designGroups: [],
       selectedArea: null,
       gridRows: initialRows
     }
@@ -88,10 +87,6 @@ class Design extends PureComponent {
     let isInside = true
     let { x: cursorOffsetX, y: cursorOffsetY } = clientOffset
     let { width, height, top, left } = colDimensions
-    let colCenter = {}
-    let maxFilledCols
-    let maxFilledRows
-    let projectedOffsetLimits
 
     let colInfo = {
       col: col.index,
@@ -111,33 +106,11 @@ class Design extends PureComponent {
       return
     }
 
-    // TODO: update this logic, since rows can be of any size now this logic is wrong now
-    maxFilledCols = Math.ceil(item.defaultSize.width / width)
-    maxFilledRows = Math.ceil(item.defaultSize.height / height)
-
-    projectedOffsetLimits = getProjectedOffsetLimits({
-      cursorOffset: clientOffset,
-      itemSize: item.defaultSize
-    })
-
-    // TODO: when dragging if some rows of the projected area of item is over some row that has
-    // components then dropping should not be allowd there
-
-    // TODO: calculate initial filled cols/rows limits
-    // (if we should start to count for selected area from left/right/top/bottom
-    // based on the orientation of the cursor to prevent placing items in
-    // more cols/rows that they need to be)
-
-    colCenter.x = left + (item.defaultSize.width / 2)
-    colCenter.y = top + (item.defaultSize.height / 2)
-
-    let isOnRightSide = (cursorOffsetX >= (colCenter.x + 2))
-    let isOnBottomSide = (cursorOffsetY >= (colCenter.y + 2))
-
     let selectedArea = findProjectedFilledArea({
       rows,
-      projectedLimits: projectedOffsetLimits,
-      baseColInfo: colInfo
+      baseColInfo: colInfo,
+      consumedRows: item.consumedRows,
+      consumedCols: item.consumedCols
     })
 
     // saving selectedArea in instance because it will be reset later
@@ -154,7 +127,6 @@ class Design extends PureComponent {
       this.selectedArea &&
       !this.selectedArea.conflict &&
       this.selectedArea.filled &&
-      this.selectedArea.points &&
       col &&
       colDimensions
     )
@@ -169,26 +141,19 @@ class Design extends PureComponent {
       defaultNumberOfCols
     } = this.props
 
-    let originalComponents = this.state.components
+    let originalDesignGroups = this.state.designGroups
+    let selectedArea = this.selectedArea
     let originalRowsToGroups = this.rowsToGroups || {}
     let currentRowsToGroups = { ...originalRowsToGroups }
     let changedRowsInsideGroups = []
-    let centerInCurrentSelectedArea
-    let newSelectedArea
 
     // TODO: Safari has a bug, if you drop a component and if that component causes the scroll bar to appear
     // then when you scroll the page you will see some part of the drag preview or some lines of the grid
     // getting draw randomly (a painting issue)
     // see: https://stackoverflow.com/questions/22842992/how-to-force-safari-to-repaint-positionfixed-elements-on-scroll
-
-    // TODO: test calculation of selected area when dropping an item with height equal to row height
-    // currently it doesn't select perfectly in one row items of same height
-    // (maybe is it time to add something like snap to grid while dragging?)
-
     const {
       rows: newRows,
-      updatedBaseRow,
-      updateBaseColInfo
+      updatedBaseRow
     } = updateRows({
       row,
       col,
@@ -208,69 +173,23 @@ class Design extends PureComponent {
       }
     })
 
-    // calculating center of current selected area
-    centerInCurrentSelectedArea = {
-      x: clientOffset.x,
-      // since we are changing the row to match dropped item height
-      // we need to pretend that the cursor is in center of the new row
-      y: updateBaseColInfo.top + (updateBaseColInfo.height / 2)
-    }
-
     // updating rows-groups map with the new row indexes
     changedRowsInsideGroups.forEach((changed) => {
       currentRowsToGroups[changed.new] = originalRowsToGroups[changed.old]
     })
 
-    // calculate new filled area on new rows
-    newSelectedArea = findProjectedFilledArea({
-      rows: newRows,
-      projectedLimits: getProjectedOffsetLimits({
-        // get projected limits over center of current selected area
-        cursorOffset: centerInCurrentSelectedArea,
-        itemSize: item.defaultSize
-      }),
-      baseColInfo: updateBaseColInfo
-    })
-
-    if (!newSelectedArea.filled || newSelectedArea.conflict) {
-      return
-    }
-
-    const { components, rowsToGroups } = addOrUpdateComponentGroup({
-      componentType: item.name,
-      componentTypeId: item.id,
-      defaultSize: item.defaultSize,
-      col: {
-        start: newSelectedArea.points.left.col,
-        end: newSelectedArea.points.right.col
-      },
+    const { designGroups, rowsToGroups } = addOrUpdateDesignGroup({
+      type: item.name,
       props: item.props
     }, {
       rows: newRows,
       rowsToGroups: currentRowsToGroups,
-      components: originalComponents,
-      referenceRow: updatedBaseRow.index
-    })
-
-    // updating filled cols from groups information
-    Object.keys(rowsToGroups).forEach((idx) => {
-      let rowIndex = parseInt(idx, 10)
-      let componentGroup = components[rowsToGroups[rowIndex]]
-
-      componentGroup.group.forEach((comp) => {
-        let col
-
-        for (let x = comp.col.start; x <= comp.col.end; x++) {
-          col = newRows[rowIndex].cols[x]
-
-          if (col.empty) {
-            newRows[rowIndex].cols[x] = {
-              ...col,
-              empty: false
-            }
-          }
-        }
-      })
+      designGroups: originalDesignGroups,
+      referenceRow: updatedBaseRow.index,
+      fromCol: {
+        start: selectedArea.startCol,
+        end: selectedArea.endCol
+      }
     })
 
     this.rowsToGroups = rowsToGroups
@@ -279,7 +198,7 @@ class Design extends PureComponent {
       // clean selectedArea when adding a component
       selectedArea: null,
       gridRows: newRows,
-      components
+      designGroups
     })
   }
 
@@ -314,12 +233,10 @@ class Design extends PureComponent {
     } = this.props
 
     const {
-      components,
+      designGroups,
       gridRows,
       selectedArea
     } = this.state
-
-    const colWidth = baseWidth / defaultNumberOfCols
 
     // using computed value "totalHeightOfRows"
     let totalHeight = this.totalHeightOfRows
@@ -330,10 +247,9 @@ class Design extends PureComponent {
         {DevTools && (
           <DevTools
             baseWidth={baseWidth}
-            baseColWidth={colWidth}
-            defaultNumberOfCols={defaultNumberOfCols}
+            numberOfCols={defaultNumberOfCols}
             gridRows={gridRows}
-            components={components}
+            designGroups={designGroups}
           />
         )}
         <div
@@ -349,10 +265,10 @@ class Design extends PureComponent {
           <Canvas
             width={baseWidth}
             height={totalHeight}
-            colWidth={colWidth}
+            numberOfCols={defaultNumberOfCols}
             gridRows={gridRows}
             selectedArea={selectedArea}
-            components={components}
+            designGroups={designGroups}
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}
             onDragEnd={this.onDragEndCanvas}

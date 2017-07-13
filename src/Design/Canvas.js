@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import throttle from 'lodash/throttle'
 import { DropTarget } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
-import CanvasItems from './CanvasItems'
+import DesignContainer from './DesignContainer'
 import CanvasSelectedArea from './CanvasSelectedArea'
 import Grid from './Grid'
 import './Canvas.css'
@@ -150,10 +150,10 @@ class Canvas extends PureComponent {
     const {
       width,
       height,
+      numberOfCols,
       gridRows,
       selectedArea,
-      colWidth,
-      components,
+      designGroups,
       connectDropTarget,
       isDragOver,
       canDrop,
@@ -175,9 +175,10 @@ class Canvas extends PureComponent {
 
     return connectDropTarget(
       <div className="Canvas" ref={(el) => this.canvasNode = el} style={canvasStyles}>
-        <CanvasItems
-          baseColWidth={colWidth}
-          components={components}
+        <DesignContainer
+          baseWidth={width}
+          numberOfCols={numberOfCols}
+          designGroups={designGroups}
         />
         {this.shouldShowGrid(gridRows) && (
           <Grid
@@ -205,10 +206,10 @@ class Canvas extends PureComponent {
 Canvas.propTypes = {
   width: PropTypes.number.isRequired,
   height: PropTypes.number.isRequired,
-  colWidth: PropTypes.number.isRequired,
+  numberOfCols: PropTypes.number.isRequired,
   gridRows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
-  components: PropTypes.array.isRequired,
+  designGroups: PropTypes.array.isRequired,
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,
   isDragOver: PropTypes.bool.isRequired,

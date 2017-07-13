@@ -1,0 +1,9 @@
+
+.DesignItem {
+  position: relative;
+  min-height: 1px;
+}
+
+.DesignItem[data-layout-grid-mode] {
+  float: left;
+}
