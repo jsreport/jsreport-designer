@@ -3,16 +3,11 @@
 
 .ComponentBarItem {
   display: block;
-  cursor: pointer;
   font-size: 0.8rem;
   position: relative;
   padding: 1.3rem 0.7rem;
   text-align: center;
   width: 100%;
-}
-
-.ComponentBarItem:hover {
-  background-color: rgba(0, 0, 0, 0.3);
 }
 
 .ComponentBarItem-icon {
