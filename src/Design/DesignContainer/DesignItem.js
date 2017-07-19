@@ -14,7 +14,9 @@ class DesignItem extends PureComponent {
       layoutMode,
       leftSpace,
       space,
-      components
+      selection,
+      components,
+      onClickComponent
     } = this.props
 
     let extraProps = {}
@@ -34,6 +36,10 @@ class DesignItem extends PureComponent {
       }
     }
 
+    if (selection != null) {
+      extraProps['data-selected'] = true
+    }
+
     extraProps[`data-layout-${layoutMode}-mode`] = true
 
     return (
@@ -45,8 +51,11 @@ class DesignItem extends PureComponent {
         {components.map((component) => (
           <DesignComponent
             key={component.id}
+            id={component.id}
             type={component.type}
+            selected={selection && selection.component === component.id ? true : undefined}
             componentProps={component.props}
+            onClick={onClickComponent}
           />
         ))}
       </div>
@@ -59,7 +68,9 @@ DesignItem.propTypes = {
   layoutMode: PropTypes.oneOf(['grid', 'fixed']).isRequired,
   leftSpace: PropTypes.number,
   space: PropTypes.number.isRequired,
-  components: PropTypes.array.isRequired
+  selection: PropTypes.object,
+  components: PropTypes.array.isRequired,
+  onClickComponent: PropTypes.func
 }
 
 export default DesignItem

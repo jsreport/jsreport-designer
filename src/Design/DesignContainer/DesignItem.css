@@ -7,3 +7,15 @@
 .DesignItem[data-layout-grid-mode] {
   float: left;
 }
+
+.DesignItem[data-selected]:before {
+  content: "";
+  border: 2px dashed rgba(24, 68, 158, 0.8);
+  display: block;
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  left: -5px;
+  right: -5px;
+  z-index: 1;
+}

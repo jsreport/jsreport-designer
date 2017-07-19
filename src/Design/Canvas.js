@@ -83,6 +83,7 @@ class Canvas extends PureComponent {
       { leading: true }
     )
 
+    this.getCanvasNode = this.getCanvasNode.bind(this)
     this.getRelativePositionInsideCanvas = this.getRelativePositionInsideCanvas.bind(this)
     this.isDraggingOver = this.isDraggingOver.bind(this)
   }
@@ -106,6 +107,10 @@ class Canvas extends PureComponent {
         item: this.props.item
       })
     }
+  }
+
+  getCanvasNode (el) {
+    this.canvasNode = el
   }
 
   getRelativePositionInsideCanvas (areaPosition, topOrLeft) {
@@ -154,9 +159,12 @@ class Canvas extends PureComponent {
       gridRows,
       selectedArea,
       designGroups,
+      designSelection,
       connectDropTarget,
       isDragOver,
       canDrop,
+      onClick,
+      onClickComponent
     } = this.props
 
     let canvasStyles = {
@@ -174,11 +182,18 @@ class Canvas extends PureComponent {
     }
 
     return connectDropTarget(
-      <div className="Canvas" ref={(el) => this.canvasNode = el} style={canvasStyles}>
+      <div
+        className="Canvas"
+        ref={this.getCanvasNode}
+        style={canvasStyles}
+        onClick={onClick}
+      >
         <DesignContainer
           baseWidth={width}
           numberOfCols={numberOfCols}
-          designGroups={designGroups}
+          selection={designSelection}
+          groups={designGroups}
+          onClickComponent={onClickComponent}
         />
         {this.shouldShowGrid(gridRows) && (
           <Grid
@@ -210,15 +225,18 @@ Canvas.propTypes = {
   gridRows: PropTypes.array.isRequired,
   selectedArea: PropTypes.object,
   designGroups: PropTypes.array.isRequired,
+  designSelection: PropTypes.object,
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,
   isDragOver: PropTypes.bool.isRequired,
+  onClick: PropTypes.func,
   onDragEnter: PropTypes.func,
   onDragOver: PropTypes.func,
   onDragLeave: PropTypes.func,
   onDragEnd: PropTypes.func,
   onDrop: PropTypes.func,
-  onColDragOver: PropTypes.func
+  onColDragOver: PropTypes.func,
+  onClickComponent: PropTypes.func
 }
 
 export default DropTarget(ComponentTypes.COMPONENT_TYPE, canvasTarget, collect)(Canvas);

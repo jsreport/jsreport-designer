@@ -92,7 +92,7 @@ class DevTools extends Component {
     } = this.props
 
     return (
-      <div style={{ position: 'absolute', top: '8px', right: '200px' }}>
+      <div style={{ position: 'absolute', top: '8px', right: '200px', zIndex: 100 }}>
         <b>GRID: {numberOfCols} x {gridRows.length}, TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
         {' '}
         <button onClick={() => this.onClickInspectGroups()}>Inspect Design groups</button>

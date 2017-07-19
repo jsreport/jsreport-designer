@@ -16,7 +16,7 @@ class GridContent extends PureComponent {
         {rows.map((row) => {
           return (
             <GridRow
-              key={'Grid-row-' + row.id}
+              key={row.id}
               row={row}
               isDraggingInParent={isDraggingInParent}
               onColDragOver={onColDragOver}

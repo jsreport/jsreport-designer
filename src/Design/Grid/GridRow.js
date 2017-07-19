@@ -38,7 +38,7 @@ class GridRow extends PureComponent {
     let gridCols = cols.map((col) => {
       return (
         <GridCol
-          key={'Grid-col-' + col.id}
+          key={col.id}
           col={col}
           isDraggingInParent={isDraggingInParent}
           onDragOver={onRowDragOver}

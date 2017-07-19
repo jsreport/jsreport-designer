@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react'
+import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
@@ -6,7 +7,8 @@ import {
   findProjectedFilledArea,
   generateRows,
   updateRows,
-  addOrUpdateDesignGroup
+  addOrUpdateDesignGroup,
+  selectComponentInDesign
 } from './designUtils'
 import Canvas from './Canvas'
 import './Design.css'
@@ -35,6 +37,7 @@ class Design extends PureComponent {
     this.totalHeightOfRows = null
 
     this.rowsToGroups = {}
+    this.componentsToGroups = {}
 
     initialRows = generateRows({
       baseWidth: baseWidth,
@@ -50,15 +53,20 @@ class Design extends PureComponent {
 
     this.state = {
       designGroups: [],
+      designSelection: null,
       selectedArea: null,
       gridRows: initialRows
     }
 
     this.totalHeightOfRows = this.getTotalHeightOfRows(this.state.gridRows)
 
+    this.getCanvasRef = this.getCanvasRef.bind(this)
+    this.handleClickOutsideCanvas = this.handleClickOutsideCanvas.bind(this)
     this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
     this.onDragLeaveCanvas = this.onDragLeaveCanvas.bind(this)
     this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
+    this.onClickCanvas = this.onClickCanvas.bind(this)
+    this.onClickComponent = this.onClickComponent.bind(this)
 
     // memoizing the calculation, only update when the cursor offset has changed
     this.calculateSelectedAreaFromCol = memoize(
@@ -71,11 +79,25 @@ class Design extends PureComponent {
     this.addComponentToCanvas = this.addComponentToCanvas.bind(this)
   }
 
+  componentDidMount () {
+    document.addEventListener('click', this.handleClickOutsideCanvas, true)
+    window.addEventListener('dragstart', this.handleClickOutsideCanvas, true)
+  }
+
   componentWillUpdate (nextProps, nextState) {
     // re-calculate computed value "totalHeightOfRows" if rows have changed
     if (this.state.gridRows !== nextState.gridRows) {
       this.totalHeightOfRows = this.getTotalHeightOfRows(nextState.gridRows)
     }
+  }
+
+  componentWillUnmount () {
+    document.removeEventListener('click', this.handleClickOutsideCanvas, true)
+    window.removeEventListener('dragstart', this.handleClickOutsideCanvas, true)
+  }
+
+  getCanvasRef (el) {
+    this.canvasRef = el
   }
 
   getTotalHeightOfRows (rows) {
@@ -122,6 +144,23 @@ class Design extends PureComponent {
     })
   }
 
+  selectComponent (componentId) {
+    this.setState({
+      designSelection: selectComponentInDesign({
+        componentId,
+        componentsToGroups: this.componentsToGroups
+      })
+    })
+  }
+
+  clearDesignSelection () {
+    if (this.state.designSelection != null) {
+      this.setState({
+        designSelection: null
+      })
+    }
+  }
+
   addComponentToCanvas ({ item, clientOffset, row, col, colDimensions }) {
     let shouldAddComponent = (
       this.selectedArea &&
@@ -144,7 +183,9 @@ class Design extends PureComponent {
     let originalDesignGroups = this.state.designGroups
     let selectedArea = this.selectedArea
     let originalRowsToGroups = this.rowsToGroups || {}
+    let originalComponentsToGroups = this.componentsToGroups || {}
     let currentRowsToGroups = { ...originalRowsToGroups }
+    let currentComponentsToGroups = { ...originalComponentsToGroups }
     let changedRowsInsideGroups = []
 
     // TODO: Safari has a bug, if you drop a component and if that component causes the scroll bar to appear
@@ -178,12 +219,18 @@ class Design extends PureComponent {
       currentRowsToGroups[changed.new] = originalRowsToGroups[changed.old]
     })
 
-    const { designGroups, rowsToGroups } = addOrUpdateDesignGroup({
+    const {
+      designGroups,
+      newComponent,
+      rowsToGroups,
+      componentsToGroups
+    } = addOrUpdateDesignGroup({
       type: item.name,
       props: item.props
     }, {
       rows: newRows,
       rowsToGroups: currentRowsToGroups,
+      componentsToGroups: currentComponentsToGroups,
       designGroups: originalDesignGroups,
       referenceRow: updatedBaseRow.index,
       fromCol: {
@@ -192,14 +239,45 @@ class Design extends PureComponent {
       }
     })
 
+    const designSelection = selectComponentInDesign({
+      componentId: newComponent.id,
+      componentsToGroups
+    })
+
     this.rowsToGroups = rowsToGroups
+    this.componentsToGroups = componentsToGroups
 
     this.setState({
       // clean selectedArea when adding a component
       selectedArea: null,
       gridRows: newRows,
-      designGroups
+      designGroups,
+      designSelection
     })
+  }
+
+  handleClickOutsideCanvas (ev) {
+    const canvasNode = findDOMNode(this.canvasRef)
+    let clickOutsideCanvas = !canvasNode.contains(ev.target)
+
+    if (clickOutsideCanvas) {
+      this.clearDesignSelection()
+    }
+  }
+
+  onClickCanvas () {
+    // clear design selection when canvas is clicked,
+    // the selection is not clear if the click was inside a component
+    // because component's click handler prevent the click event to be propagated to the parent
+    this.clearDesignSelection()
+  }
+
+  onClickComponent (ev, componentId) {
+    // stop progagation of click
+    ev.preventDefault()
+    ev.stopPropagation()
+
+    this.selectComponent(componentId)
   }
 
   onDragEnterCanvas () {
@@ -214,7 +292,6 @@ class Design extends PureComponent {
         selectedArea: null
       })
     }
-
   }
 
   onDragEndCanvas () {
@@ -235,7 +312,8 @@ class Design extends PureComponent {
     const {
       designGroups,
       gridRows,
-      selectedArea
+      selectedArea,
+      designSelection
     } = this.state
 
     // using computed value "totalHeightOfRows"
@@ -263,12 +341,16 @@ class Design extends PureComponent {
           }}
         >
           <Canvas
+            ref={this.getCanvasRef}
             width={baseWidth}
             height={totalHeight}
             numberOfCols={defaultNumberOfCols}
             gridRows={gridRows}
             selectedArea={selectedArea}
             designGroups={designGroups}
+            designSelection={designSelection}
+            onClick={this.onClickCanvas}
+            onClickComponent={this.onClickComponent}
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}
             onDragEnd={this.onDragEndCanvas}

@@ -8,7 +8,9 @@ class DesignContainer extends PureComponent {
     const {
       baseWidth,
       numberOfCols,
-      designGroups
+      groups,
+      selection,
+      onClickComponent
     } = this.props
 
     const styles = {
@@ -20,13 +22,15 @@ class DesignContainer extends PureComponent {
         className="DesignContainer"
         style={styles}
       >
-        {designGroups.map((designGroup) => (
+        {groups.map((designGroup) => (
           <DesignGroup
-            key={'DesignGroup-' + designGroup.id}
+            key={designGroup.id}
             numberOfCols={numberOfCols}
             topSpace={designGroup.topSpace}
             layoutMode={designGroup.layoutMode}
+            selection={selection && selection.group === designGroup.id ? selection.data[selection.group] : undefined}
             items={designGroup.items}
+            onClickComponent={onClickComponent}
           />
         ))}
       </div>
@@ -37,7 +41,9 @@ class DesignContainer extends PureComponent {
 DesignContainer.propTypes = {
   baseWidth: PropTypes.number.isRequired,
   numberOfCols: PropTypes.number.isRequired,
-  designGroups: PropTypes.array.isRequired
+  selection: PropTypes.object,
+  groups: PropTypes.array.isRequired,
+  onClickComponent: PropTypes.func
 }
 
 export default DesignContainer

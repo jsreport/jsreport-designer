@@ -162,7 +162,7 @@ function generateCols ({ baseWidth, numberOfCols }) {
 
   for (let i = 0; i < numberOfCols; i++) {
     cols.push({
-      id: shortid.generate(),
+      id: 'col-' + shortid.generate(),
       index: i,
       width: baseWidth / numberOfCols,
       unit: 'px',
@@ -178,7 +178,7 @@ function generateRows ({ baseWidth, numberOfRows, numberOfCols, height }) {
 
   for (let i = 0; i < numberOfRows; i++) {
     let row = {
-      id: shortid.generate(),
+      id: 'row-' + shortid.generate(),
       index: i,
       height: height,
       unit: 'px',
@@ -278,7 +278,7 @@ function updateRows ({
   // if placeholder row is inside the selected area then insert a new row
   if (endRow >= placeholderRow.index) {
     let newRow = {
-      id: shortid.generate(),
+      id: 'row-' + shortid.generate(),
       index: rowToUpdate.index + (rowsToAdd.length + 1),
       height: defaultRowHeight,
       unit: 'px',
@@ -360,7 +360,7 @@ function updateRows ({
 
 function generateDesignItem ({ row, startCol, endCol, components = [] }) {
   return {
-    id: shortid.generate(),
+    id: 'DI-' + shortid.generate(),
     start: startCol,
     end: endCol,
     space: row.layoutMode === 'grid' ? (endCol - startCol) + 1 : (
@@ -375,6 +375,7 @@ function generateDesignItem ({ row, startCol, endCol, components = [] }) {
 function addOrUpdateDesignGroup (component, {
   rows,
   rowsToGroups,
+  componentsToGroups,
   designGroups,
   referenceRow,
   fromCol
@@ -383,16 +384,22 @@ function addOrUpdateDesignGroup (component, {
   let currentGroup
   let newComponent
   let newDesignGroups
-  let newRowsToGroup
+  let newRowsToGroups
+  let newComponentsToGroups
+  let newComponentGroupInfo = {}
 
-  newRowsToGroup = {
+  newRowsToGroups = {
     ...rowsToGroups
+  }
+
+  newComponentsToGroups = {
+    ...componentsToGroups
   }
 
   // component information
   newComponent = {
     ...component,
-    id: shortid.generate(),
+    id: 'DC-' + shortid.generate(),
     props: compProps
   }
 
@@ -430,10 +437,13 @@ function addOrUpdateDesignGroup (component, {
 
     // creating a new group with component
     currentGroup = {
-      id: shortid.generate(),
+      id: 'DG-' + shortid.generate(),
       items: [newItem],
       layoutMode: rows[referenceRow].layoutMode
     }
+
+    newComponentGroupInfo.group = currentGroup.id
+    newComponentGroupInfo.item = newItem.id
 
     rowsToGroupsIndexes = Object.keys(rowsToGroups).map((item) => parseInt(item, 10))
 
@@ -478,7 +488,7 @@ function addOrUpdateDesignGroup (component, {
       ]
 
       // updating rows-groups map
-      newRowsToGroup[referenceRow] = newDesignGroups.length - 1
+      newRowsToGroups[referenceRow] = newDesignGroups.length - 1
     } else {
       let rowGroupsChanged = []
 
@@ -514,20 +524,20 @@ function addOrUpdateDesignGroup (component, {
       // since group order has changed,
       // we need to update all referenced items in the object map
       rows.slice(rowGroupAfterNewIndex).forEach((row) => {
-        if (newRowsToGroup[row.index] != null) {
+        if (newRowsToGroups[row.index] != null) {
           rowGroupsChanged.push({ row: row.index })
           // deleting old references
-          delete newRowsToGroup[row.index]
+          delete newRowsToGroups[row.index]
         }
       })
 
       rowGroupsChanged.forEach((changed) => {
         // adding + 1 to all groups after the new group
-        newRowsToGroup[changed.row] = rowsToGroups[changed.row] + 1
+        newRowsToGroups[changed.row] = rowsToGroups[changed.row] + 1
       })
 
       // saving the new group
-      newRowsToGroup[referenceRow] = groupAfterNewIndex
+      newRowsToGroups[referenceRow] = groupAfterNewIndex
     }
   } else {
     let groupFoundIndex = rowsToGroups[referenceRow]
@@ -583,20 +593,31 @@ function addOrUpdateDesignGroup (component, {
         components: [newComponent]
       })
 
-      if (itemBeforeNewIndex != null) {
-        if (rows[referenceRow].layoutMode === 'grid') {
+      if (rows[referenceRow].layoutMode === 'grid') {
+        if (itemBeforeNewIndex != null) {
           leftSpaceBeforeItem = (fromCol.start - currentGroup.items[itemBeforeNewIndex].end) - 1
         } else {
+          leftSpaceBeforeItem = fromCol.start
+        }
+      } else {
+        if (itemBeforeNewIndex != null) {
           leftSpaceBeforeItem = getDistanceFromCol({
             rows,
             fromCol: { row: referenceRow, col: currentGroup.items[itemBeforeNewIndex].end },
             toCol: { row: referenceRow, col: fromCol.start }
           }).distanceX
+        } else {
+          leftSpaceBeforeItem = getDistanceFromCol({
+            rows,
+            fromCol: { row: referenceRow, col: 0 },
+            toCol: { row: referenceRow, col: fromCol.start },
+            opts: { includeFrom: fromCol.start !== 0 }
+          }).distanceX
         }
+      }
 
-        if (leftSpaceBeforeItem > 0) {
-          currentItem.leftSpace = leftSpaceBeforeItem
-        }
+      if (leftSpaceBeforeItem > 0) {
+        currentItem.leftSpace = leftSpaceBeforeItem
       }
     }
 
@@ -650,6 +671,9 @@ function addOrUpdateDesignGroup (component, {
       }
     }
 
+    newComponentGroupInfo.group = currentGroup.id
+    newComponentGroupInfo.item = currentItem.id
+
     newDesignGroups = [
       ...designGroups.slice(0, groupFoundIndex),
       currentGroup,
@@ -657,9 +681,38 @@ function addOrUpdateDesignGroup (component, {
     ]
   }
 
+  newComponentsToGroups[newComponent.id] = newComponentGroupInfo
+
   return {
     designGroups: newDesignGroups,
-    rowsToGroups: newRowsToGroup
+    newComponent,
+    rowsToGroups: newRowsToGroups,
+    componentsToGroups: newComponentsToGroups
+  }
+}
+
+function selectComponentInDesign ({ componentId, componentsToGroups }) {
+  let found = componentsToGroups[componentId] !== null
+  let componentInGroupInfo
+
+  if (!found) {
+    return null
+  }
+
+  componentInGroupInfo = componentsToGroups[componentId]
+
+  return {
+    group: componentInGroupInfo.group,
+    data: {
+      [componentInGroupInfo.group]: {
+        item: componentInGroupInfo.item,
+        data: {
+          [componentInGroupInfo.item]: {
+            component: componentId
+          }
+        }
+      }
+    }
   }
 }
 
@@ -676,3 +729,4 @@ export { updateRows }
  *  Design group utils
  */
 export { addOrUpdateDesignGroup }
+export { selectComponentInDesign }
