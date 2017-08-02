@@ -410,7 +410,6 @@ class Design extends PureComponent {
     let rows = this.state.gridRows
     let shouldCalculate = false
     let isGrowing = false
-    let prevent = false
     let newSelectedArea
     let step
     let nextCol
@@ -434,34 +433,6 @@ class Design extends PureComponent {
       isGrowing = true
     }
 
-    if (resize.direction === 'left') {
-      if (isGrowing) {
-        prevent = item.layoutMode === 'grid' ? (
-          selectedAreaWhenResizing.startCol === 0
-        ) : false
-      } else {
-        prevent = (
-          resize.position === 0 && resize.prevPosition === 0 &&
-          selectedAreaWhenResizing.startCol === selectedArea.startCol
-        )
-      }
-    } else {
-      if (isGrowing) {
-        prevent = item.layoutMode === 'grid' ? (
-          selectedAreaWhenResizing.endCol === rows[selectedAreaWhenResizing.row].cols.length - 1
-        ) : false
-      } else {
-        prevent = (
-          resize.position === 0 && resize.prevPosition === 0 &&
-          selectedAreaWhenResizing.endCol === selectedArea.endCol
-        )
-      }
-    }
-
-    if (prevent) {
-      return
-    }
-
     if (item.layoutMode === 'grid') {
       let colReference
       let baseCol
@@ -472,27 +443,35 @@ class Design extends PureComponent {
 
       if (resize.direction === 'left') {
         colReference = selectedAreaWhenResizing.startCol
+        baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
 
         if (colReference === 0 && !isGrowing) {
           baseColLeft = selectedAreaWhenResizing.areaBox.left
         } else {
           colReference = colReference - 1
+          baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
 
-          baseColLeft = (
-            selectedAreaWhenResizing.areaBox.left -
-            rows[selectedAreaWhenResizing.row].cols[colReference].width
-          )
+          if (baseCol) {
+            baseColLeft = (
+              selectedAreaWhenResizing.areaBox.left -
+              baseCol.width
+            )
+          }
         }
       } else {
         colReference = selectedAreaWhenResizing.endCol
+        baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
 
         if (colReference === rows[selectedAreaWhenResizing.row].cols.length - 1 && !isGrowing) {
-          baseColLeft = (
-            selectedAreaWhenResizing.areaBox.left +
-            selectedAreaWhenResizing.areaBox.width
-          ) - rows[selectedAreaWhenResizing.row].cols[colReference].width
+          if (baseCol) {
+            baseColLeft = (
+              selectedAreaWhenResizing.areaBox.left +
+              selectedAreaWhenResizing.areaBox.width
+            ) - baseCol.width
+          }
         } else {
           colReference = colReference + 1
+          baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
 
           baseColLeft = (
             selectedAreaWhenResizing.areaBox.left +
@@ -501,7 +480,9 @@ class Design extends PureComponent {
         }
       }
 
-      baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
+      if (!baseCol) {
+        return
+      }
 
       startCol = findStartCol({
         rows,
@@ -539,25 +520,24 @@ class Design extends PureComponent {
         shouldCalculate = true
         nextCol = rows[selectedAreaWhenResizing.row].cols[startCol.colCoordinate.col]
       } else if (startCol.filled) {
-        if (isGrowing) {
-          shouldCalculate = Math.abs(
-            (resize.direction === 'left' ? (
-              selectedAreaWhenResizing.startCol
-            ) : (
-              selectedAreaWhenResizing.endCol
-            )) - startCol.colCoordinate.col
-          ) > 1
+        let evaluatedCol
+
+        if (resize.direction === 'left') {
+          evaluatedCol = selectedAreaWhenResizing.startCol
         } else {
-          shouldCalculate = Math.max(
-            resize.direction === 'left' ? selectedAreaWhenResizing.startCol : selectedAreaWhenResizing.endCol,
-            startCol.colCoordinate.col
-          ) === startCol.colCoordinate.col ? (
-            (
-              (resize.direction === 'left' ?
-              selectedAreaWhenResizing.startCol :
-              selectedAreaWhenResizing.endCol) - startCol.colCoordinate.col
-            ) <= 0
-          ) : true
+          evaluatedCol = selectedAreaWhenResizing.endCol
+        }
+
+        if (isGrowing) {
+          shouldCalculate = Math.abs(evaluatedCol - startCol.colCoordinate.col) > 1
+        } else {
+          if (resize.position === 0 && evaluatedCol > startCol.colCoordinate.col) {
+            shouldCalculate = true
+          } else if (Math.abs(evaluatedCol - startCol.colCoordinate.col) === 1) {
+            shouldCalculate = false
+          } else {
+            shouldCalculate = true
+          }
         }
 
         if (resize.direction === 'left') {
@@ -569,18 +549,43 @@ class Design extends PureComponent {
     } else {
       let baseColWidth = this.props.baseWidth / this.props.defaultNumberOfCols
       let consumedCols = Math.floor(resize.position / baseColWidth)
-
-      // fixed mode
-      shouldCalculate = true
+      let evaluatedCol
+      let factor
 
       if (resize.direction === 'left') {
-        nextCol = rows[selectedAreaWhenResizing.row].cols[
-          (selectedArea.startCol - consumedCols) - 1
-        ]
+        evaluatedCol = selectedArea.startCol
+        factor = -1
       } else {
-        nextCol = rows[selectedAreaWhenResizing.row].cols[
-          (selectedArea.endCol + consumedCols) + 1
-        ]
+        evaluatedCol = selectedArea.endCol
+        factor = 1
+      }
+
+      if (resize.position === 0) {
+        nextCol = rows[selectedAreaWhenResizing.row].cols[evaluatedCol]
+      } else {
+        let newColIndex = evaluatedCol + (consumedCols * factor)
+
+        if (
+          newColIndex !== 0 &&
+          newColIndex !== rows[selectedAreaWhenResizing.row].cols.length - 1
+        ) {
+          newColIndex = newColIndex + factor
+        }
+
+        nextCol = rows[selectedAreaWhenResizing.row].cols[newColIndex]
+      }
+
+      // fixed mode
+      if (
+        (nextCol.index === evaluatedCol &&
+        selectedArea.areaBox.width === selectedAreaWhenResizing.areaBox.width) ||
+        (nextCol.index === 0 && resize.position === resize.prevPosition) ||
+        (nextCol.index === rows[selectedAreaWhenResizing.row].cols.length - 1 &&
+        resize.position === resize.prevPosition)
+      ) {
+        shouldCalculate = false
+      } else {
+        shouldCalculate = true
       }
     }
 
