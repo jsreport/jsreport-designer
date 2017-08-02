@@ -1,0 +1,40 @@
+.ResizerLeft,
+.ResizerRight {
+  cursor: ew-resize;
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.ResizerLeft:before,
+.ResizerRight:before {
+  background: #fff;
+  border: 1px solid #000;
+  display: block;
+  content: "";
+  width: 8px;
+  height: 8px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.ResizerLeft {
+  left: 0px;
+  -webkit-transform: perspective(1px) translate(-5px, -50%);
+  -ms-transform: perspective(1px) translate(-5px, -50%);
+  transform: perspective(1px) translate(-5px, -50%);
+}
+
+.ResizerRight {
+  right: 0px;
+  -webkit-transform: perspective(1px) translate(5px, -50%);
+  -ms-transform: perspective(1px) translate(5px, -50%);
+  transform: perspective(1px) translate(5px, -50%);
+}

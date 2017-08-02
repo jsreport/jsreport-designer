@@ -11,7 +11,8 @@ import './Canvas.css'
 const canvasTarget = {
   hover (props, monitor, component) {
     if (!monitor.isOver() && props.onDragEnter) {
-      // getting canvas position when enter on canvas
+      // getting canvas position when enter on canvas to later use it
+      // when calculating the selected area position
       let position = component.canvasNode.getBoundingClientRect()
 
       component.canvasPosition = {
@@ -36,7 +37,7 @@ const canvasTarget = {
     }
   },
 
-  drop (props, monitor) {
+  drop (props, monitor, component) {
     const hasDroppedOnChild = monitor.didDrop();
 
     if (!props.onDrop) {
@@ -86,6 +87,8 @@ class Canvas extends PureComponent {
     this.getCanvasNode = this.getCanvasNode.bind(this)
     this.getRelativePositionInsideCanvas = this.getRelativePositionInsideCanvas.bind(this)
     this.isDraggingOver = this.isDraggingOver.bind(this)
+    this.handleResizeItemStart = this.handleResizeItemStart.bind(this)
+    this.handleResizeItemEnd = this.handleResizeItemEnd.bind(this)
   }
 
   componentWillReceiveProps (nextProps) {
@@ -103,6 +106,9 @@ class Canvas extends PureComponent {
     }
 
     if (this.props.item && !nextProps.item) {
+      // cleaning canvas position when dragging ends
+      this.canvasPosition = null
+
       nextProps.onDragEnd && nextProps.onDragEnd({
         item: this.props.item
       })
@@ -114,8 +120,17 @@ class Canvas extends PureComponent {
   }
 
   getRelativePositionInsideCanvas (areaPosition, topOrLeft) {
-    const canvasPosition = this.canvasPosition
+    let canvasPosition = this.canvasPosition
     let position
+
+    if (!canvasPosition) {
+      canvasPosition = this.canvasNode.getBoundingClientRect()
+
+      canvasPosition = {
+        top: canvasPosition.top,
+        left: canvasPosition.left
+      }
+    }
 
     if (topOrLeft === 'top') {
       position = areaPosition - canvasPosition.top
@@ -136,6 +151,34 @@ class Canvas extends PureComponent {
 
   isDraggingOver () {
     return this.props.isDragOver
+  }
+
+  handleResizeItemStart (...args) {
+    let canvasDimensions = this.canvasNode.getBoundingClientRect()
+
+    // getting canvas position when resizing is starting to later use it
+    // when calculating the selected area position
+    this.canvasPosition = {
+      top: canvasDimensions.top,
+      left: canvasDimensions.left
+    }
+
+    if (this.props.onResizeItemStart) {
+      return this.props.onResizeItemStart(...args)
+    }
+
+    return
+  }
+
+  handleResizeItemEnd (...args) {
+    // cleaning canvas position when resizing ends
+    this.canvasPosition = null
+
+    if (this.props.onResizeItemEnd) {
+      return this.props.onResizeItemEnd(...args)
+    }
+
+    return
   }
 
   onColDragOver (params) {
@@ -164,7 +207,8 @@ class Canvas extends PureComponent {
       isDragOver,
       canDrop,
       onClick,
-      onClickComponent
+      onClickComponent,
+      onResizeItem
     } = this.props
 
     let canvasStyles = {
@@ -172,13 +216,14 @@ class Canvas extends PureComponent {
       height: height + 'px'
     }
 
+    let extraProps = {}
+
     if (!isDragOver && canDrop) {
-      canvasStyles.outline = '2px dotted #dede26'
+      extraProps['data-dragging'] = true
     }
 
     if (isDragOver && canDrop) {
-      canvasStyles.outline = '2px dotted rgb(168, 230, 79)'
-      canvasStyles.borderColor = 'rgba(168, 230, 79, 0.3)'
+      extraProps['data-can-drop'] = true
     }
 
     return connectDropTarget(
@@ -187,6 +232,7 @@ class Canvas extends PureComponent {
         ref={this.getCanvasNode}
         style={canvasStyles}
         onClick={onClick}
+        {...extraProps}
       >
         <DesignContainer
           baseWidth={width}
@@ -194,6 +240,9 @@ class Canvas extends PureComponent {
           selection={designSelection}
           groups={designGroups}
           onClickComponent={onClickComponent}
+          onResizeItemStart={this.handleResizeItemStart}
+          onResizeItem={onResizeItem}
+          onResizeItemEnd={this.handleResizeItemEnd}
         />
         {this.shouldShowGrid(gridRows) && (
           <Grid
@@ -236,7 +285,10 @@ Canvas.propTypes = {
   onDragEnd: PropTypes.func,
   onDrop: PropTypes.func,
   onColDragOver: PropTypes.func,
-  onClickComponent: PropTypes.func
+  onClickComponent: PropTypes.func,
+  onResizeItemStart: PropTypes.func,
+  onResizeItem: PropTypes.func,
+  onResizeItemEnd: PropTypes.func
 }
 
 export default DropTarget(ComponentTypes.COMPONENT_TYPE, canvasTarget, collect)(Canvas);

@@ -10,7 +10,10 @@ class DesignContainer extends PureComponent {
       numberOfCols,
       groups,
       selection,
-      onClickComponent
+      onClickComponent,
+      onResizeItemStart,
+      onResizeItem,
+      onResizeItemEnd
     } = this.props
 
     const styles = {
@@ -31,6 +34,9 @@ class DesignContainer extends PureComponent {
             selection={selection && selection.group === designGroup.id ? selection.data[selection.group] : undefined}
             items={designGroup.items}
             onClickComponent={onClickComponent}
+            onResizeItemStart={onResizeItemStart}
+            onResizeItem={onResizeItem}
+            onResizeItemEnd={onResizeItemEnd}
           />
         ))}
       </div>
@@ -43,7 +49,10 @@ DesignContainer.propTypes = {
   numberOfCols: PropTypes.number.isRequired,
   selection: PropTypes.object,
   groups: PropTypes.array.isRequired,
-  onClickComponent: PropTypes.func
+  onClickComponent: PropTypes.func,
+  onResizeItemStart: PropTypes.func,
+  onResizeItem: PropTypes.func,
+  onResizeItemEnd: PropTypes.func
 }
 
 export default DesignContainer

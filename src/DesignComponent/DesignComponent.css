@@ -1,0 +1,30 @@
+
+.DesignComponent {
+  display: inline-block;
+  position: relative;
+  cursor: move;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+.DesignComponent:before {
+  /*pseudo-element to prevent any dom element inside to a component*/
+  /*to be draggable (since images an links are draggable by default
+  /*we need to disable that behaviour)*/
+  display: block;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.DesignComponent[data-selected] {
+  /*is important to use outline because outline does not consume*/
+  /*the width and height of element*/
+  outline: 1px dashed rgba(0, 0, 0, 0.8);
+  z-index: 1;
+}

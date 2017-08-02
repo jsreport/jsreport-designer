@@ -1,0 +1,13 @@
+
+.Selection {
+  border: 2px dashed;
+  display: block;
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  z-index: 2;
+}

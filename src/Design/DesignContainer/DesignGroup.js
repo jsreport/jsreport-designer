@@ -11,7 +11,10 @@ class DesignGroup extends PureComponent {
       topSpace,
       selection,
       items,
-      onClickComponent
+      onClickComponent,
+      onResizeItemStart,
+      onResizeItem,
+      onResizeItemEnd
     } = this.props
 
     let styles = {}
@@ -29,10 +32,12 @@ class DesignGroup extends PureComponent {
         style={styles}
         {...extraProps}
       >
-        {items.map((designItem) => {
+        {items.map((designItem, didx) => {
           return (
             <DesignItem
               key={designItem.id}
+              id={designItem.id}
+              index={didx}
               numberOfCols={numberOfCols}
               layoutMode={layoutMode}
               leftSpace={designItem.leftSpace}
@@ -40,6 +45,9 @@ class DesignGroup extends PureComponent {
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
               onClickComponent={onClickComponent}
+              onResizeStart={onResizeItemStart}
+              onResize={onResizeItem}
+              onResizeEnd={onResizeItemEnd}
             />
           )
         })}
@@ -54,7 +62,10 @@ DesignGroup.propTypes = {
   numberOfCols: PropTypes.number.isRequired,
   selection: PropTypes.object,
   items: PropTypes.array.isRequired,
-  onClickComponent: PropTypes.func
+  onClickComponent: PropTypes.func,
+  onResizeItemStart: PropTypes.func,
+  onResizeItem: PropTypes.func,
+  onResizeItemEnd: PropTypes.func
 }
 
 export default DesignGroup

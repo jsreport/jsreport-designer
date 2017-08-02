@@ -3,6 +3,84 @@ import shortid from 'shortid'
 
 const DEFAULT_LAYOUT_MODE = 'grid'
 
+function findStartCol ({ rows, point, baseCol, step }) {
+  let complete = false
+  let filled = false
+  let currentCol = { ...baseCol }
+  let startCol
+  let propertyToEvaluate
+  let limit
+
+  if (point.side === 'top' || point.side === 'left') {
+    limit = 0
+  }
+
+  if (point.side === 'top' || point.side === 'bottom') {
+    propertyToEvaluate = 'row'
+  } else {
+    propertyToEvaluate = 'col'
+  }
+
+  while (!complete) {
+    let isInsideInfo = isInsideOfCol({ point, colInfo: currentCol })
+    // we only care if the point is inside of the evaluated side
+    let isInside = isInsideInfo[propertyToEvaluate === 'row' ? 'isInsideY' : 'isInsideX']
+
+    if (isInside) {
+      filled = true
+    }
+
+    if (limit == null) {
+      if (propertyToEvaluate === 'row') {
+        limit = rows.length - 1
+      } else {
+        limit = rows[currentCol.row].cols.length - 1
+      }
+    }
+
+    if (currentCol[propertyToEvaluate] === limit || isInside) {
+      startCol = {
+        col: currentCol.col,
+        row: currentCol.row,
+        x: currentCol.left,
+        y: currentCol.top
+      }
+
+      complete = true
+
+      continue
+    }
+
+    // calculating next col to check
+    if (propertyToEvaluate === 'row') {
+      if (step < 0) {
+        // when the step is negative we calculate based on previous row
+        currentCol.top = currentCol.top + (rows[currentCol.row + step].height * step)
+      } else {
+        currentCol.top = currentCol.top + (rows[currentCol.row].height * step)
+      }
+
+      currentCol.height = rows[currentCol.row + step].height
+    } else {
+      if (step < 0) {
+        // when the step is negative we calculate based on previous col
+        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col + step].width * step)
+      } else {
+        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col].width * step)
+      }
+
+      currentCol.width = rows[currentCol.row].cols[currentCol.col + step].width
+    }
+
+    currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
+  }
+
+  return {
+    colCoordinate: startCol,
+    filled
+  }
+}
+
 function isInsideOfCol ({ point, colInfo }) {
   const { x, y } = point
   const { width, height, top, left } = colInfo
@@ -67,7 +145,7 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
       // if next col has reached the limit and `includeTo` is activate then include
       // the values of the last col
       if (current.col === toCol.col && opts.includeTo === true) {
-        current.distanceX += rows[originalRow].cols[current.col] * stepX
+        current.distanceX += rows[originalRow].cols[current.col].width * stepX
       }
     }
   }
@@ -78,7 +156,7 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
   }
 }
 
-function findProjectedFilledArea ({ rows, baseColInfo, consumedRows, consumedCols }) {
+function findProjectedFilledArea ({ rows, baseColInfo, consumedRows = 1, consumedCols, originalArea }) {
   let area = {}
   let savedRows = []
   let filled = false
@@ -117,8 +195,14 @@ function findProjectedFilledArea ({ rows, baseColInfo, consumedRows, consumedCol
         continue;
       }
 
-      if (!conflict && !currentCol.empty) {
-        conflict = true
+      if (originalArea) {
+        if (!originalArea[coordinate] && !conflict) {
+          conflict = !currentCol.empty
+        }
+      } else {
+        if (!conflict) {
+          conflict = !currentCol.empty
+        }
       }
 
       area[coordinate] = {
@@ -372,10 +456,10 @@ function generateDesignItem ({ row, startCol, endCol, components = [] }) {
   }
 }
 
-function addOrUpdateDesignGroup (component, {
+function addComponentToDesign (component, {
   rows,
   rowsToGroups,
-  componentsToGroups,
+  componentsInfo,
   designGroups,
   referenceRow,
   fromCol
@@ -385,15 +469,15 @@ function addOrUpdateDesignGroup (component, {
   let newComponent
   let newDesignGroups
   let newRowsToGroups
-  let newComponentsToGroups
-  let newComponentGroupInfo = {}
+  let newComponentsInfo
+  let newComponentInfo = {}
 
   newRowsToGroups = {
     ...rowsToGroups
   }
 
-  newComponentsToGroups = {
-    ...componentsToGroups
+  newComponentsInfo = {
+    ...componentsInfo
   }
 
   // component information
@@ -442,8 +526,9 @@ function addOrUpdateDesignGroup (component, {
       layoutMode: rows[referenceRow].layoutMode
     }
 
-    newComponentGroupInfo.group = currentGroup.id
-    newComponentGroupInfo.item = newItem.id
+    newComponentInfo.rowIndex = referenceRow
+    newComponentInfo.groupId = currentGroup.id
+    newComponentInfo.itemId = newItem.id
 
     rowsToGroupsIndexes = Object.keys(rowsToGroups).map((item) => parseInt(item, 10))
 
@@ -671,8 +756,9 @@ function addOrUpdateDesignGroup (component, {
       }
     }
 
-    newComponentGroupInfo.group = currentGroup.id
-    newComponentGroupInfo.item = currentItem.id
+    newComponentInfo.rowIndex = referenceRow
+    newComponentInfo.groupId = currentGroup.id
+    newComponentInfo.itemId = currentItem.id
 
     newDesignGroups = [
       ...designGroups.slice(0, groupFoundIndex),
@@ -681,33 +767,33 @@ function addOrUpdateDesignGroup (component, {
     ]
   }
 
-  newComponentsToGroups[newComponent.id] = newComponentGroupInfo
+  newComponentsInfo[newComponent.id] = newComponentInfo
 
   return {
     designGroups: newDesignGroups,
     newComponent,
     rowsToGroups: newRowsToGroups,
-    componentsToGroups: newComponentsToGroups
+    componentsInfo: newComponentsInfo
   }
 }
 
-function selectComponentInDesign ({ componentId, componentsToGroups }) {
-  let found = componentsToGroups[componentId] !== null
+function selectComponentInDesign ({ componentId, componentsInfo }) {
+  let found = componentsInfo[componentId] !== null
   let componentInGroupInfo
 
   if (!found) {
     return null
   }
 
-  componentInGroupInfo = componentsToGroups[componentId]
+  componentInGroupInfo = componentsInfo[componentId]
 
   return {
-    group: componentInGroupInfo.group,
+    group: componentInGroupInfo.groupId,
     data: {
-      [componentInGroupInfo.group]: {
-        item: componentInGroupInfo.item,
+      [componentInGroupInfo.groupId]: {
+        item: componentInGroupInfo.itemId,
         data: {
-          [componentInGroupInfo.item]: {
+          [componentInGroupInfo.itemId]: {
             component: componentId
           }
         }
@@ -719,6 +805,7 @@ function selectComponentInDesign ({ componentId, componentsToGroups }) {
 /**
  *  Grid utils
  */
+export { findStartCol }
 export { isInsideOfCol }
 export { getDistanceFromCol }
 export { findProjectedFilledArea }
@@ -728,5 +815,5 @@ export { updateRows }
 /**
  *  Design group utils
  */
-export { addOrUpdateDesignGroup }
+export { addComponentToDesign }
 export { selectComponentInDesign }

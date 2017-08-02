@@ -1,6 +1,7 @@
 import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
+import './DesignComponent.css'
 const componentRegistry = require('../shared/componentRegistry')
 
 class DesignComponent extends PureComponent {
@@ -64,23 +65,17 @@ class DesignComponent extends PureComponent {
       selected
     } = this.props
 
-    let styles = {
-      display: 'inline-block',
-      position: 'relative',
-      cursor: 'move'
-    }
+    let extraProps = {}
 
     if (selected) {
-      // is important to use outline because outline does not consume
-      // the width and height of element
-      styles.outline = '1px dashed rgba(0, 0, 0, 0.8)'
-      styles.zIndex = 1
+      extraProps['data-selected'] = true
     }
 
     return (
       <div
         ref={this.getComponentRef}
-        style={styles}
+        className="DesignComponent"
+        {...extraProps}
         data-jsreport-component-type={type}
         onClick={this.handleClick}
         dangerouslySetInnerHTML={{ __html: this.renderComponent(type, componentProps) }}
