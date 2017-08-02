@@ -2,12 +2,12 @@ import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
-import arrayFrom from 'array.from'
 import {
   isInsideOfCol,
   findStartCol,
   findProjectedFilledArea,
   getDistanceFromCol,
+  areColsEmpty,
   generateRows,
   updateRows,
   addComponentToDesign,
@@ -343,7 +343,6 @@ class Design extends PureComponent {
     let maxLeftPosition
     let maxRightPosition
     let selectedArea
-    let baseArea
 
     this.isResizing = true
 
@@ -363,20 +362,6 @@ class Design extends PureComponent {
     if (currentDesignGroup) {
       currentDesignItem = currentDesignGroup.items[item.index]
 
-      baseArea = arrayFrom(
-        {
-          length: (currentDesignItem.end - currentDesignItem.start) + 1
-        },
-        (v, i) => currentDesignItem.start + i
-      ).reduce((acu, colIdx) => {
-        acu[colIdx + ',' + componentsInfo[item.components[0].id].rowIndex] = {
-          cold: colIdx,
-          row: componentsInfo[item.components[0].id].rowIndex
-        }
-
-        return acu
-      }, {})
-
       // getting the initial projected area when the resizing starts
       selectedArea = findProjectedFilledArea({
         rows,
@@ -386,9 +371,10 @@ class Design extends PureComponent {
           top: itemDimensions.top,
           left: itemDimensions.left
         },
-        consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1,
-        originalArea: baseArea
+        consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1
       })
+
+      selectedArea.conflict = false
 
       this.selectedArea = selectedArea
       this.selectedAreaWhenResizing = selectedArea
@@ -413,6 +399,7 @@ class Design extends PureComponent {
     let newSelectedArea
     let step
     let nextCol
+    let startCol
 
     this.isResizing = true
 
@@ -436,7 +423,6 @@ class Design extends PureComponent {
     if (item.layoutMode === 'grid') {
       let colReference
       let baseCol
-      let startCol
       let baseColLeft
       let colLimit
       let sizeLimit
@@ -590,6 +576,20 @@ class Design extends PureComponent {
     }
 
     if (!shouldCalculate || !nextCol) {
+      // when layoutMode is grid give hints early about invalid resizing
+      if (startCol) {
+        if (resize.position === 0) {
+          return true
+        }
+
+        return areColsEmpty({
+          row: rows[selectedAreaWhenResizing.row],
+          fromCol: startCol.colCoordinate.col,
+          toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
+          excludeTo: true
+        })
+      }
+
       return
     }
 
@@ -632,13 +632,24 @@ class Design extends PureComponent {
       ) : this.selectedArea.areaBox.left
     }
 
-    // TODO: update conflict
+    if (resize.position === 0 || areColsEmpty({
+      row: rows[selectedAreaWhenResizing.row],
+      fromCol: nextCol.index,
+      toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
+      excludeTo: true
+    })) {
+      newSelectedArea.conflict = false
+    } else {
+      newSelectedArea.conflict = true
+    }
 
     this.selectedAreaWhenResizing = newSelectedArea
 
     this.setState({
       selectedArea: newSelectedArea
     })
+
+    return !newSelectedArea.conflict
   }
 
   onResizeDesignItemEnd ({ item, resize, node }) {

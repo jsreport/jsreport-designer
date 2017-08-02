@@ -63,7 +63,7 @@ Selection.defaultProps = {
 }
 
 Selection.propTypes = {
-  state: PropTypes.oneOf(['default', 'active', 'error']),
+  state: PropTypes.oneOf(['default', 'active', 'invalid']),
   left: PropTypes.number,
   right: PropTypes.number,
   onResizeStart: PropTypes.func,

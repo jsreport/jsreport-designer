@@ -5,6 +5,6 @@
   display: table;
 }
 
-.DesignGroup[data-layout-grid-mode]:after {
+.DesignGroup:after {
   clear: both;
 }

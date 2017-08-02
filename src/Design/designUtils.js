@@ -156,7 +156,37 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
   }
 }
 
-function findProjectedFilledArea ({ rows, baseColInfo, consumedRows = 1, consumedCols, originalArea }) {
+function areColsEmpty ({ row, fromCol, toCol, excludeTo }) {
+  let step
+  let colsToEvaluate
+  let allEmpty
+
+  if (fromCol === toCol || fromCol < toCol) {
+    step = 1
+  } else {
+    step = -1
+  }
+
+  colsToEvaluate = arrayFrom({
+    length: Math.abs(fromCol - toCol) + 1
+  }, (v, i) => fromCol + (i * step))
+
+  if (colsToEvaluate.length === 0) {
+    return true
+  }
+
+  allEmpty = colsToEvaluate.every((col) => {
+    if (excludeTo === true && col === toCol) {
+      return true
+    }
+
+    return row.cols[col].empty === true
+  })
+
+  return allEmpty
+}
+
+function findProjectedFilledArea ({ rows, baseColInfo, consumedRows = 1, consumedCols }) {
   let area = {}
   let savedRows = []
   let filled = false
@@ -195,14 +225,8 @@ function findProjectedFilledArea ({ rows, baseColInfo, consumedRows = 1, consume
         continue;
       }
 
-      if (originalArea) {
-        if (!originalArea[coordinate] && !conflict) {
-          conflict = !currentCol.empty
-        }
-      } else {
-        if (!conflict) {
-          conflict = !currentCol.empty
-        }
+      if (!conflict && !currentCol.empty) {
+        conflict = true
       }
 
       area[coordinate] = {
@@ -807,6 +831,7 @@ function selectComponentInDesign ({ componentId, componentsInfo }) {
  */
 export { findStartCol }
 export { isInsideOfCol }
+export { areColsEmpty }
 export { getDistanceFromCol }
 export { findProjectedFilledArea }
 export { generateRows }

@@ -91,7 +91,10 @@ class DesignItem extends PureComponent {
   }
 
   handleResize (ev, direction) {
+    let previousResizingState = 'active'
+    let resizingState
     let position
+    let resizing
     const node = this.node
 
     const item = {
@@ -101,6 +104,10 @@ class DesignItem extends PureComponent {
       space: this.props.space,
       leftSpace: this.props.leftSpace,
       components: this.props.components
+    }
+
+    if (this.state.resizing) {
+      previousResizingState = this.state.resizing.state
     }
 
     if (direction === 'left') {
@@ -122,7 +129,7 @@ class DesignItem extends PureComponent {
     }
 
     if (this.props.onResize) {
-      this.props.onResize({
+      resizingState = this.props.onResize({
         item,
         node,
         resize: {
@@ -135,15 +142,31 @@ class DesignItem extends PureComponent {
           y: ev.clientY
         }
       })
+
+      if (resizingState === false) {
+        resizingState = 'invalid'
+      } else if (resizingState === true) {
+        resizingState = 'active'
+      } else {
+        resizingState = undefined
+      }
     }
 
     this.prevPosition = position
 
+    resizing = {
+      direction,
+      position
+    }
+
+    if (resizingState !== undefined) {
+      resizing.state = resizingState
+    } else {
+      resizing.state = previousResizingState
+    }
+
     this.setState({
-      resizing: {
-        direction,
-        position
-      }
+      resizing
     })
   }
 
@@ -241,7 +264,7 @@ class DesignItem extends PureComponent {
         {selection && (
           <Selection
             key="selection"
-            state={resizing ? 'active' : undefined}
+            state={resizing ? resizing.state : undefined}
             left={resizing && resizing.direction === 'left' ? resizing.position : undefined}
             right={resizing && resizing.direction === 'right' ? resizing.position : undefined}
             onResizeStart={this.handleResizeStart}

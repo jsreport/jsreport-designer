@@ -4,7 +4,7 @@
   min-height: 1px;
 }
 
-.DesignItem[data-layout-grid-mode] {
+.DesignItem {
   float: left;
 }
 
