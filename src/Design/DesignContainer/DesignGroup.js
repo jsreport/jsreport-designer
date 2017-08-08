@@ -41,6 +41,7 @@ class DesignGroup extends PureComponent {
               numberOfCols={numberOfCols}
               layoutMode={layoutMode}
               leftSpace={designItem.leftSpace}
+              minSpace={designItem.minSpace}
               space={designItem.space}
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}

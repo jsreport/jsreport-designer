@@ -122,7 +122,7 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
     let nextCol = originalCol + stepX
 
     if (current.row !== toCol.row) {
-      if (nextRow < toCol.row) {
+      if (Math.abs(nextRow - toCol.row)) {
         current.distanceY += rows[originalRow + stepY].height * stepY
       }
 
@@ -136,7 +136,7 @@ function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
     }
 
     if (current.col !== toCol.col) {
-      if (nextCol < toCol.col) {
+      if (Math.abs(nextCol - toCol.col) >= 1) {
         current.distanceX += rows[originalRow].cols[originalCol + stepX].width * stepX
       }
 
@@ -298,6 +298,10 @@ function generateRows ({ baseWidth, numberOfRows, numberOfCols, height }) {
       layoutMode: DEFAULT_LAYOUT_MODE
     }
 
+    if (row.index === 1) {
+      row.layoutMode = 'fixed'
+    }
+
     rows.push(row)
   }
 
@@ -305,82 +309,66 @@ function generateRows ({ baseWidth, numberOfRows, numberOfCols, height }) {
 }
 
 function updateRows ({
-  row,
-  col,
-  colDimensions,
   rows,
-  item,
-  selectedArea,
+  previous,
+  current,
   defaultRowHeight,
   defaultNumberOfCols,
   totalWidth,
   onRowIndexChange
 }) {
-  const { row: startRow, startCol, endCol } = selectedArea
+  const {
+    row: startRow,
+    newHeight: newRowHeight,
+    empty: emptyChange,
+    startCol,
+    endCol
+  } = current
 
   let endRow = startRow
   let rowToUpdateWillChangeDimensions = false
   let rowsToAdd = []
   let rowToUpdate
   let rowsToUpdate
-  let filteredRowsToUpdate
   let placeholderRow
-  let colToUpdateInfo
   let newRows
 
   // get placeholder row (last one)
   placeholderRow = rows[rows.length - 1]
 
   rowToUpdate = {
-    ...rows[startRow],
-    // since the row to update will have the dropped item, then the row is not empty anymore
-    empty: false
+    ...rows[startRow]
   }
 
-  // updating consumed cols in rowToUpdate
+  // updating current cols in rowToUpdate
   for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
-    if (rowToUpdate.cols[colIndex].empty) {
+    if (emptyChange != null && rowToUpdate.cols[colIndex].empty !== emptyChange) {
       rowToUpdate.cols[colIndex] = {
         ...rowToUpdate.cols[colIndex],
-        empty: false
+        empty: emptyChange
       }
     }
   }
 
-  // if start row is a placeholder then update it to a normal row,
-  // later we will change add a new row as the new placeholder
-  if (rowToUpdate.placeholder) {
-    delete rowToUpdate.placeholder
-  }
-
-  colToUpdateInfo = {
-    // take the information from the starting points (selected area)
-    // always take the col from the starting points
-    row: startRow,
-    col: startCol,
-    height: rows[startRow].height,
-    width: rows[startRow].cols[startCol].width,
-    left: colDimensions.left,
-    top: colDimensions.top
+  // if there is a change is "empty" state of cols we need to check if the row
+  // is still empty or not
+  if (emptyChange != null) {
+    rowToUpdate.empty = rowToUpdate.cols.every((col) => col.empty)
   }
 
   if (rows[startRow].empty) {
-    rowToUpdateWillChangeDimensions = rows[startRow].height !== item.size.height
+    rowToUpdateWillChangeDimensions = rows[startRow].height !== newRowHeight
   } else {
-    rowToUpdateWillChangeDimensions = item.size.height > rows[startRow].height
+    rowToUpdateWillChangeDimensions = newRowHeight > rows[startRow].height
   }
 
-  // if item will change the height of the row
+  // if the height of the row will be changed
   // then we should update the row information (size, etc) with new values,
   // the rule is that projected row will always take the height of the item when
   // it is greater than its own height.
   if (rowToUpdateWillChangeDimensions) {
-    // new height of row is equal to the height of dropped item
-    rowToUpdate.height = item.size.height
-    // since rows will change, we need to update
-    // some information of the col.
-    // new height of col
-    colToUpdateInfo.height = rowToUpdate.height
+    // new height of row is equal to the new height
+    rowToUpdate.height = newRowHeight
   }
 
   // if placeholder row is inside the selected area then insert a new row
@@ -397,6 +385,12 @@ function updateRows ({
       // the row to add is empty
       empty: true,
       layoutMode: DEFAULT_LAYOUT_MODE
+    }
+
+    // if start row is a placeholder then update it to a normal row,
+    // the new row will be the new placeholder
+    if (rowToUpdate.placeholder) {
+      delete rowToUpdate.placeholder
     }
 
     // setting the new placeholder row
@@ -422,60 +416,123 @@ function updateRows ({
   // checking all rows after the row to update
   rowsToUpdate = rows.slice(rowToUpdate.index + 1)
 
-  // removing empty rows inside the selected area of item
-  // (rows that are present after the row to update)
-  filteredRowsToUpdate = rowsToUpdate.filter((currentRow) => {
-    // ignore placeholder row
-    if (currentRow.placeholder) {
+  // indexes of rows will be changed
+  if (rowsToAdd.length > 0) {
+    // removing empty rows inside the selected area of item
+    // (rows that are present after the row to update)
+    let filteredRowsToUpdate = rowsToUpdate.filter((currentRow) => {
+      // ignore placeholder row
+      if (currentRow.placeholder) {
+        return true
+      }
+
+      if (currentRow.empty && startRow <= currentRow.index && currentRow.index <= endRow) {
+        return false
+      }
+
       return true
+    })
+
+    newRows = newRows.concat(filteredRowsToUpdate.map((currentRow) => {
+      // original index plus the amount of rows added
+      let newIndex = currentRow.index + rowsToAdd.length
+
+      // minus the amount of items eliminated in the filtering
+      newIndex = newIndex - (rowsToUpdate.length - filteredRowsToUpdate.length)
+
+      // index of row has changed
+      if (currentRow.index !== newIndex) {
+        onRowIndexChange && onRowIndexChange(currentRow, newIndex)
+      }
+
+      if (newIndex !== currentRow.index) {
+        return {
+          ...currentRow,
+          index: newIndex
+        }
+      }
+
+      return currentRow
+    }))
+  } else {
+    newRows = newRows.concat(rowsToUpdate)
+  }
+
+  // changing the cols of previous row
+  if (previous) {
+    let previousRow = previous.row
+    let previousStarCol = previous.startCol
+    let previousEndCol = previous.endCol
+    let previousEmptyChange = previous.empty
+    let isRowEmpty
+    let shouldUpdatePrevious
+    let changedRow
+
+    changedRow = {
+      ...newRows[previousRow],
+      cols: [
+        ...newRows[previousRow].cols
+      ]
     }
 
-    if (currentRow.empty && startRow <= currentRow.index && currentRow.index <= endRow) {
-      return false
-    }
+    for (let colIndex = previousStarCol; colIndex <= previousEndCol; colIndex++) {
+      // change nothing is cols were updated previously
+      if (
+        emptyChange != null &&
+        startRow === previousRow &&
+        startCol <= colIndex &&
+        colIndex <= endCol
+      ) {
+        continue;
+      }
 
-    return true
-  })
+      if (
+        changedRow.cols[colIndex].empty !== previousEmptyChange
+      ) {
+        shouldUpdatePrevious = true
 
-  newRows = newRows.concat(filteredRowsToUpdate.map((currentRow) => {
-    // original index plus the amount of rows added
-    let newIndex = currentRow.index + rowsToAdd.length
-
-    // minus the amount of items eliminated in the filtering
-    newIndex = newIndex - (rowsToUpdate.length - filteredRowsToUpdate.length)
-
-    // index of row has changed
-    if (currentRow.index !== newIndex) {
-      onRowIndexChange && onRowIndexChange(currentRow, newIndex)
-    }
-
-    if (newIndex !== currentRow.index) {
-      return {
-        ...currentRow,
-        index: newIndex
+        changedRow.cols[colIndex] = {
+          ...changedRow.cols[colIndex],
+          empty: previousEmptyChange
+        }
       }
     }
 
-    return currentRow
-  }))
+    isRowEmpty = changedRow.cols.every((col) => col.empty)
+
+    if (shouldUpdatePrevious) {
+      changedRow.empty = isRowEmpty
+      newRows[previousRow] = changedRow
+    }
+  }
 
   return {
     rows: newRows,
-    updatedBaseRow: rowToUpdate,
-    updateBaseColInfo: colToUpdateInfo
+    updatedBaseRow: rowToUpdate
   }
 }
 
-function generateDesignItem ({ row, startCol, endCol, components = [] }) {
+function generateDesignItem ({ row, startCol, endCol, components = [], baseSize }) {
+  let space
+  let minSpace
+
+  if (row.layoutMode === 'grid') {
+    space = (endCol - startCol) + 1
+    minSpace = space
+  } else {
+    space = row.cols.slice(startCol, endCol + 1).reduce((acu, col) => {
+      return acu + col.width
+    }, 0)
+
+    minSpace = Math.ceil(baseSize.width)
+  }
+
   return {
     id: 'DI-' + shortid.generate(),
     start: startCol,
     end: endCol,
-    space: row.layoutMode === 'grid' ? (endCol - startCol) + 1 : (
-      row.cols.slice(startCol, endCol + 1).reduce((acu, col) => {
-        return acu + col.width
-      }, 0)
-    ),
+    minSpace,
+    space,
     components: components
   }
 }
@@ -484,6 +541,7 @@ function addComponentToDesign (component, {
   rows,
   rowsToGroups,
   componentsInfo,
+  componentSize,
   designGroups,
   referenceRow,
   fromCol
@@ -525,7 +583,8 @@ function addComponentToDesign (component, {
       row: rows[referenceRow],
       startCol: fromCol.start,
       endCol: fromCol.end,
-      components: [newComponent]
+      components: [newComponent],
+      baseSize: componentSize
     })
 
     if (rows[referenceRow].layoutMode === 'grid') {
@@ -699,7 +758,8 @@ function addComponentToDesign (component, {
         row: rows[referenceRow],
         startCol: fromCol.start,
         endCol: fromCol.end,
-        components: [newComponent]
+        components: [newComponent],
+        baseSize: componentSize
       })
 
       if (rows[referenceRow].layoutMode === 'grid') {
@@ -801,6 +861,88 @@ function addComponentToDesign (component, {
   }
 }
 
+function updateDesignItem ({
+  rowsToGroups,
+  componentsInfo,
+  designGroups,
+  designItem,
+  current
+}) {
+  let newDesignGroup
+  let newDesignItem
+  let nextDesignItem
+  let designGroupIndex
+  let designItemIndex
+
+  designGroupIndex = rowsToGroups[componentsInfo[designItem.components[0].id].rowIndex]
+
+  newDesignGroup = {
+    ...designGroups[designGroupIndex]
+  }
+
+  if (designItem.index != null) {
+    designItemIndex = designItem.index
+  } else {
+    let found
+
+    newDesignGroup.items.some((item, idx) => {
+      let ok = item.id === designItem.id
+
+      if (ok) {
+        found = idx
+      }
+
+      return ok
+    })
+
+    if (found != null) {
+      designItemIndex = found
+    }
+  }
+
+  newDesignItem = {
+    ...newDesignGroup.items[designItemIndex]
+  }
+
+  nextDesignItem = newDesignGroup.items[designItemIndex + 1]
+
+  if (newDesignGroup.layoutMode === 'grid') {
+    newDesignItem.start = current.start
+    newDesignItem.end = current.end
+    newDesignItem.space = (current.end - current.start) + 1
+
+    if (designItem.start !== current.start) {
+      newDesignItem.leftSpace = designItem.leftSpace + (current.start - designItem.start)
+    }
+  }
+
+  if (nextDesignItem) {
+    if (designItem.end !== current.end) {
+      nextDesignItem = { ...nextDesignItem }
+      nextDesignItem.leftSpace = nextDesignItem.leftSpace + (designItem.end - current.end)
+    }
+
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, designItemIndex),
+      newDesignItem,
+      nextDesignItem,
+      ...newDesignGroup.items.slice(designItemIndex + 2)
+    ]
+  } else {
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, designItemIndex),
+      newDesignItem,
+      ...newDesignGroup.items.slice(designItemIndex + 1)
+    ]
+  }
+
+  return [
+    ...designGroups.slice(0, designGroupIndex),
+    newDesignGroup,
+    ...designGroups.slice(designGroupIndex + 1)
+  ]
+}
+
 function selectComponentInDesign ({ componentId, componentsInfo }) {
   let found = componentsInfo[componentId] !== null
   let componentInGroupInfo
@@ -841,4 +983,5 @@ export { updateRows }
  *  Design group utils
  */
 export { addComponentToDesign }
+export { updateDesignItem }
 export { selectComponentInDesign }

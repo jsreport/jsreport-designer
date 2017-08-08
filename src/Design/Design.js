@@ -11,6 +11,7 @@ import {
   generateRows,
   updateRows,
   addComponentToDesign,
+  updateDesignItem,
   selectComponentInDesign
 } from './designUtils'
 import Canvas from './Canvas'
@@ -154,25 +155,25 @@ class Design extends PureComponent {
     })
   }
 
-  addComponentToCanvas ({ item, clientOffset, row, col, colDimensions }) {
+  addComponentToCanvas ({ item }) {
     let shouldAddComponent = (
       this.selectedArea &&
       !this.selectedArea.conflict &&
       this.selectedArea.filled &&
-      col &&
-      colDimensions
+      item
     )
 
     if (!shouldAddComponent) {
       return
     }
 
-    let {
+    const {
       baseWidth,
       defaultRowHeight,
       defaultNumberOfCols
     } = this.props
 
+    let originalRows = this.state.gridRows
     let originalDesignGroups = this.state.designGroups
     let selectedArea = this.selectedArea
     let originalRowsToGroups = this.rowsToGroups || {}
@@ -189,12 +190,15 @@ class Design extends PureComponent {
       rows: newRows,
       updatedBaseRow
     } = updateRows({
-      row,
-      col,
-      colDimensions,
-      rows: this.state.gridRows,
-      item,
-      selectedArea: this.selectedArea,
+      rows: originalRows,
+      current: {
+        row: selectedArea.row,
+        newHeight: item.size.height,
+        startCol: selectedArea.startCol,
+        endCol: selectedArea.endCol,
+        // since the row to update will have the dropped item, then the row is not empty anymore
+        empty: false
+      },
       defaultRowHeight: defaultRowHeight,
       defaultNumberOfCols: defaultNumberOfCols,
       totalWidth: baseWidth,
@@ -224,6 +228,7 @@ class Design extends PureComponent {
       rows: newRows,
       rowsToGroups: currentRowsToGroups,
       componentsInfo: currentComponentsInfo,
+      componentSize: item.size,
       designGroups: originalDesignGroups,
       referenceRow: updatedBaseRow.index,
       fromCol: {
@@ -332,6 +337,11 @@ class Design extends PureComponent {
   }
 
   onResizeDesignItemStart ({ item, resize, node }) {
+    const {
+      baseWidth,
+      defaultNumberOfCols
+    } = this.props
+
     let rows = this.state.gridRows
     let rowsToGroups = this.rowsToGroups
     let designGroups = this.state.designGroups
@@ -340,6 +350,8 @@ class Design extends PureComponent {
     let currentDesignItem
     let canvasDimensions
     let itemDimensions
+    let minLeftPosition
+    let minRightPosition
     let maxLeftPosition
     let maxRightPosition
     let selectedArea
@@ -359,38 +371,62 @@ class Design extends PureComponent {
       ]
     ]
 
-    if (currentDesignGroup) {
-      currentDesignItem = currentDesignGroup.items[item.index]
-
-      // getting the initial projected area when the resizing starts
-      selectedArea = findProjectedFilledArea({
-        rows,
-        baseColInfo: {
-          col: currentDesignItem.start,
-          row: componentsInfo[item.components[0].id].rowIndex,
-          top: itemDimensions.top,
-          left: itemDimensions.left
-        },
-        consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1
-      })
-
-      selectedArea.conflict = false
-
-      this.selectedArea = selectedArea
-      this.selectedAreaWhenResizing = selectedArea
-
-      this.setState({
-        selectedArea
-      })
+    if (!currentDesignGroup) {
+      return
     }
 
+    currentDesignItem = currentDesignGroup.items[item.index]
+
+    if (!currentDesignItem) {
+      return
+    }
+
+    if (currentDesignItem.space !== currentDesignItem.minSpace) {
+      let min = Math.abs(currentDesignItem.space - currentDesignItem.minSpace)
+
+      if (item.layoutMode === 'grid') {
+        min = min * (baseWidth / defaultNumberOfCols)
+      }
+
+      min = Math.round(min) * -1
+
+      minLeftPosition = min
+      minRightPosition = min
+    } else {
+      minLeftPosition = 0
+      minRightPosition = 0
+    }
+
+    // getting the initial projected area when the resizing starts
+    selectedArea = findProjectedFilledArea({
+      rows,
+      baseColInfo: {
+        col: currentDesignItem.start,
+        row: componentsInfo[item.components[0].id].rowIndex,
+        top: itemDimensions.top,
+        left: itemDimensions.left
+      },
+      consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1
+    })
+
+    selectedArea.conflict = false
+
+    this.selectedArea = selectedArea
+    this.selectedAreaWhenResizing = selectedArea
+
+    this.setState({
+      selectedArea
+    })
+
     return {
+      minLeft: minLeftPosition,
+      minRight: minRightPosition,
       maxLeft: maxLeftPosition,
       maxRight: maxRightPosition
     }
   }
 
-  onResizeDesignItem ({ item, resize, node }) {
+  onResizeDesignItem ({ item, resize }) {
     let selectedArea = this.selectedArea
     let selectedAreaWhenResizing = this.selectedAreaWhenResizing
     let rows = this.state.gridRows
@@ -409,7 +445,9 @@ class Design extends PureComponent {
       step = 1
     }
 
-    if (resize.prevPosition > resize.position) {
+    if (
+      resize.prevPosition > resize.position
+    ) {
       step = step * -1
     }
 
@@ -498,8 +536,13 @@ class Design extends PureComponent {
         colLimit = resize.direction === 'left' ? 0 : rows[selectedAreaWhenResizing.row].cols.length - 1
         sizeLimit = resize.direction === 'left' ? resize.maxLeft : resize.maxRight
       } else {
-        colLimit = resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol
-        sizeLimit = resize.direction === 'left' ? 0 : rows[selectedAreaWhenResizing.row].cols.length - 1
+        if (resize.direction === 'left') {
+          colLimit = selectedArea.startCol + Math.abs(item.space - item.minSpace)
+        } else {
+          colLimit = selectedArea.endCol - Math.abs(item.space - item.minSpace)
+        }
+
+        sizeLimit = resize.direction === 'left' ? resize.minLeft : resize.minRight
       }
 
       if (startCol.colCoordinate.col === colLimit && resize.position === sizeLimit) {
@@ -517,7 +560,7 @@ class Design extends PureComponent {
         if (isGrowing) {
           shouldCalculate = Math.abs(evaluatedCol - startCol.colCoordinate.col) > 1
         } else {
-          if (resize.position === 0 && evaluatedCol > startCol.colCoordinate.col) {
+          if (resize.position === sizeLimit && Math.abs(evaluatedCol - startCol.colCoordinate.col) >= 1) {
             shouldCalculate = true
           } else if (Math.abs(evaluatedCol - startCol.colCoordinate.col) === 1) {
             shouldCalculate = false
@@ -576,68 +619,62 @@ class Design extends PureComponent {
     }
 
     if (!shouldCalculate || !nextCol) {
-      // when layoutMode is grid give hints early about invalid resizing
-      if (startCol) {
-        if (resize.position === 0) {
-          return true
-        }
-
-        return areColsEmpty({
-          row: rows[selectedAreaWhenResizing.row],
-          fromCol: startCol.colCoordinate.col,
-          toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
-          excludeTo: true
-        })
-      }
-
       return
     }
 
     newSelectedArea = {
-      ...this.selectedAreaWhenResizing,
+      ...selectedAreaWhenResizing,
     }
 
     newSelectedArea.areaBox = {
-      ...this.selectedAreaWhenResizing.areaBox
+      ...selectedAreaWhenResizing.areaBox
     }
 
     if (item.layoutMode === 'grid') {
       let distanceX
+      let fromCol
+      let toCol
 
-      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : this.selectedAreaWhenResizing.startCol
-      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : this.selectedAreaWhenResizing.endCol
+      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedAreaWhenResizing.startCol
+      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedAreaWhenResizing.endCol
+
+      fromCol = resize.direction === 'left' ? nextCol.index : selectedArea.endCol
+      toCol = resize.direction === 'left' ? selectedArea.startCol : nextCol.index
 
       distanceX = getDistanceFromCol({
         rows,
-        fromCol: { row: selectedArea.row, col: resize.direction === 'left' ? nextCol.index : this.selectedArea.endCol },
-        toCol: { row: selectedArea.row, col: resize.direction === 'left' ? this.selectedArea.startCol : nextCol.index },
+        fromCol: { row: selectedArea.row, col: fromCol },
+        toCol: { row: selectedArea.row, col: toCol },
         opts: {
-          includeFrom: resize.direction === 'left' ? nextCol.index !== this.selectedArea.startCol : undefined,
-          includeTo: resize.direction === 'right' ? nextCol.index !== this.selectedArea.startCol : undefined,
+          includeFrom: resize.direction === 'left' ? nextCol.index !== selectedArea.startCol : undefined,
+          includeTo: resize.direction === 'right' ? nextCol.index !== selectedArea.startCol : undefined,
         }
       }).distanceX
 
-      newSelectedArea.areaBox.width = this.selectedArea.areaBox.width + distanceX
+      newSelectedArea.areaBox.width = selectedArea.areaBox.width + distanceX
 
       newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-        this.selectedArea.areaBox.left - distanceX
-      ) : this.selectedArea.areaBox.left
+        selectedArea.areaBox.left - distanceX
+      ) : selectedArea.areaBox.left
     } else {
-      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : this.selectedAreaWhenResizing.startCol
-      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : this.selectedAreaWhenResizing.endCol
+      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedAreaWhenResizing.startCol
+      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedAreaWhenResizing.endCol
 
-      newSelectedArea.areaBox.width = this.selectedArea.areaBox.width + resize.position
+      newSelectedArea.areaBox.width = selectedArea.areaBox.width + resize.position
       newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-        this.selectedArea.areaBox.left - resize.position
-      ) : this.selectedArea.areaBox.left
+        selectedArea.areaBox.left - resize.position
+      ) : selectedArea.areaBox.left
     }
 
-    if (resize.position === 0 || areColsEmpty({
-      row: rows[selectedAreaWhenResizing.row],
-      fromCol: nextCol.index,
-      toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
-      excludeTo: true
-    })) {
+    if (
+      (resize.position <= 0) ||
+      areColsEmpty({
+        row: rows[selectedAreaWhenResizing.row],
+        fromCol: nextCol.index,
+        toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
+        excludeTo: true
+      })
+    ) {
       newSelectedArea.conflict = false
     } else {
       newSelectedArea.conflict = true
@@ -652,22 +689,104 @@ class Design extends PureComponent {
     return !newSelectedArea.conflict
   }
 
-  onResizeDesignItemEnd ({ item, resize, node }) {
-    // we mark that resizing has ended sometime later,
-    // this is needed because we switch "isResizing" on the next interaction
-    // "handleGeneralClickOrDragStart", and because some browsers has inconsistences
-    // (like not firing click events after resizing) we need to ensure to have
-    // "isResizing" in correct state
-    setTimeout(() => {
-      this.isResizing = false
-    }, 100)
+  onResizeDesignItemEnd ({ item, resize }) {
+    const {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfCols
+    } = this.props
 
-    this.selectedArea = null
-    this.selectedAreaWhenResizing = null
+    const originalRows = this.state.gridRows
+    const originalSelectedArea = this.selectedArea
+    const selectedArea = this.selectedAreaWhenResizing
+    const originalDesignGroups = this.state.designGroups
+    const originalComponentsInfo = this.componentsInfo
+    const rowsToGroups = this.rowsToGroups
+
+    const currentDesignGroup = originalDesignGroups[
+      rowsToGroups[
+        originalComponentsInfo[item.components[0].id].rowIndex
+      ]
+    ]
+
+    const cleanup = () => {
+      // we mark that resizing has ended sometime later,
+      // this is needed because we switch "isResizing" on the next interaction
+      // "handleGeneralClickOrDragStart", and because some browsers has inconsistences
+      // (like not firing click events after resizing) we need to ensure to have
+      // "isResizing" in correct state
+      setTimeout(() => {
+        this.isResizing = false
+      }, 100)
+
+      this.selectedArea = null
+      this.selectedAreaWhenResizing = null
+
+      this.setState({
+        selectedArea: null
+      })
+    }
+
+    if (
+      (item.layoutMode === 'grid' &&
+      originalSelectedArea.startCol === selectedArea.startCol &&
+      originalSelectedArea.endCol === selectedArea.endCol) ||
+      (item.layoutMode === 'fixed' &&
+      originalSelectedArea.areaBox.width === selectedArea.areaBox.width) ||
+      selectedArea.conflict
+    ) {
+      return cleanup()
+    }
+
+    const {
+      rows: newRows
+    } = updateRows({
+      rows: originalRows,
+      previous: {
+        row: originalSelectedArea.row,
+        startCol: originalSelectedArea.startCol,
+        endCol: originalSelectedArea.endCol,
+        // clean the previous cols
+        empty: true
+      },
+      current: {
+        row: selectedArea.row,
+        newHeight: originalRows[selectedArea.row].height,
+        startCol: selectedArea.startCol,
+        endCol: selectedArea.endCol,
+        // since the row still have the item, the cols are not empty
+        empty: false
+      },
+      defaultRowHeight: defaultRowHeight,
+      defaultNumberOfCols: defaultNumberOfCols,
+      totalWidth: baseWidth
+    })
+
+    let itemChange = {
+      start: selectedArea.startCol,
+      end: selectedArea.endCol
+    }
+
+    if (item.layoutMode !== 'grid') {
+      itemChange.left = selectedArea.areaBox.left
+      itemChange.width = selectedArea.areaBox.width
+    }
+
+    const newDesignGroups = updateDesignItem({
+      rowsToGroups,
+      componentsInfo: originalComponentsInfo,
+      designGroups: originalDesignGroups,
+      designItem: { ...currentDesignGroup.items[item.index], index: item.index },
+      current: itemChange
+    })
 
     this.setState({
-      selectedArea: null
+      selectedArea: null,
+      gridRows: newRows,
+      designGroups: newDesignGroups
     })
+
+    cleanup()
   }
 
   onDragEnterCanvas () {

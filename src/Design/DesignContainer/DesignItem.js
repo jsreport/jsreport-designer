@@ -14,6 +14,8 @@ class DesignItem extends PureComponent {
 
     this.originalResizeCoord = null
     this.prevPosition = null
+    this.minResizeLeft = null
+    this.minResizeRight = null
     this.maxResizeLeft = null
     this.maxResizeRight = null
 
@@ -50,6 +52,7 @@ class DesignItem extends PureComponent {
       id: this.props.id,
       index: this.props.index,
       layoutMode: this.props.layoutMode,
+      minSpace: this.props.minSpace,
       space: this.props.space,
       leftSpace: this.props.leftSpace,
       components: this.props.components
@@ -77,7 +80,17 @@ class DesignItem extends PureComponent {
 
       this.prevPosition = position
 
-      resizeLimits = (resizeLimits == null) ? { maxLeft: undefined, maxRight: undefined } : resizeLimits
+      resizeLimits = (resizeLimits == null) ? {
+        minLeft: 0,
+        minRight: 0
+      } : {
+        minLeft: 0,
+        minRight: 0,
+        ...resizeLimits
+      }
+
+      this.minResizeLeft = (resizeLimits.minLeft != null && resizeLimits.minLeft > 0) ? 0 : resizeLimits.minLeft
+      this.minResizeRight = (resizeLimits.minRight != null && resizeLimits.minRight > 0) ? 0 : resizeLimits.minRight
       this.maxResizeLeft = resizeLimits.maxLeft
       this.maxResizeRight = resizeLimits.maxRight
     }
@@ -101,6 +114,7 @@ class DesignItem extends PureComponent {
       id: this.props.id,
       index: this.props.index,
       layoutMode: this.props.layoutMode,
+      minSpace: this.props.minSpace,
       space: this.props.space,
       leftSpace: this.props.leftSpace,
       components: this.props.components
@@ -116,7 +130,27 @@ class DesignItem extends PureComponent {
       position = ev.clientX - this.originalResizeCoord.x
     }
 
-    position = position < 0 ? 0 : position
+    // if for some reason the browser gives us the same position than the previous
+    // then don't emit a event and don't update the selection
+    if (position === this.prevPosition) {
+      return
+    }
+
+    if (
+      direction === 'left' &&
+      this.minResizeLeft != null &&
+      position <= 0 &&
+      (this.minResizeLeft === 0 || position <= this.minResizeLeft)
+    ) {
+      position = this.minResizeLeft
+    } else if (
+      direction === 'right' &&
+      this.minResizeRight != null &&
+      position <= 0 &&
+      (this.minResizeRight === 0 || position <= this.minResizeRight)
+    ) {
+      position = this.minResizeRight
+    }
 
     if (direction === 'left') {
       if (this.maxResizeLeft != null && position > this.maxResizeLeft) {
@@ -136,6 +170,8 @@ class DesignItem extends PureComponent {
           direction,
           position,
           prevPosition: this.prevPosition,
+          minLeft: this.minResizeLeft,
+          minRight: this.minResizeRight,
           maxLeft: this.maxResizeLeft,
           maxRight: this.maxResizeRight,
           x: ev.clientX,
@@ -177,6 +213,7 @@ class DesignItem extends PureComponent {
       id: this.props.id,
       index: this.props.index,
       layoutMode: this.props.layoutMode,
+      minSpace: this.props.minSpace,
       space: this.props.space,
       leftSpace: this.props.leftSpace,
       components: this.props.components
@@ -193,6 +230,8 @@ class DesignItem extends PureComponent {
           direction,
           position: this.state.resizing.position,
           prevPosition: this.prevPosition,
+          minLeft: this.minResizeLeft,
+          minRight: this.minResizeRight,
           maxLeft: this.maxResizeLeft,
           maxRight: this.maxResizeRight,
           x: ev.clientX,
@@ -203,6 +242,8 @@ class DesignItem extends PureComponent {
 
     this.originalResizeCoord = null
     this.prevPosition = null
+    this.minResizeLeft = null
+    this.minResizeRight = null
     this.maxResizeLeft = null
     this.maxResizeRight = null
 
@@ -293,6 +334,7 @@ DesignItem.propTypes = {
   numberOfCols: PropTypes.number.isRequired,
   layoutMode: PropTypes.oneOf(['grid', 'fixed']).isRequired,
   leftSpace: PropTypes.number,
+  minSpace: PropTypes.number.isRequired,
   space: PropTypes.number.isRequired,
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
