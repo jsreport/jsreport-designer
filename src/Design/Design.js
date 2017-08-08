@@ -4,13 +4,11 @@ import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
   isInsideOfCol,
-  findStartCol,
   findProjectedFilledArea,
-  getDistanceFromCol,
-  areColsEmpty,
   generateRows,
   updateRows,
   addComponentToDesign,
+  getProjectedFilledAreaWhenResizingDesignItem,
   updateDesignItem,
   selectComponentInDesign
 } from './designUtils'
@@ -427,257 +425,30 @@ class Design extends PureComponent {
   }
 
   onResizeDesignItem ({ item, resize }) {
+    const { baseWidth, defaultNumberOfCols } = this.props
+
+    let rows = this.state.gridRows
     let selectedArea = this.selectedArea
     let selectedAreaWhenResizing = this.selectedAreaWhenResizing
-    let rows = this.state.gridRows
-    let shouldCalculate = false
-    let isGrowing = false
-    let newSelectedArea
-    let step
-    let nextCol
-    let startCol
 
     this.isResizing = true
 
-    if (resize.direction === 'left') {
-      step = -1
-    } else {
-      step = 1
-    }
+    // TODO: Safari has a bug, when resizing if you move the mouse bellow the resized item
+    // while resizing you will see that all grid cols bellow the item gets selected (text selection)
+    // this must be some way to disable the selection or some way to hide it with CSS
 
-    if (
-      resize.prevPosition > resize.position
-    ) {
-      step = step * -1
-    }
+    const newSelectedArea = getProjectedFilledAreaWhenResizingDesignItem({
+      rows,
+      baseWidth,
+      defaultNumberOfCols,
+      originalSelectedArea: selectedArea,
+      selectedArea: selectedAreaWhenResizing,
+      item,
+      resize
+    })
 
-    if (
-      (resize.direction === 'left' && step === -1) ||
-      (resize.direction === 'right' && step === 1)
-    ) {
-      isGrowing = true
-    }
-
-    if (item.layoutMode === 'grid') {
-      let colReference
-      let baseCol
-      let baseColLeft
-      let colLimit
-      let sizeLimit
-
-      if (resize.direction === 'left') {
-        colReference = selectedAreaWhenResizing.startCol
-        baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
-
-        if (colReference === 0 && !isGrowing) {
-          baseColLeft = selectedAreaWhenResizing.areaBox.left
-        } else {
-          colReference = colReference - 1
-          baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
-
-          if (baseCol) {
-            baseColLeft = (
-              selectedAreaWhenResizing.areaBox.left -
-              baseCol.width
-            )
-          }
-        }
-      } else {
-        colReference = selectedAreaWhenResizing.endCol
-        baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
-
-        if (colReference === rows[selectedAreaWhenResizing.row].cols.length - 1 && !isGrowing) {
-          if (baseCol) {
-            baseColLeft = (
-              selectedAreaWhenResizing.areaBox.left +
-              selectedAreaWhenResizing.areaBox.width
-            ) - baseCol.width
-          }
-        } else {
-          colReference = colReference + 1
-          baseCol = rows[selectedAreaWhenResizing.row].cols[colReference]
-
-          baseColLeft = (
-            selectedAreaWhenResizing.areaBox.left +
-            selectedAreaWhenResizing.areaBox.width
-          )
-        }
-      }
-
-      if (!baseCol) {
-        return
-      }
-
-      startCol = findStartCol({
-        rows,
-        point: {
-          side: resize.direction === 'left' ? (
-            isGrowing ? 'left' : 'right'
-          ) : (
-            isGrowing ? 'right' : 'left'
-          ),
-          x: resize.direction === 'left' ? (
-            selectedArea.areaBox.left - resize.position
-          ) : selectedArea.areaBox.left + selectedArea.areaBox.width + resize.position,
-          y: selectedArea.areaBox.top
-        },
-        baseCol: {
-          col: baseCol.index,
-          row: selectedArea.row,
-          top: selectedArea.areaBox.top,
-          left: baseColLeft,
-          width: baseCol.width,
-          height: selectedArea.areaBox.height
-        },
-        step
-      })
-
-      if (isGrowing) {
-        colLimit = resize.direction === 'left' ? 0 : rows[selectedAreaWhenResizing.row].cols.length - 1
-        sizeLimit = resize.direction === 'left' ? resize.maxLeft : resize.maxRight
-      } else {
-        if (resize.direction === 'left') {
-          colLimit = selectedArea.startCol + Math.abs(item.space - item.minSpace)
-        } else {
-          colLimit = selectedArea.endCol - Math.abs(item.space - item.minSpace)
-        }
-
-        sizeLimit = resize.direction === 'left' ? resize.minLeft : resize.minRight
-      }
-
-      if (startCol.colCoordinate.col === colLimit && resize.position === sizeLimit) {
-        shouldCalculate = true
-        nextCol = rows[selectedAreaWhenResizing.row].cols[startCol.colCoordinate.col]
-      } else if (startCol.filled) {
-        let evaluatedCol
-
-        if (resize.direction === 'left') {
-          evaluatedCol = selectedAreaWhenResizing.startCol
-        } else {
-          evaluatedCol = selectedAreaWhenResizing.endCol
-        }
-
-        if (isGrowing) {
-          shouldCalculate = Math.abs(evaluatedCol - startCol.colCoordinate.col) > 1
-        } else {
-          if (resize.position === sizeLimit && Math.abs(evaluatedCol - startCol.colCoordinate.col) >= 1) {
-            shouldCalculate = true
-          } else if (Math.abs(evaluatedCol - startCol.colCoordinate.col) === 1) {
-            shouldCalculate = false
-          } else {
-            shouldCalculate = true
-          }
-        }
-
-        if (resize.direction === 'left') {
-          nextCol = rows[selectedAreaWhenResizing.row].cols[startCol.colCoordinate.col + 1]
-        } else {
-          nextCol = rows[selectedAreaWhenResizing.row].cols[startCol.colCoordinate.col -  1]
-        }
-      }
-    } else {
-      let baseColWidth = this.props.baseWidth / this.props.defaultNumberOfCols
-      let consumedCols = Math.floor(resize.position / baseColWidth)
-      let evaluatedCol
-      let factor
-
-      if (resize.direction === 'left') {
-        evaluatedCol = selectedArea.startCol
-        factor = -1
-      } else {
-        evaluatedCol = selectedArea.endCol
-        factor = 1
-      }
-
-      if (resize.position === 0) {
-        nextCol = rows[selectedAreaWhenResizing.row].cols[evaluatedCol]
-      } else {
-        let newColIndex = evaluatedCol + (consumedCols * factor)
-
-        if (
-          newColIndex !== 0 &&
-          newColIndex !== rows[selectedAreaWhenResizing.row].cols.length - 1
-        ) {
-          newColIndex = newColIndex + factor
-        }
-
-        nextCol = rows[selectedAreaWhenResizing.row].cols[newColIndex]
-      }
-
-      // fixed mode
-      if (
-        (nextCol.index === evaluatedCol &&
-        selectedArea.areaBox.width === selectedAreaWhenResizing.areaBox.width) ||
-        (nextCol.index === 0 && resize.position === resize.prevPosition) ||
-        (nextCol.index === rows[selectedAreaWhenResizing.row].cols.length - 1 &&
-        resize.position === resize.prevPosition)
-      ) {
-        shouldCalculate = false
-      } else {
-        shouldCalculate = true
-      }
-    }
-
-    if (!shouldCalculate || !nextCol) {
+    if (!newSelectedArea) {
       return
-    }
-
-    newSelectedArea = {
-      ...selectedAreaWhenResizing,
-    }
-
-    newSelectedArea.areaBox = {
-      ...selectedAreaWhenResizing.areaBox
-    }
-
-    if (item.layoutMode === 'grid') {
-      let distanceX
-      let fromCol
-      let toCol
-
-      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedAreaWhenResizing.startCol
-      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedAreaWhenResizing.endCol
-
-      fromCol = resize.direction === 'left' ? nextCol.index : selectedArea.endCol
-      toCol = resize.direction === 'left' ? selectedArea.startCol : nextCol.index
-
-      distanceX = getDistanceFromCol({
-        rows,
-        fromCol: { row: selectedArea.row, col: fromCol },
-        toCol: { row: selectedArea.row, col: toCol },
-        opts: {
-          includeFrom: resize.direction === 'left' ? nextCol.index !== selectedArea.startCol : undefined,
-          includeTo: resize.direction === 'right' ? nextCol.index !== selectedArea.startCol : undefined,
-        }
-      }).distanceX
-
-      newSelectedArea.areaBox.width = selectedArea.areaBox.width + distanceX
-
-      newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-        selectedArea.areaBox.left - distanceX
-      ) : selectedArea.areaBox.left
-    } else {
-      newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedAreaWhenResizing.startCol
-      newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedAreaWhenResizing.endCol
-
-      newSelectedArea.areaBox.width = selectedArea.areaBox.width + resize.position
-      newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-        selectedArea.areaBox.left - resize.position
-      ) : selectedArea.areaBox.left
-    }
-
-    if (
-      (resize.position <= 0) ||
-      areColsEmpty({
-        row: rows[selectedAreaWhenResizing.row],
-        fromCol: nextCol.index,
-        toCol: resize.direction === 'left' ? selectedArea.startCol : selectedArea.endCol,
-        excludeTo: true
-      })
-    ) {
-      newSelectedArea.conflict = false
-    } else {
-      newSelectedArea.conflict = true
     }
 
     this.selectedAreaWhenResizing = newSelectedArea

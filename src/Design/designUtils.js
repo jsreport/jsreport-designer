@@ -857,6 +857,266 @@ function addComponentToDesign (component, {
   }
 }
 
+function getProjectedFilledAreaWhenResizingDesignItem ({
+  rows,
+  baseWidth,
+  defaultNumberOfCols,
+  originalSelectedArea,
+  selectedArea,
+  item,
+  resize
+}) {
+  let shouldCalculate = false
+  let isGrowing = false
+  let newSelectedArea
+  let step
+  let nextCol
+  let startCol
+
+  if (resize.direction === 'left') {
+    step = -1
+  } else {
+    step = 1
+  }
+
+  if (
+    resize.prevPosition > resize.position
+  ) {
+    step = step * -1
+  }
+
+  if (
+    (resize.direction === 'left' && step === -1) ||
+    (resize.direction === 'right' && step === 1)
+  ) {
+    isGrowing = true
+  }
+
+  if (item.layoutMode === 'grid') {
+    let colReference
+    let baseCol
+    let baseColLeft
+    let colLimit
+    let sizeLimit
+
+    if (resize.direction === 'left') {
+      colReference = selectedArea.startCol
+      baseCol = rows[selectedArea.row].cols[colReference]
+
+      if (colReference === 0 && !isGrowing) {
+        baseColLeft = selectedArea.areaBox.left
+      } else {
+        colReference = colReference - 1
+        baseCol = rows[selectedArea.row].cols[colReference]
+
+        if (baseCol) {
+          baseColLeft = (
+            selectedArea.areaBox.left -
+            baseCol.width
+          )
+        }
+      }
+    } else {
+      colReference = selectedArea.endCol
+      baseCol = rows[selectedArea.row].cols[colReference]
+
+      if (colReference === rows[selectedArea.row].cols.length - 1 && !isGrowing) {
+        if (baseCol) {
+          baseColLeft = (
+            selectedArea.areaBox.left +
+            selectedArea.areaBox.width
+          ) - baseCol.width
+        }
+      } else {
+        colReference = colReference + 1
+        baseCol = rows[selectedArea.row].cols[colReference]
+
+        baseColLeft = (
+          selectedArea.areaBox.left +
+          selectedArea.areaBox.width
+        )
+      }
+    }
+
+    if (!baseCol) {
+      return
+    }
+
+    startCol = findStartCol({
+      rows,
+      point: {
+        side: resize.direction === 'left' ? (
+          isGrowing ? 'left' : 'right'
+        ) : (
+          isGrowing ? 'right' : 'left'
+        ),
+        x: resize.direction === 'left' ? (
+          originalSelectedArea.areaBox.left - resize.position
+        ) : originalSelectedArea.areaBox.left + originalSelectedArea.areaBox.width + resize.position,
+        y: originalSelectedArea.areaBox.top
+      },
+      baseCol: {
+        col: baseCol.index,
+        row: originalSelectedArea.row,
+        top: originalSelectedArea.areaBox.top,
+        left: baseColLeft,
+        width: baseCol.width,
+        height: originalSelectedArea.areaBox.height
+      },
+      step
+    })
+
+    if (isGrowing) {
+      colLimit = resize.direction === 'left' ? 0 : rows[selectedArea.row].cols.length - 1
+      sizeLimit = resize.direction === 'left' ? resize.maxLeft : resize.maxRight
+    } else {
+      if (resize.direction === 'left') {
+        colLimit = originalSelectedArea.startCol + Math.abs(item.space - item.minSpace)
+      } else {
+        colLimit = originalSelectedArea.endCol - Math.abs(item.space - item.minSpace)
+      }
+
+      sizeLimit = resize.direction === 'left' ? resize.minLeft : resize.minRight
+    }
+
+    if (startCol.colCoordinate.col === colLimit && resize.position === sizeLimit) {
+      shouldCalculate = true
+      nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col]
+    } else if (startCol.filled) {
+      let evaluatedCol
+
+      if (resize.direction === 'left') {
+        evaluatedCol = selectedArea.startCol
+      } else {
+        evaluatedCol = selectedArea.endCol
+      }
+
+      if (isGrowing) {
+        shouldCalculate = Math.abs(evaluatedCol - startCol.colCoordinate.col) > 1
+      } else {
+        if (resize.position === sizeLimit && Math.abs(evaluatedCol - startCol.colCoordinate.col) >= 1) {
+          shouldCalculate = true
+        } else if (Math.abs(evaluatedCol - startCol.colCoordinate.col) === 1) {
+          shouldCalculate = false
+        } else {
+          shouldCalculate = true
+        }
+      }
+
+      if (resize.direction === 'left') {
+        nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col + 1]
+      } else {
+        nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col -  1]
+      }
+    }
+  } else {
+    let baseColWidth = baseWidth / defaultNumberOfCols
+    let consumedCols = Math.floor(resize.position / baseColWidth)
+    let evaluatedCol
+    let factor
+
+    if (resize.direction === 'left') {
+      evaluatedCol = originalSelectedArea.startCol
+      factor = -1
+    } else {
+      evaluatedCol = originalSelectedArea.endCol
+      factor = 1
+    }
+
+    if (resize.position === 0) {
+      nextCol = rows[selectedArea.row].cols[evaluatedCol]
+    } else {
+      let newColIndex = evaluatedCol + (consumedCols * factor)
+
+      if (
+        newColIndex !== 0 &&
+        newColIndex !== rows[selectedArea.row].cols.length - 1
+      ) {
+        newColIndex = newColIndex + factor
+      }
+
+      nextCol = rows[selectedArea.row].cols[newColIndex]
+    }
+
+    // fixed mode
+    if (
+      (nextCol.index === evaluatedCol &&
+      originalSelectedArea.areaBox.width === selectedArea.areaBox.width) ||
+      (nextCol.index === 0 && resize.position === resize.prevPosition) ||
+      (nextCol.index === rows[selectedArea.row].cols.length - 1 &&
+      resize.position === resize.prevPosition)
+    ) {
+      shouldCalculate = false
+    } else {
+      shouldCalculate = true
+    }
+  }
+
+  if (!shouldCalculate || !nextCol) {
+    return
+  }
+
+  newSelectedArea = {
+    ...selectedArea,
+  }
+
+  newSelectedArea.areaBox = {
+    ...selectedArea.areaBox
+  }
+
+  if (item.layoutMode === 'grid') {
+    let distanceX
+    let fromCol
+    let toCol
+
+    newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedArea.startCol
+    newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedArea.endCol
+
+    fromCol = resize.direction === 'left' ? nextCol.index : originalSelectedArea.endCol
+    toCol = resize.direction === 'left' ? originalSelectedArea.startCol : nextCol.index
+
+    distanceX = getDistanceFromCol({
+      rows,
+      fromCol: { row: originalSelectedArea.row, col: fromCol },
+      toCol: { row: originalSelectedArea.row, col: toCol },
+      opts: {
+        includeFrom: resize.direction === 'left' ? nextCol.index !== originalSelectedArea.startCol : undefined,
+        includeTo: resize.direction === 'right' ? nextCol.index !== originalSelectedArea.startCol : undefined,
+      }
+    }).distanceX
+
+    newSelectedArea.areaBox.width = originalSelectedArea.areaBox.width + distanceX
+
+    newSelectedArea.areaBox.left = resize.direction === 'left' ? (
+      originalSelectedArea.areaBox.left - distanceX
+    ) : originalSelectedArea.areaBox.left
+  } else {
+    newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedArea.startCol
+    newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedArea.endCol
+
+    newSelectedArea.areaBox.width = originalSelectedArea.areaBox.width + resize.position
+    newSelectedArea.areaBox.left = resize.direction === 'left' ? (
+      originalSelectedArea.areaBox.left - resize.position
+    ) : originalSelectedArea.areaBox.left
+  }
+
+  if (
+    (resize.position <= 0) ||
+    areColsEmpty({
+      row: rows[selectedArea.row],
+      fromCol: nextCol.index,
+      toCol: resize.direction === 'left' ? originalSelectedArea.startCol : originalSelectedArea.endCol,
+      excludeTo: true
+    })
+  ) {
+    newSelectedArea.conflict = false
+  } else {
+    newSelectedArea.conflict = true
+  }
+
+  return newSelectedArea
+}
+
 function updateDesignItem ({
   rowsToGroups,
   componentsInfo,
@@ -969,10 +1229,7 @@ function selectComponentInDesign ({ componentId, componentsInfo }) {
 /**
  *  Grid utils
  */
-export { findStartCol }
 export { isInsideOfCol }
-export { areColsEmpty }
-export { getDistanceFromCol }
 export { findProjectedFilledArea }
 export { generateRows }
 export { generateCols }
@@ -981,5 +1238,6 @@ export { updateRows }
  *  Design group utils
  */
 export { addComponentToDesign }
+export { getProjectedFilledAreaWhenResizingDesignItem }
 export { updateDesignItem }
 export { selectComponentInDesign }
