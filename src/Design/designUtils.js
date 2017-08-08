@@ -908,13 +908,15 @@ function updateDesignItem ({
     newDesignItem.space = (current.end - current.start) + 1
 
     if (designItem.start !== current.start) {
-      newDesignItem.leftSpace = designItem.leftSpace + (current.start - designItem.start)
+      newDesignItem.leftSpace = newDesignItem.leftSpace == null ? 0 : newDesignItem.leftSpace
+      newDesignItem.leftSpace = newDesignItem.leftSpace + (current.start - designItem.start)
     }
   }
 
   if (nextDesignItem) {
-    if (designItem.end !== current.end) {
+    if (current.end !== designItem.end) {
       nextDesignItem = { ...nextDesignItem }
+      nextDesignItem.leftSpace = nextDesignItem.leftSpace == null ? 0 : nextDesignItem.leftSpace
       nextDesignItem.leftSpace = nextDesignItem.leftSpace + (designItem.end - current.end)
     }
 
