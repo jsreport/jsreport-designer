@@ -298,10 +298,6 @@ function generateRows ({ baseWidth, numberOfRows, numberOfCols, height }) {
       layoutMode: DEFAULT_LAYOUT_MODE
     }
 
-    if (row.index === 1) {
-      row.layoutMode = 'fixed'
-    }
-
     rows.push(row)
   }
 
