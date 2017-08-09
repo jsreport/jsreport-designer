@@ -12,6 +12,7 @@ class DesignGroup extends PureComponent {
       selection,
       items,
       onClickComponent,
+      onRemoveComponent,
       onResizeItemStart,
       onResizeItem,
       onResizeItemEnd
@@ -46,6 +47,7 @@ class DesignGroup extends PureComponent {
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
               onClickComponent={onClickComponent}
+              onRemoveComponent={onRemoveComponent}
               onResizeStart={onResizeItemStart}
               onResize={onResizeItem}
               onResizeEnd={onResizeItemEnd}
@@ -64,6 +66,7 @@ DesignGroup.propTypes = {
   selection: PropTypes.object,
   items: PropTypes.array.isRequired,
   onClickComponent: PropTypes.func,
+  onRemoveComponent: PropTypes.func,
   onResizeItemStart: PropTypes.func,
   onResizeItem: PropTypes.func,
   onResizeItemEnd: PropTypes.func

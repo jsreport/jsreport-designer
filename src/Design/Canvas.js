@@ -208,6 +208,7 @@ class Canvas extends PureComponent {
       canDrop,
       onClick,
       onClickComponent,
+      onRemoveComponent,
       onResizeItem
     } = this.props
 
@@ -240,6 +241,7 @@ class Canvas extends PureComponent {
           selection={designSelection}
           groups={designGroups}
           onClickComponent={onClickComponent}
+          onRemoveComponent={onRemoveComponent}
           onResizeItemStart={this.handleResizeItemStart}
           onResizeItem={onResizeItem}
           onResizeItemEnd={this.handleResizeItemEnd}
@@ -286,6 +288,7 @@ Canvas.propTypes = {
   onDrop: PropTypes.func,
   onColDragOver: PropTypes.func,
   onClickComponent: PropTypes.func,
+  onRemoveComponent: PropTypes.func,
   onResizeItemStart: PropTypes.func,
   onResizeItem: PropTypes.func,
   onResizeItemEnd: PropTypes.func

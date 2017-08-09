@@ -8,6 +8,7 @@ import {
   generateRows,
   updateRows,
   addComponentToDesign,
+  removeComponentInDesign,
   getProjectedFilledAreaWhenResizingDesignItem,
   updateDesignItem,
   selectComponentInDesign
@@ -73,6 +74,7 @@ class Design extends PureComponent {
     this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
     this.onClickCanvas = this.onClickCanvas.bind(this)
     this.onClickDesignComponent = this.onClickDesignComponent.bind(this)
+    this.onRemoveDesignComponent = this.onRemoveDesignComponent.bind(this)
     this.onResizeDesignItemStart = this.onResizeDesignItemStart.bind(this)
     this.onResizeDesignItem = this.onResizeDesignItem.bind(this)
     this.onResizeDesignItemEnd = this.onResizeDesignItemEnd.bind(this)
@@ -332,6 +334,90 @@ class Design extends PureComponent {
     ev.stopPropagation()
 
     this.selectComponent(componentId)
+  }
+
+  onRemoveDesignComponent ({ item, componentId }) {
+    const {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfCols
+    } = this.props
+
+    let originalRows = this.state.gridRows
+    let originalDesignGroups = this.state.designGroups
+    let originalRowsToGroups = this.rowsToGroups
+    let originalComponentsInfo = this.componentsInfo
+    let currentDesignGroup
+    let currentDesignItem
+    let designSelection
+    let newRows
+    let stateToUpdate
+
+    if (this.isResizing) {
+      return
+    }
+
+    currentDesignGroup = originalDesignGroups[
+      originalRowsToGroups[
+        originalComponentsInfo[componentId].rowIndex
+      ]
+    ]
+
+    currentDesignItem = currentDesignGroup.items[item.index]
+
+    if (currentDesignItem.components.length === 1) {
+      // the only component present in the item will be removed
+      // which means that the item will be also removed, so we update
+      // the row and cols to empty state again
+      newRows = updateRows({
+        rows: originalRows,
+        current: {
+          row: originalComponentsInfo[componentId].rowIndex,
+          startCol: currentDesignItem.start,
+          endCol: currentDesignItem.end,
+          empty: true
+        },
+        defaultRowHeight: defaultRowHeight,
+        defaultNumberOfCols: defaultNumberOfCols,
+        totalWidth: baseWidth
+      }).rows
+    } else {
+      newRows = originalRows
+    }
+
+    const {
+      designGroups,
+      rowsToGroups,
+      componentsInfo,
+      updatedDesignItem
+    } = removeComponentInDesign({
+      rowsToGroups: originalRowsToGroups,
+      componentsInfo: originalComponentsInfo,
+      designGroups: originalDesignGroups,
+      designItem: { ...currentDesignItem, index: item.index },
+      componentId
+    })
+
+    if (updatedDesignItem.components.length > 0) {
+      designSelection = this.selectComponent(updatedDesignItem.components[0].id, {
+        componentsInfo,
+        returnSelection: true
+      })
+    }
+
+    this.rowsToGroups = rowsToGroups
+    this.componentsInfo = componentsInfo
+
+    stateToUpdate = {
+      gridRows: newRows,
+      designGroups
+    }
+
+    if (designSelection) {
+      stateToUpdate.designSelection = designSelection
+    }
+
+    this.setState(stateToUpdate)
   }
 
   onResizeDesignItemStart ({ item, resize, node }) {
@@ -631,6 +717,7 @@ class Design extends PureComponent {
             designSelection={designSelection}
             onClick={this.onClickCanvas}
             onClickComponent={this.onClickDesignComponent}
+            onRemoveComponent={this.onRemoveDesignComponent}
             onDragEnter={this.onDragEnterCanvas}
             onDragLeave={this.onDragLeaveCanvas}
             onDragEnd={this.onDragEndCanvas}

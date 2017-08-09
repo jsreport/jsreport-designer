@@ -352,10 +352,12 @@ function updateRows ({
     rowToUpdate.empty = rowToUpdate.cols.every((col) => col.empty)
   }
 
-  if (rows[startRow].empty) {
-    rowToUpdateWillChangeDimensions = rows[startRow].height !== newRowHeight
-  } else {
-    rowToUpdateWillChangeDimensions = newRowHeight > rows[startRow].height
+  if (newRowHeight != null) {
+    if (rows[startRow].empty) {
+      rowToUpdateWillChangeDimensions = rows[startRow].height !== newRowHeight
+    } else {
+      rowToUpdateWillChangeDimensions = newRowHeight > rows[startRow].height
+    }
   }
 
   // if the height of the row will be changed
@@ -857,6 +859,130 @@ function addComponentToDesign (component, {
   }
 }
 
+function removeComponentInDesign ({
+  rowsToGroups,
+  componentsInfo,
+  designGroups,
+  designItem,
+  componentId
+}) {
+  let newDesignGroups
+  let newRowsToGroups
+  let newComponentsInfo
+  let newDesignGroup
+  let newDesignItem
+  let designGroupIndex
+  let designItemIndex
+
+  newRowsToGroups = {
+    ...rowsToGroups
+  }
+
+  newComponentsInfo = {
+    ...componentsInfo
+  }
+
+  designGroupIndex = rowsToGroups[componentsInfo[componentId].rowIndex]
+
+  newDesignGroup = {
+    ...designGroups[designGroupIndex]
+  }
+
+  if (designItem.index != null) {
+    designItemIndex = designItem.index
+  } else {
+    let found
+
+    newDesignGroup.items.some((item, idx) => {
+      let ok = item.id === designItem.id
+
+      if (ok) {
+        found = idx
+      }
+
+      return ok
+    })
+
+    if (found != null) {
+      designItemIndex = found
+    }
+  }
+
+  newDesignItem = {
+    ...newDesignGroup.items[designItemIndex]
+  }
+
+  newDesignItem.components = newDesignItem.components.filter((comp) => {
+    return comp.id !== componentId
+  })
+
+  if (newDesignItem.components.length === 0) {
+    // deleting the item if there is no more components in there
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, designItemIndex),
+      ...newDesignGroup.items.slice(designItemIndex + 1)
+    ]
+  } else {
+    // updating the items
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, designItemIndex),
+      newDesignItem,
+      ...newDesignGroup.items.slice(designItemIndex + 1)
+    ]
+  }
+
+  if (newDesignGroup.items.length === 0) {
+    delete newRowsToGroups[componentsInfo[componentId].rowIndex]
+
+    // deleting the group if there is no more items in there
+    newDesignGroups = [
+      ...designGroups.slice(0, designGroupIndex),
+      ...designGroups.slice(designGroupIndex + 1)
+    ]
+  } else {
+    // updating the groups
+    newDesignGroups = [
+      ...designGroups.slice(0, designGroupIndex),
+      newDesignGroup,
+      ...designGroups.slice(designGroupIndex + 1)
+    ]
+  }
+
+  delete newComponentsInfo[componentId]
+
+  return {
+    designGroups: newDesignGroups,
+    rowsToGroups: newRowsToGroups,
+    componentsInfo: newComponentsInfo,
+    updatedDesignItem: newDesignItem
+  }
+}
+
+function selectComponentInDesign ({ componentId, componentsInfo }) {
+  let found = componentsInfo[componentId] !== null
+  let componentInGroupInfo
+
+  if (!found) {
+    return null
+  }
+
+  componentInGroupInfo = componentsInfo[componentId]
+
+  return {
+    group: componentInGroupInfo.groupId,
+    data: {
+      [componentInGroupInfo.groupId]: {
+        item: componentInGroupInfo.itemId,
+        data: {
+          [componentInGroupInfo.itemId]: {
+            component: componentId
+          }
+        }
+      }
+    }
+  }
+}
+
 function getProjectedFilledAreaWhenResizingDesignItem ({
   rows,
   baseWidth,
@@ -1201,31 +1327,6 @@ function updateDesignItem ({
   ]
 }
 
-function selectComponentInDesign ({ componentId, componentsInfo }) {
-  let found = componentsInfo[componentId] !== null
-  let componentInGroupInfo
-
-  if (!found) {
-    return null
-  }
-
-  componentInGroupInfo = componentsInfo[componentId]
-
-  return {
-    group: componentInGroupInfo.groupId,
-    data: {
-      [componentInGroupInfo.groupId]: {
-        item: componentInGroupInfo.itemId,
-        data: {
-          [componentInGroupInfo.itemId]: {
-            component: componentId
-          }
-        }
-      }
-    }
-  }
-}
-
 /**
  *  Grid utils
  */
@@ -1238,6 +1339,7 @@ export { updateRows }
  *  Design group utils
  */
 export { addComponentToDesign }
+export { removeComponentInDesign }
+export { selectComponentInDesign }
 export { getProjectedFilledAreaWhenResizingDesignItem }
 export { updateDesignItem }
-export { selectComponentInDesign }

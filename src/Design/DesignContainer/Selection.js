@@ -9,6 +9,7 @@ class Selection extends PureComponent {
       state,
       left,
       right,
+      onKeyDown,
       onResizeStart,
       onResize,
       onResizeEnd
@@ -38,7 +39,14 @@ class Selection extends PureComponent {
     }
 
     return (
-      <div className="Selection" style={styles} draggable={false}>
+      <div
+        className="Selection"
+        onKeyDown={onKeyDown}
+        style={styles}
+        // tab index necessary to make key events to work
+        tabIndex="0"
+        draggable={false}
+      >
         <Resizer
           key="resize-left-picker"
           direction="left"
@@ -66,6 +74,7 @@ Selection.propTypes = {
   state: PropTypes.oneOf(['default', 'active', 'invalid']),
   left: PropTypes.number,
   right: PropTypes.number,
+  onKeyDown: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
   onResizeEnd: PropTypes.func

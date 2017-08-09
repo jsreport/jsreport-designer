@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react'
+import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import Selection from './Selection'
 import DesignComponent from '../../DesignComponent'
@@ -19,19 +20,70 @@ class DesignItem extends PureComponent {
     this.maxResizeLeft = null
     this.maxResizeRight = null
 
-    this.setNode = this.setNode.bind(this)
+    this.getItem = this.getItem.bind(this)
+    this.setItemNode = this.setItemNode.bind(this)
+    this.setSelectionNode = this.setSelectionNode.bind(this)
+    this.focusSelection = this.focusSelection.bind(this)
     this.handleClick = this.handleClick.bind(this)
+    this.handleKeyDown = this.handleKeyDown.bind(this)
     this.handleResizeStart = this.handleResizeStart.bind(this)
     this.handleResize = this.handleResize.bind(this)
     this.handleResizeEnd = this.handleResizeEnd.bind(this)
+  }
+
+  componentDidMount () {
+    this.focusSelection()
+  }
+
+  componentDidUpdate () {
+    this.focusSelection()
   }
 
   getWidthInPercentage ({ numberOfCols, consumedCols }) {
     return 100 / (numberOfCols / consumedCols)
   }
 
-  setNode (el) {
+  getItem () {
+    return {
+      id: this.props.id,
+      index: this.props.index,
+      layoutMode: this.props.layoutMode,
+      minSpace: this.props.minSpace,
+      space: this.props.space,
+      leftSpace: this.props.leftSpace,
+      components: this.props.components
+    }
+  }
+
+  setItemNode (el) {
     this.node = el
+  }
+
+  setSelectionNode (el) {
+    this.selection = el
+  }
+
+  focusSelection () {
+    // in order for key events to work, the selection box must be focused
+    if (this.selection) {
+      findDOMNode(this.selection).focus()
+    }
+  }
+
+  handleKeyDown (ev) {
+    const { onRemoveComponent, selection } = this.props
+    const item = this.getItem()
+
+    ev.preventDefault()
+    ev.stopPropagation()
+
+    // when backspace key is pressed remove the component
+    if (ev.keyCode === 8 && onRemoveComponent) {
+      onRemoveComponent({
+        item,
+        componentId: selection.component
+      })
+    }
   }
 
   handleClick (ev) {
@@ -48,15 +100,7 @@ class DesignItem extends PureComponent {
     let position = 0
     const node = this.node
 
-    const item = {
-      id: this.props.id,
-      index: this.props.index,
-      layoutMode: this.props.layoutMode,
-      minSpace: this.props.minSpace,
-      space: this.props.space,
-      leftSpace: this.props.leftSpace,
-      components: this.props.components
-    }
+    const item = this.getItem()
 
     this.originalResizeCoord = {
       x: ev.clientX,
@@ -110,15 +154,7 @@ class DesignItem extends PureComponent {
     let resizing
     const node = this.node
 
-    const item = {
-      id: this.props.id,
-      index: this.props.index,
-      layoutMode: this.props.layoutMode,
-      minSpace: this.props.minSpace,
-      space: this.props.space,
-      leftSpace: this.props.leftSpace,
-      components: this.props.components
-    }
+    const item = this.getItem()
 
     if (this.state.resizing) {
       previousResizingState = this.state.resizing.state
@@ -209,15 +245,7 @@ class DesignItem extends PureComponent {
   handleResizeEnd (ev, direction) {
     const node = this.node
 
-    const item = {
-      id: this.props.id,
-      index: this.props.index,
-      layoutMode: this.props.layoutMode,
-      minSpace: this.props.minSpace,
-      space: this.props.space,
-      leftSpace: this.props.leftSpace,
-      components: this.props.components
-    }
+    const item = this.getItem()
 
     ev.preventDefault();
     ev.stopPropagation();
@@ -296,7 +324,7 @@ class DesignItem extends PureComponent {
 
     return (
       <div
-        ref={this.setNode}
+        ref={this.setItemNode}
         className="DesignItem"
         style={itemStyles}
         {...extraProps}
@@ -305,9 +333,11 @@ class DesignItem extends PureComponent {
         {selection && (
           <Selection
             key="selection"
+            ref={this.setSelectionNode}
             state={resizing ? resizing.state : undefined}
             left={resizing && resizing.direction === 'left' ? resizing.position : undefined}
             right={resizing && resizing.direction === 'right' ? resizing.position : undefined}
+            onKeyDown={this.handleKeyDown}
             onResizeStart={this.handleResizeStart}
             onResize={this.handleResize}
             onResizeEnd={this.handleResizeEnd}
@@ -339,6 +369,7 @@ DesignItem.propTypes = {
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
   onClickComponent: PropTypes.func,
+  onRemoveComponent: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
   onResizeEnd: PropTypes.func

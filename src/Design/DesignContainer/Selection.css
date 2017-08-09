@@ -11,3 +11,9 @@
   user-select: none;
   z-index: 2;
 }
+
+.Selection:focus {
+  outline: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
