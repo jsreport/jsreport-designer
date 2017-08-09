@@ -375,6 +375,10 @@ class Design extends PureComponent {
           row: originalComponentsInfo[componentId].rowIndex,
           startCol: currentDesignItem.start,
           endCol: currentDesignItem.end,
+          // the only item present in group will be removed
+          // which means that the group will be also removed, so we update
+          // the row to have the default row height again
+          newHeight: currentDesignGroup.items.length === 1 ? defaultRowHeight : undefined,
           empty: true
         },
         defaultRowHeight: defaultRowHeight,
@@ -391,6 +395,7 @@ class Design extends PureComponent {
       componentsInfo,
       updatedDesignItem
     } = removeComponentInDesign({
+      rows: newRows,
       rowsToGroups: originalRowsToGroups,
       componentsInfo: originalComponentsInfo,
       designGroups: originalDesignGroups,

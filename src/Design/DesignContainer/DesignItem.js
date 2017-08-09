@@ -77,8 +77,8 @@ class DesignItem extends PureComponent {
     ev.preventDefault()
     ev.stopPropagation()
 
-    // when backspace key is pressed remove the component
-    if (ev.keyCode === 8 && onRemoveComponent) {
+    // when backspace or del key is pressed remove the component
+    if ((ev.keyCode === 8 || ev.keyCode === 46) && onRemoveComponent) {
       onRemoveComponent({
         item,
         componentId: selection.component

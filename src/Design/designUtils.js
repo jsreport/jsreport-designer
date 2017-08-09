@@ -353,10 +353,10 @@ function updateRows ({
   }
 
   if (newRowHeight != null) {
-    if (rows[startRow].empty) {
-      rowToUpdateWillChangeDimensions = rows[startRow].height !== newRowHeight
+    if (rowToUpdate.empty) {
+      rowToUpdateWillChangeDimensions = rowToUpdate.height !== newRowHeight
     } else {
-      rowToUpdateWillChangeDimensions = newRowHeight > rows[startRow].height
+      rowToUpdateWillChangeDimensions = newRowHeight > rowToUpdate.height
     }
   }
 
@@ -860,6 +860,7 @@ function addComponentToDesign (component, {
 }
 
 function removeComponentInDesign ({
+  rows,
   rowsToGroups,
   componentsInfo,
   designGroups,
@@ -870,9 +871,12 @@ function removeComponentInDesign ({
   let newRowsToGroups
   let newComponentsInfo
   let newDesignGroup
+  let nextDesignGroup
   let newDesignItem
+  let nextDesignItem
   let designGroupIndex
   let designItemIndex
+  let rowIndex
 
   newRowsToGroups = {
     ...rowsToGroups
@@ -882,11 +886,14 @@ function removeComponentInDesign ({
     ...componentsInfo
   }
 
-  designGroupIndex = rowsToGroups[componentsInfo[componentId].rowIndex]
+  rowIndex = componentsInfo[componentId].rowIndex
+  designGroupIndex = rowsToGroups[rowIndex]
 
   newDesignGroup = {
     ...designGroups[designGroupIndex]
   }
+
+  nextDesignGroup = designGroups[designGroupIndex + 1]
 
   if (designItem.index != null) {
     designItemIndex = designItem.index
@@ -912,16 +919,34 @@ function removeComponentInDesign ({
     ...newDesignGroup.items[designItemIndex]
   }
 
+  nextDesignItem = newDesignGroup.items[designItemIndex + 1]
+
   newDesignItem.components = newDesignItem.components.filter((comp) => {
     return comp.id !== componentId
   })
 
   if (newDesignItem.components.length === 0) {
-    // deleting the item if there is no more components in there
-    newDesignGroup.items = [
-      ...newDesignGroup.items.slice(0, designItemIndex),
-      ...newDesignGroup.items.slice(designItemIndex + 1)
-    ]
+    if (nextDesignItem) {
+      // since we will remove the item we need to
+      // re-calculate the leftSpace of next item
+      nextDesignItem = { ...nextDesignItem }
+      nextDesignItem.leftSpace = nextDesignItem.leftSpace == null ? 0 : nextDesignItem.leftSpace
+      nextDesignItem.leftSpace += newDesignItem.space
+      nextDesignItem.leftSpace += newDesignItem.leftSpace == null ? 0 : newDesignItem.leftSpace
+
+      // deleting the item and updating the next one
+      newDesignGroup.items = [
+        ...newDesignGroup.items.slice(0, designItemIndex),
+        nextDesignItem,
+        ...newDesignGroup.items.slice(designItemIndex + 2)
+      ]
+    } else {
+      // deleting the item if there is no more components in there
+      newDesignGroup.items = [
+        ...newDesignGroup.items.slice(0, designItemIndex),
+        ...newDesignGroup.items.slice(designItemIndex + 1)
+      ]
+    }
   } else {
     // updating the items
     newDesignGroup.items = [
@@ -932,13 +957,36 @@ function removeComponentInDesign ({
   }
 
   if (newDesignGroup.items.length === 0) {
-    delete newRowsToGroups[componentsInfo[componentId].rowIndex]
+    delete newRowsToGroups[rowIndex]
 
-    // deleting the group if there is no more items in there
-    newDesignGroups = [
-      ...designGroups.slice(0, designGroupIndex),
-      ...designGroups.slice(designGroupIndex + 1)
-    ]
+    if (nextDesignGroup) {
+      // since we will remove the group we need to
+      // re-calculate the topSpace of next group
+      nextDesignGroup = { ...nextDesignGroup }
+      nextDesignGroup.topSpace = nextDesignGroup.topSpace == null ? 0 : nextDesignGroup.topSpace
+      nextDesignGroup.topSpace += rows[rowIndex].height
+      nextDesignGroup.topSpace += newDesignGroup.topSpace == null ? 0 : newDesignGroup.topSpace
+
+      // updating rowsToGroups of groups after the removed one
+      rows.slice(rowIndex + 1).forEach((row) => {
+        if (newRowsToGroups[row.index] != null) {
+          newRowsToGroups[row.index] = newRowsToGroups[row.index] - 1
+        }
+      })
+
+      // deleting the group and updating the next one
+      newDesignGroups = [
+        ...designGroups.slice(0, designGroupIndex),
+        nextDesignGroup,
+        ...designGroups.slice(designGroupIndex + 2)
+      ]
+    } else {
+      // deleting the group if there is no more items in there
+      newDesignGroups = [
+        ...designGroups.slice(0, designGroupIndex),
+        ...designGroups.slice(designGroupIndex + 1)
+      ]
+    }
   } else {
     // updating the groups
     newDesignGroups = [
@@ -1295,7 +1343,7 @@ function updateDesignItem ({
 
     if (designItem.start !== current.start) {
       newDesignItem.leftSpace = newDesignItem.leftSpace == null ? 0 : newDesignItem.leftSpace
-      newDesignItem.leftSpace = newDesignItem.leftSpace + (current.start - designItem.start)
+      newDesignItem.leftSpace += (current.start - designItem.start)
     }
   }
 
@@ -1303,7 +1351,7 @@ function updateDesignItem ({
     if (current.end !== designItem.end) {
       nextDesignItem = { ...nextDesignItem }
       nextDesignItem.leftSpace = nextDesignItem.leftSpace == null ? 0 : nextDesignItem.leftSpace
-      nextDesignItem.leftSpace = nextDesignItem.leftSpace + (designItem.end - current.end)
+      nextDesignItem.leftSpace += (designItem.end - current.end)
     }
 
     newDesignGroup.items = [
