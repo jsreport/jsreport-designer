@@ -1,25 +1,28 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import GridRow from './GridRow'
+import arrayFrom from 'array.from'
+import GridCol from './GridCol'
 import './Grid.css'
 
 class GridContent extends PureComponent {
   render () {
     const {
-      rows,
-      isDraggingInParent,
-      onColDragOver
+      baseWidth,
+      numberOfCols
     } = this.props
+
+    const colWidth = baseWidth / numberOfCols
 
     return (
       <div className="Grid-content">
-        {rows.map((row) => {
+        {arrayFrom({ length: numberOfCols - 1 }, (v, i) => i).map((val) => {
+          let left = colWidth * (val + 1)
+
           return (
-            <GridRow
-              key={row.id}
-              row={row}
-              isDraggingInParent={isDraggingInParent}
-              onColDragOver={onColDragOver}
+            <GridCol
+              key={val}
+              // left - 1 because the col has 1px of border width
+              left={left - 1}
             />
           )
         })}
@@ -31,28 +34,19 @@ class GridContent extends PureComponent {
 class Grid extends PureComponent {
   render () {
     const {
-      canDrop,
       baseWidth,
-      rows,
-      isDraggingInParent,
-      onColDragOver
+      numberOfCols,
+      showTopBorder
     } = this.props
 
-    const gridStyles = {
-      width: baseWidth,
-      zIndex: -1
-    }
-
-    if (canDrop) {
-      gridStyles.zIndex = 1
-    }
-
     return (
-      <div className="Grid" style={gridStyles}>
+      <div className="Grid" data-design-grid="true">
+        {showTopBorder && (
+          <div className="Grid-top" data-design-grid-border />
+        )}
         <GridContent
-          rows={rows}
-          isDraggingInParent={isDraggingInParent}
-          onColDragOver={onColDragOver}
+          baseWidth={baseWidth}
+          numberOfCols={numberOfCols}
         />
       </div>
     )
@@ -60,11 +54,9 @@ class Grid extends PureComponent {
 }
 
 Grid.propTypes = {
-  canDrop: PropTypes.bool.isRequired,
   baseWidth: PropTypes.number.isRequired,
-  rows: PropTypes.array.isRequired,
-  isDraggingInParent: PropTypes.func.isRequired,
-  onColDragOver: PropTypes.func
+  numberOfCols: PropTypes.number.isRequired,
+  showTopBorder: PropTypes.bool.isRequired
 }
 
 export default Grid

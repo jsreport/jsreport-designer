@@ -16,12 +16,38 @@ class DevTools extends Component {
   getDesignPayload () {
     const {
       baseWidth,
+      emptyGroupHeight,
       numberOfCols,
       designGroups
     } = this.props
 
+    let lastGroupWithContent
+    let designGroupsToSend = []
+
+    designGroups.forEach((dg, idx) => {
+      let topSpace
+
+      if (dg.items.length === 0) {
+        return
+      }
+
+      // calculating topSpace between designGroups
+      if (lastGroupWithContent != null) {
+        topSpace = ((idx - lastGroupWithContent) - 1) * emptyGroupHeight
+      } else {
+        topSpace = idx * emptyGroupHeight
+      }
+
+      if (topSpace != null && topSpace > 0) {
+        dg.topSpace = topSpace
+      }
+
+      lastGroupWithContent = idx
+      designGroupsToSend.push(dg)
+    })
+
     // filtering unnecessary data
-    var designGroupsPayload = designGroups.map((designGroup) => {
+    var designGroupsPayload = designGroupsToSend.map((designGroup) => {
       var group = {
         items: designGroup.items.map((designItem) => {
           var item = {
@@ -88,12 +114,12 @@ class DevTools extends Component {
 
     const {
       numberOfCols,
-      gridRows
+      designGroups
     } = this.props
 
     return (
       <div style={{ position: 'absolute', top: '8px', right: '200px', zIndex: 100 }}>
-        <b>GRID: {numberOfCols} x {gridRows.length}, TOTAL ROWS: {gridRows.length}, TOTAL: COLS: { gridRows.length * 12 }</b>
+        <b>GRID: {numberOfCols} x {designGroups.length}, TOTAL ROWS: {designGroups.length}</b>
         {' '}
         <button onClick={() => this.onClickInspectGroups()}>Inspect Design groups</button>
         <button onClick={() => this.onClickInspectPayload()}>Inspect Design payload</button>

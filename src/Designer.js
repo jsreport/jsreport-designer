@@ -71,8 +71,6 @@ class Designer extends Component {
 
     item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
 
-    item.consumedRows = 1
-
     item.consumedCols = Math.ceil(
       item.size.width < baseColWidth ? 1 : item.size.width / baseColWidth
     )

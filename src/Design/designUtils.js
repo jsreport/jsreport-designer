@@ -1,559 +1,146 @@
-import arrayFrom from 'array.from'
 import shortid from 'shortid'
 
 const DEFAULT_LAYOUT_MODE = 'grid'
 
-function findStartCol ({ rows, point, baseCol, step }) {
-  let complete = false
-  let filled = false
-  let currentCol = { ...baseCol }
-  let startCol
-  let propertyToEvaluate
-  let limit
-
-  if (point.side === 'top' || point.side === 'left') {
-    limit = 0
+function generateDesignGroup ({ items, layoutMode, topSpace } = {}) {
+  let newGroup = {
+    id: 'DG-' + shortid.generate(),
+    items: items != null ? items : [],
+    layoutMode: layoutMode != null ? layoutMode : DEFAULT_LAYOUT_MODE
   }
 
-  if (point.side === 'top' || point.side === 'bottom') {
-    propertyToEvaluate = 'row'
-  } else {
-    propertyToEvaluate = 'col'
+  if (topSpace != null) {
+    newGroup.topSpace = topSpace
   }
 
-  while (!complete) {
-    let isInsideInfo = isInsideOfCol({ point, colInfo: currentCol })
-    // we only care if the point is inside of the evaluated side
-    let isInside = isInsideInfo[propertyToEvaluate === 'row' ? 'isInsideY' : 'isInsideX']
-
-    if (isInside) {
-      filled = true
-    }
-
-    if (limit == null) {
-      if (propertyToEvaluate === 'row') {
-        limit = rows.length - 1
-      } else {
-        limit = rows[currentCol.row].cols.length - 1
-      }
-    }
-
-    if (currentCol[propertyToEvaluate] === limit || isInside) {
-      startCol = {
-        col: currentCol.col,
-        row: currentCol.row,
-        x: currentCol.left,
-        y: currentCol.top
-      }
-
-      complete = true
-
-      continue
-    }
-
-    // calculating next col to check
-    if (propertyToEvaluate === 'row') {
-      if (step < 0) {
-        // when the step is negative we calculate based on previous row
-        currentCol.top = currentCol.top + (rows[currentCol.row + step].height * step)
-      } else {
-        currentCol.top = currentCol.top + (rows[currentCol.row].height * step)
-      }
-
-      currentCol.height = rows[currentCol.row + step].height
-    } else {
-      if (step < 0) {
-        // when the step is negative we calculate based on previous col
-        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col + step].width * step)
-      } else {
-        currentCol.left = currentCol.left + (rows[currentCol.row].cols[currentCol.col].width * step)
-      }
-
-      currentCol.width = rows[currentCol.row].cols[currentCol.col + step].width
-    }
-
-    currentCol[propertyToEvaluate] = currentCol[propertyToEvaluate] + step
-  }
-
-  return {
-    colCoordinate: startCol,
-    filled
-  }
+  return newGroup
 }
 
-function isInsideOfCol ({ point, colInfo }) {
-  const { x, y } = point
-  const { width, height, top, left } = colInfo
-
-  const isInsideX = (left <= x && x <= (left + width))
-
-  const isInsideY = (top <= y && y <= (top + height))
-
-  const isInside = isInsideX && isInsideY
-
-  return {
-    isInside,
-    isInsideX,
-    isInsideY
-  }
-}
-
-function getDistanceFromCol ({ rows, fromCol, toCol, opts = {} }) {
-  let current = {
-    row: fromCol.row,
-    col: fromCol.col,
-    distanceX: 0,
-    distanceY: 0
-  }
-
-  let stepX = fromCol.col <= toCol.col ? 1 : -1
-  let stepY = fromCol.row <= toCol.row ? 1 : -1
-
-  // if `includeFrom` is active include the values of the starting row/col
-  if (opts.includeFrom === true) {
-    current.distanceY = rows[fromCol.row].height * stepY
-    current.distanceX = rows[fromCol.row].cols[fromCol.col].width * stepX
-  }
-
-  while (current.col !== toCol.col || current.row !== toCol.row) {
-    let originalRow = current.row
-    let originalCol = current.col
-    let nextRow = originalRow + stepY
-    let nextCol = originalCol + stepX
-
-    if (current.row !== toCol.row) {
-      if (Math.abs(nextRow - toCol.row)) {
-        current.distanceY += rows[originalRow + stepY].height * stepY
-      }
-
-      current.row += stepY
-
-      // if next row has reached the limit and `includeTo` is activate then include
-      // the values of the last row
-      if (current.row === toCol.row && opts.includeTo === true) {
-        current.distanceY += rows[current.row].height * stepY
-      }
-    }
-
-    if (current.col !== toCol.col) {
-      if (Math.abs(nextCol - toCol.col) >= 1) {
-        current.distanceX += rows[originalRow].cols[originalCol + stepX].width * stepX
-      }
-
-      current.col += stepX
-
-      // if next col has reached the limit and `includeTo` is activate then include
-      // the values of the last col
-      if (current.col === toCol.col && opts.includeTo === true) {
-        current.distanceX += rows[originalRow].cols[current.col].width * stepX
-      }
-    }
-  }
-
-  return {
-    distanceX: current.distanceX,
-    distanceY: current.distanceY
-  }
-}
-
-function areColsEmpty ({ row, fromCol, toCol, excludeTo }) {
-  let step
-  let colsToEvaluate
-  let allEmpty
-
-  if (fromCol === toCol || fromCol < toCol) {
-    step = 1
-  } else {
-    step = -1
-  }
-
-  colsToEvaluate = arrayFrom({
-    length: Math.abs(fromCol - toCol) + 1
-  }, (v, i) => fromCol + (i * step))
-
-  if (colsToEvaluate.length === 0) {
-    return true
-  }
-
-  allEmpty = colsToEvaluate.every((col) => {
-    if (excludeTo === true && col === toCol) {
-      return true
-    }
-
-    return row.cols[col].empty === true
-  })
-
-  return allEmpty
-}
-
-function findProjectedFilledArea ({ rows, baseColInfo, consumedRows = 1, consumedCols }) {
-  let area = {}
-  let savedRows = []
-  let filled = false
-  let conflict = false
-  let areaTotalWidth = 0
-  let areaTotalHeigth = 0
-  let areaBox
-  let startCol
-  let startRow
-  let endCol
-  let endRow
-  let toFill
-
-  startCol = baseColInfo.col
-  startRow = baseColInfo.row
-
-  endCol = baseColInfo.col + (consumedCols - 1)
-  endCol = endCol < rows[startRow].cols.length ? endCol : rows[startRow].cols.length - 1
-
-  endRow = baseColInfo.row + (consumedRows - 1)
-  endRow = endRow < rows.length ? endRow : rows.length - 1
-
-  toFill = arrayFrom({ length: (endCol - startCol) + 1 }, (v, i) => startCol + i)
-
-  toFill.forEach((x) => {
-    let currentRow = startRow
-
-    areaTotalWidth += rows[currentRow].cols[x].width
-
-    while (currentRow <= endRow) {
-      let currentCol = rows[currentRow].cols[x]
-      let coordinate = x + ',' + currentRow
-
-      if (area[coordinate]) {
-        currentRow++
-        continue;
-      }
-
-      if (!conflict && !currentCol.empty) {
-        conflict = true
-      }
-
-      area[coordinate] = {
-        col: x,
-        row: currentRow
-      }
-
-      if (savedRows.indexOf(currentRow) === -1) {
-        areaTotalHeigth += rows[currentRow].height
-        savedRows.push(currentRow)
-      }
-
-      currentRow++
-    }
-  })
-
-  areaBox = {
-    width: areaTotalWidth,
-    height: areaTotalHeigth,
-    top: baseColInfo.top,
-    left: baseColInfo.left
-  }
-
-  // does the projected preview fills inside the selected area of grid?
-  filled = (
-    rows[baseColInfo.row].cols.length - baseColInfo.col >= consumedCols
-  )
-
-  return {
-    filled,
-    conflict,
-    row: baseColInfo.row,
-    startCol: baseColInfo.col,
-    endCol: endCol,
-    areaBox
-  }
-}
-
-function generateCols ({ baseWidth, numberOfCols }) {
-  let cols = []
-
-  for (let i = 0; i < numberOfCols; i++) {
-    cols.push({
-      id: 'col-' + shortid.generate(),
-      index: i,
-      width: baseWidth / numberOfCols,
-      unit: 'px',
-      empty: true
-    })
-  }
-
-  return cols
-}
-
-function generateRows ({ baseWidth, numberOfRows, numberOfCols, height }) {
-  let rows = []
+function generateDesignGroups ({ numberOfRows }) {
+  let groups = []
 
   for (let i = 0; i < numberOfRows; i++) {
-    let row = {
-      id: 'row-' + shortid.generate(),
-      index: i,
-      height: height,
-      unit: 'px',
-      empty: true,
-      cols: generateCols({
-        baseWidth,
-        numberOfCols
-      }),
-      layoutMode: DEFAULT_LAYOUT_MODE
-    }
-
-    rows.push(row)
+    groups.push(generateDesignGroup())
   }
 
-  return rows
+  return groups
 }
 
-function updateRows ({
-  rows,
-  previous,
-  current,
-  defaultRowHeight,
-  defaultNumberOfCols,
-  totalWidth,
-  onRowIndexChange
+function generateDesignItem ({
+  colWidth,
+  layoutMode,
+  start,
+  end,
+  components = [],
+  baseSize
 }) {
-  const {
-    row: startRow,
-    newHeight: newRowHeight,
-    empty: emptyChange,
-    startCol,
-    endCol
-  } = current
-
-  let endRow = startRow
-  let rowToUpdateWillChangeDimensions = false
-  let rowsToAdd = []
-  let rowToUpdate
-  let rowsToUpdate
-  let placeholderRow
-  let newRows
-
-  // get placeholder row (last one)
-  placeholderRow = rows[rows.length - 1]
-
-  rowToUpdate = {
-    ...rows[startRow]
-  }
-
-  // updating current cols in rowToUpdate
-  for (let colIndex = startCol; colIndex <= endCol; colIndex++) {
-    if (emptyChange != null && rowToUpdate.cols[colIndex].empty !== emptyChange) {
-      rowToUpdate.cols[colIndex] = {
-        ...rowToUpdate.cols[colIndex],
-        empty: emptyChange
-      }
-    }
-  }
-
-  // if there is a change is "empty" state of cols we need to check if the row
-  // is still empty or not
-  if (emptyChange != null) {
-    rowToUpdate.empty = rowToUpdate.cols.every((col) => col.empty)
-  }
-
-  if (newRowHeight != null) {
-    if (rowToUpdate.empty) {
-      rowToUpdateWillChangeDimensions = rowToUpdate.height !== newRowHeight
-    } else {
-      rowToUpdateWillChangeDimensions = newRowHeight > rowToUpdate.height
-    }
-  }
-
-  // if the height of the row will be changed
-  // then we should update the row information (size, etc) with new values,
-  // the rule is that projected row will always take the height of the item when
-  // it is greater than its own height.
-  if (rowToUpdateWillChangeDimensions) {
-    // new height of row is equal to the new height
-    rowToUpdate.height = newRowHeight
-  }
-
-  // if placeholder row is inside the selected area then insert a new row
-  if (endRow >= placeholderRow.index) {
-    let newRow = {
-      id: 'row-' + shortid.generate(),
-      index: rowToUpdate.index + (rowsToAdd.length + 1),
-      height: defaultRowHeight,
-      unit: 'px',
-      cols: generateCols({ 
-        baseWidth: totalWidth,
-        numberOfCols: defaultNumberOfCols
-      }),
-      // the row to add is empty
-      empty: true,
-      layoutMode: DEFAULT_LAYOUT_MODE
-    }
-
-    // if start row is a placeholder then update it to a normal row,
-    // the new row will be the new placeholder
-    if (rowToUpdate.placeholder) {
-      delete rowToUpdate.placeholder
-    }
-
-    // setting the new placeholder row
-    if (placeholderRow.index === rowToUpdate.index) {
-      newRow.placeholder = true
-    }
-
-    rowsToAdd.push(newRow)
-  }
-
-  // creating new rows
-  newRows = [
-    // preserving all rows before the row to update
-    ...rows.slice(0, rowToUpdate.index),
-    rowToUpdate
-  ]
-
-  // add all calculated new rows
-  if (rowsToAdd.length) {
-    newRows = newRows.concat(rowsToAdd)
-  }
-
-  // checking all rows after the row to update
-  rowsToUpdate = rows.slice(rowToUpdate.index + 1)
-
-  // indexes of rows will be changed
-  if (rowsToAdd.length > 0) {
-    // removing empty rows inside the selected area of item
-    // (rows that are present after the row to update)
-    let filteredRowsToUpdate = rowsToUpdate.filter((currentRow) => {
-      // ignore placeholder row
-      if (currentRow.placeholder) {
-        return true
-      }
-
-      if (currentRow.empty && startRow <= currentRow.index && currentRow.index <= endRow) {
-        return false
-      }
-
-      return true
-    })
-
-    newRows = newRows.concat(filteredRowsToUpdate.map((currentRow) => {
-      // original index plus the amount of rows added
-      let newIndex = currentRow.index + rowsToAdd.length
-
-      // minus the amount of items eliminated in the filtering
-      newIndex = newIndex - (rowsToUpdate.length - filteredRowsToUpdate.length)
-
-      // index of row has changed
-      if (currentRow.index !== newIndex) {
-        onRowIndexChange && onRowIndexChange(currentRow, newIndex)
-      }
-
-      if (newIndex !== currentRow.index) {
-        return {
-          ...currentRow,
-          index: newIndex
-        }
-      }
-
-      return currentRow
-    }))
-  } else {
-    newRows = newRows.concat(rowsToUpdate)
-  }
-
-  // changing the cols of previous row
-  if (previous) {
-    let previousRow = previous.row
-    let previousStarCol = previous.startCol
-    let previousEndCol = previous.endCol
-    let previousEmptyChange = previous.empty
-    let isRowEmpty
-    let shouldUpdatePrevious
-    let changedRow
-
-    changedRow = {
-      ...newRows[previousRow],
-      cols: [
-        ...newRows[previousRow].cols
-      ]
-    }
-
-    for (let colIndex = previousStarCol; colIndex <= previousEndCol; colIndex++) {
-      // change nothing is cols were updated previously
-      if (
-        emptyChange != null &&
-        startRow === previousRow &&
-        startCol <= colIndex &&
-        colIndex <= endCol
-      ) {
-        continue;
-      }
-
-      if (
-        changedRow.cols[colIndex].empty !== previousEmptyChange
-      ) {
-        shouldUpdatePrevious = true
-
-        changedRow.cols[colIndex] = {
-          ...changedRow.cols[colIndex],
-          empty: previousEmptyChange
-        }
-      }
-    }
-
-    isRowEmpty = changedRow.cols.every((col) => col.empty)
-
-    if (shouldUpdatePrevious) {
-      changedRow.empty = isRowEmpty
-      newRows[previousRow] = changedRow
-    }
-  }
-
-  return {
-    rows: newRows,
-    updatedBaseRow: rowToUpdate
-  }
-}
-
-function generateDesignItem ({ row, startCol, endCol, components = [], baseSize }) {
   let space
   let minSpace
 
-  if (row.layoutMode === 'grid') {
-    space = (endCol - startCol) + 1
+  if (layoutMode === 'grid') {
+    space = (end - start) + 1
     minSpace = space
   } else {
-    space = row.cols.slice(startCol, endCol + 1).reduce((acu, col) => {
-      return acu + col.width
-    }, 0)
+    space = ((end - start) + 1) * colWidth
 
     minSpace = Math.ceil(baseSize.width)
   }
 
   return {
     id: 'DI-' + shortid.generate(),
-    start: startCol,
-    end: endCol,
+    start,
+    end,
     minSpace,
     space,
     components: components
   }
 }
 
+function updateDesignItem ({
+  designGroups,
+  referenceGroup,
+  referenceItem,
+  current
+}) {
+  let newDesignGroup
+  let newDesignItem
+  let nextDesignItem
+  let currentDesignItem
+
+  newDesignGroup = {
+    ...designGroups[referenceGroup]
+  }
+
+  currentDesignItem = newDesignGroup.items[referenceItem]
+
+  newDesignItem = {
+    ...newDesignGroup.items[referenceItem]
+  }
+
+  nextDesignItem = newDesignGroup.items[referenceItem + 1]
+
+  if (newDesignGroup.layoutMode === 'grid') {
+    newDesignItem.start = current.start
+    newDesignItem.end = current.end
+    newDesignItem.space = (current.end - current.start) + 1
+
+    if (currentDesignItem.start !== current.start) {
+      newDesignItem.leftSpace = newDesignItem.leftSpace == null ? 0 : newDesignItem.leftSpace
+      newDesignItem.leftSpace += (current.start - currentDesignItem.start)
+    }
+  }
+
+  if (nextDesignItem) {
+    if (current.end !== currentDesignItem.end) {
+      nextDesignItem = { ...nextDesignItem }
+      nextDesignItem.leftSpace = nextDesignItem.leftSpace == null ? 0 : nextDesignItem.leftSpace
+      nextDesignItem.leftSpace += (currentDesignItem.end - current.end)
+    }
+
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, referenceItem),
+      newDesignItem,
+      nextDesignItem,
+      ...newDesignGroup.items.slice(referenceItem + 2)
+    ]
+  } else {
+    newDesignGroup.items = [
+      ...newDesignGroup.items.slice(0, referenceItem),
+      newDesignItem,
+      ...newDesignGroup.items.slice(referenceItem + 1)
+    ]
+  }
+
+  return [
+    ...designGroups.slice(0, referenceGroup),
+    newDesignGroup,
+    ...designGroups.slice(referenceGroup + 1)
+  ]
+}
+
 function addComponentToDesign (component, {
-  rows,
-  rowsToGroups,
+  baseWidth,
+  emptyGroupHeight,
+  numberOfCols,
   componentsInfo,
   componentSize,
   designGroups,
-  referenceRow,
-  fromCol
+  referenceGroup,
+  fromArea
 }) {
+  let layoutMode = designGroups[referenceGroup].layoutMode
+  let colWidth = baseWidth / numberOfCols
   let compProps = component.props || {}
   let currentGroup
   let newComponent
   let newDesignGroups
-  let newRowsToGroups
   let newComponentsInfo
   let newComponentInfo = {}
+  let placeholderGroupIndex
 
-  newRowsToGroups = {
-    ...rowsToGroups
+  // get placeholder group (last one)
+  if (designGroups.length > 0 && designGroups[designGroups.length - 1].placeholder === true) {
+    placeholderGroupIndex = designGroups.length - 1
   }
 
   newComponentsInfo = {
@@ -568,170 +155,72 @@ function addComponentToDesign (component, {
   }
 
   // check to see if we should create a new group or update an existing one
-  if (rowsToGroups[referenceRow] == null) {
+  if (placeholderGroupIndex != null && placeholderGroupIndex === referenceGroup) {
     let newItem
-    let rowsToGroupsIndexes
-    let rowGroupBeforeNewIndex
-    let rowGroupAfterNewIndex
-    let groupAfterNewIndex
-    let topSpaceBeforeGroup
     let leftSpaceBeforeItem
 
+    // creating new item with component
     newItem = generateDesignItem({
-      row: rows[referenceRow],
-      startCol: fromCol.start,
-      endCol: fromCol.end,
+      colWidth,
+      layoutMode,
+      start: fromArea.start,
+      end: fromArea.end,
       components: [newComponent],
       baseSize: componentSize
     })
 
-    if (rows[referenceRow].layoutMode === 'grid') {
-      leftSpaceBeforeItem = fromCol.start
+    if (layoutMode === 'grid') {
+      leftSpaceBeforeItem = fromArea.start
     } else {
-      leftSpaceBeforeItem = getDistanceFromCol({
-        rows,
-        fromCol: { row: referenceRow, col: 0 },
-        toCol: { row: referenceRow, col: fromCol.start },
-        opts: { includeFrom: fromCol.start !== 0 }
-      }).distanceX
+      leftSpaceBeforeItem = fromArea.start * colWidth
     }
 
     if (leftSpaceBeforeItem > 0) {
       newItem.leftSpace = leftSpaceBeforeItem
     }
 
-    // creating a new group with component
-    currentGroup = {
-      id: 'DG-' + shortid.generate(),
-      items: [newItem],
-      layoutMode: rows[referenceRow].layoutMode
-    }
+    // creating a new group with item
+    currentGroup = generateDesignGroup({
+      layoutMode,
+      items: [newItem]
+    })
 
-    newComponentInfo.rowIndex = referenceRow
     newComponentInfo.groupId = currentGroup.id
     newComponentInfo.itemId = newItem.id
 
-    rowsToGroupsIndexes = Object.keys(rowsToGroups).map((item) => parseInt(item, 10))
-
-    // searching for a group before the new one (sort descending)
-    rowsToGroupsIndexes.slice(0).sort((a, b) => b - a).some((rowIndex) => {
-      if (rowIndex < referenceRow) {
-        rowGroupBeforeNewIndex = rowIndex
-        return true
-      }
-
-      return false
-    })
-
-    // calculating top space before this new group
-    topSpaceBeforeGroup = getDistanceFromCol({
-      rows,
-      fromCol: { row: rowGroupBeforeNewIndex != null ? rowGroupBeforeNewIndex: 0, col: 0 },
-      toCol: { row: referenceRow, col: 0 },
-      opts: { includeFrom: rowGroupBeforeNewIndex == null && referenceRow !== 0 ? true : false }
-    }).distanceY
-
-    if (topSpaceBeforeGroup != null && topSpaceBeforeGroup !== 0) {
-      currentGroup.topSpace = topSpaceBeforeGroup
-    }
-
-    // searching for a group after the new one (sort ascending)
-    rowsToGroupsIndexes.slice(0).sort((a, b) => a - b).some((rowIndex) => {
-      if (referenceRow < rowIndex) {
-        rowGroupAfterNewIndex = rowIndex
-        groupAfterNewIndex = rowsToGroups[rowGroupAfterNewIndex]
-        return true
-      }
-
-      return false
-    })
-
-    if (groupAfterNewIndex == null) {
-      // if there is no group after the new group, insert it as the last
-      newDesignGroups = [
-        ...designGroups,
-        currentGroup
-      ]
-
-      // updating rows-groups map
-      newRowsToGroups[referenceRow] = newDesignGroups.length - 1
-    } else {
-      let rowGroupsChanged = []
-
-      // updating group order with the new group
-      newDesignGroups = [
-        ...designGroups.slice(0, groupAfterNewIndex),
-        currentGroup,
-        // updating top space of group after the new one
-        ...designGroups.slice(groupAfterNewIndex, groupAfterNewIndex + 1).map((group) => {
-          let newTopSpace = getDistanceFromCol({
-            rows,
-            fromCol: { row: referenceRow, col: 0 },
-            toCol: { row: rowGroupAfterNewIndex, col: 0 }
-          }).distanceY
-
-          // updating top space only if necessary
-          if (
-            (group.topSpace == null && newTopSpace !== 0) ||
-            (group.topSpace != null && group.topSpace !== newTopSpace)
-          ) {
-            return {
-              ...group,
-              topSpace: newTopSpace
-            }
-          }
-
-          return group
-        }),
-        ...designGroups.slice(groupAfterNewIndex + 1)
-      ]
-
-      // updating rows-groups map
-      // since group order has changed,
-      // we need to update all referenced items in the object map
-      rows.slice(rowGroupAfterNewIndex).forEach((row) => {
-        if (newRowsToGroups[row.index] != null) {
-          rowGroupsChanged.push({ row: row.index })
-          // deleting old references
-          delete newRowsToGroups[row.index]
-        }
-      })
-
-      rowGroupsChanged.forEach((changed) => {
-        // adding + 1 to all groups after the new group
-        newRowsToGroups[changed.row] = rowsToGroups[changed.row] + 1
-      })
-
-      // saving the new group
-      newRowsToGroups[referenceRow] = groupAfterNewIndex
-    }
+    // adding group before placeholder
+    newDesignGroups = [
+      ...designGroups.slice(0, -1),
+      currentGroup,
+      ...designGroups.slice(-1)
+    ]
   } else {
-    let groupFoundIndex = rowsToGroups[referenceRow]
     let currentItem
     let itemBeforeNewIndex
     let itemAfterNewIndex
     let componentInExistingItemIndex
 
     // getting existing group
-    currentGroup = designGroups[groupFoundIndex]
+    currentGroup = { ...designGroups[referenceGroup] }
 
-    // searching for a item after the new one
+    // searching for a item before/after the new one, or if there
+    // is already an existing item in current position
     currentGroup.items.forEach((item, index) => {
       if (
         componentInExistingItemIndex == null &&
-        item.start <= fromCol.start &&
-        item.end >= fromCol.start
+        item.start <= fromArea.start &&
+        item.end >= fromArea.start
       ) {
         // getting the index of the first item
         componentInExistingItemIndex = index
       }
 
-      if (itemAfterNewIndex == null && fromCol.end < item.start) {
+      if (itemAfterNewIndex == null && fromArea.end < item.start) {
         // getting the index of the first item after
         itemAfterNewIndex = index
       }
 
-      if (item.end < fromCol.start) {
+      if (item.end < fromArea.start) {
         // getting the index of the last item before
         itemBeforeNewIndex = index
       }
@@ -753,100 +242,87 @@ function addComponentToDesign (component, {
 
       // creating new item
       currentItem = generateDesignItem({
-        row: rows[referenceRow],
-        startCol: fromCol.start,
-        endCol: fromCol.end,
+        colWidth,
+        layoutMode,
+        start: fromArea.start,
+        end: fromArea.end,
         components: [newComponent],
         baseSize: componentSize
       })
 
-      if (rows[referenceRow].layoutMode === 'grid') {
+      if (layoutMode === 'grid') {
         if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = (fromCol.start - currentGroup.items[itemBeforeNewIndex].end) - 1
+          leftSpaceBeforeItem = (fromArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1
         } else {
-          leftSpaceBeforeItem = fromCol.start
+          leftSpaceBeforeItem = fromArea.start
         }
       } else {
         if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = getDistanceFromCol({
-            rows,
-            fromCol: { row: referenceRow, col: currentGroup.items[itemBeforeNewIndex].end },
-            toCol: { row: referenceRow, col: fromCol.start }
-          }).distanceX
+          leftSpaceBeforeItem = ((fromArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1) * colWidth
         } else {
-          leftSpaceBeforeItem = getDistanceFromCol({
-            rows,
-            fromCol: { row: referenceRow, col: 0 },
-            toCol: { row: referenceRow, col: fromCol.start },
-            opts: { includeFrom: fromCol.start !== 0 }
-          }).distanceX
+          leftSpaceBeforeItem = fromArea.start * colWidth
         }
       }
 
       if (leftSpaceBeforeItem > 0) {
         currentItem.leftSpace = leftSpaceBeforeItem
       }
-    }
 
-    if (componentInExistingItemIndex != null) {
-      currentGroup.items = [
-        ...currentGroup.items.slice(0, componentInExistingItemIndex),
-        currentItem,
-        ...currentGroup.items.slice(componentInExistingItemIndex + 1)
-      ]
-    } else {
-      if (itemAfterNewIndex == null) {
-        // if there is no item after the new item, insert it as the last
+      if (componentInExistingItemIndex != null) {
         currentGroup.items = [
-          ...currentGroup.items,
-          currentItem
+          ...currentGroup.items.slice(0, componentInExistingItemIndex),
+          currentItem,
+          ...currentGroup.items.slice(componentInExistingItemIndex + 1)
         ]
       } else {
-        // updating items order with the new item
-        currentGroup.items = [
-          ...currentGroup.items.slice(0, itemAfterNewIndex),
-          currentItem,
-          // updating left space of item after the new one
-          ...currentGroup.items.slice(itemAfterNewIndex, itemAfterNewIndex + 1).map((item) => {
-            let newLeftSpace
+        if (itemAfterNewIndex == null) {
+          // if there is no item after the new item, insert it as the last
+          currentGroup.items = [
+            ...currentGroup.items,
+            currentItem
+          ]
+        } else {
+          // updating items order with the new item
+          currentGroup.items = [
+            ...currentGroup.items.slice(0, itemAfterNewIndex),
+            currentItem,
+            // updating left space of item after the new one
+            ...currentGroup.items.slice(itemAfterNewIndex, itemAfterNewIndex + 1).map((item) => {
+              let newLeftSpace
 
-            if (rows[referenceRow].layoutMode === 'grid') {
-              newLeftSpace = (item.start - fromCol.end) - 1
-            } else {
-              newLeftSpace = getDistanceFromCol({
-                rows,
-                fromCol: { row: referenceRow, col: fromCol.end },
-                toCol: { row: referenceRow, col: item.start }
-              }).distanceX
-            }
-
-            // updating left space if necessary
-            if (
-              (item.leftSpace == null && newLeftSpace !== 0) ||
-              (item.leftSpace != null && item.leftSpace !== newLeftSpace)
-            ) {
-              return {
-                ...item,
-                leftSpace: newLeftSpace
+              if (layoutMode === 'grid') {
+                newLeftSpace = (item.start - fromArea.end) - 1
+              } else {
+                newLeftSpace = ((item.start - fromArea.end) - 1) * colWidth
               }
-            }
 
-            return item
-          }),
-          ...currentGroup.items.slice(itemAfterNewIndex + 1)
-        ]
+              // updating left space if necessary
+              if (
+                (item.leftSpace == null && newLeftSpace !== 0) ||
+                (item.leftSpace != null && item.leftSpace !== newLeftSpace)
+              ) {
+                return {
+                  ...item,
+                  leftSpace: newLeftSpace
+                }
+              }
+
+              return item
+            }),
+            ...currentGroup.items.slice(itemAfterNewIndex + 1)
+          ]
+        }
       }
+
+      newComponentInfo.groupId = currentGroup.id
+      newComponentInfo.itemId = currentItem.id
+
+      newDesignGroups = [
+        ...designGroups.slice(0, referenceGroup),
+        currentGroup,
+        ...designGroups.slice(referenceGroup + 1)
+      ]
     }
-
-    newComponentInfo.rowIndex = referenceRow
-    newComponentInfo.groupId = currentGroup.id
-    newComponentInfo.itemId = currentItem.id
-
-    newDesignGroups = [
-      ...designGroups.slice(0, groupFoundIndex),
-      currentGroup,
-      ...designGroups.slice(groupFoundIndex + 1)
-    ]
   }
 
   newComponentsInfo[newComponent.id] = newComponentInfo
@@ -854,73 +330,38 @@ function addComponentToDesign (component, {
   return {
     designGroups: newDesignGroups,
     newComponent,
-    rowsToGroups: newRowsToGroups,
     componentsInfo: newComponentsInfo
   }
 }
 
 function removeComponentInDesign ({
-  rows,
-  rowsToGroups,
   componentsInfo,
   designGroups,
-  designItem,
+  referenceGroup,
+  referenceItem,
   componentId
 }) {
   let newDesignGroups
-  let newRowsToGroups
   let newComponentsInfo
   let newDesignGroup
-  let nextDesignGroup
   let newDesignItem
   let nextDesignItem
-  let designGroupIndex
-  let designItemIndex
-  let rowIndex
-
-  newRowsToGroups = {
-    ...rowsToGroups
-  }
 
   newComponentsInfo = {
     ...componentsInfo
   }
 
-  rowIndex = componentsInfo[componentId].rowIndex
-  designGroupIndex = rowsToGroups[rowIndex]
-
   newDesignGroup = {
-    ...designGroups[designGroupIndex]
-  }
-
-  nextDesignGroup = designGroups[designGroupIndex + 1]
-
-  if (designItem.index != null) {
-    designItemIndex = designItem.index
-  } else {
-    let found
-
-    newDesignGroup.items.some((item, idx) => {
-      let ok = item.id === designItem.id
-
-      if (ok) {
-        found = idx
-      }
-
-      return ok
-    })
-
-    if (found != null) {
-      designItemIndex = found
-    }
+    ...designGroups[referenceGroup]
   }
 
   newDesignItem = {
-    ...newDesignGroup.items[designItemIndex]
+    ...newDesignGroup.items[referenceItem]
   }
 
-  nextDesignItem = newDesignGroup.items[designItemIndex + 1]
+  nextDesignItem = newDesignGroup.items[referenceItem + 1]
 
+  // removing the component
   newDesignItem.components = newDesignItem.components.filter((comp) => {
     return comp.id !== componentId
   })
@@ -936,71 +377,37 @@ function removeComponentInDesign ({
 
       // deleting the item and updating the next one
       newDesignGroup.items = [
-        ...newDesignGroup.items.slice(0, designItemIndex),
+        ...newDesignGroup.items.slice(0, referenceItem),
         nextDesignItem,
-        ...newDesignGroup.items.slice(designItemIndex + 2)
+        ...newDesignGroup.items.slice(referenceItem + 2)
       ]
     } else {
       // deleting the item if there is no more components in there
       newDesignGroup.items = [
-        ...newDesignGroup.items.slice(0, designItemIndex),
-        ...newDesignGroup.items.slice(designItemIndex + 1)
+        ...newDesignGroup.items.slice(0, referenceItem),
+        ...newDesignGroup.items.slice(referenceItem + 1)
       ]
     }
   } else {
     // updating the items
     newDesignGroup.items = [
-      ...newDesignGroup.items.slice(0, designItemIndex),
+      ...newDesignGroup.items.slice(0, referenceItem),
       newDesignItem,
-      ...newDesignGroup.items.slice(designItemIndex + 1)
+      ...newDesignGroup.items.slice(referenceItem + 1)
     ]
   }
 
-  if (newDesignGroup.items.length === 0) {
-    delete newRowsToGroups[rowIndex]
-
-    if (nextDesignGroup) {
-      // since we will remove the group we need to
-      // re-calculate the topSpace of next group
-      nextDesignGroup = { ...nextDesignGroup }
-      nextDesignGroup.topSpace = nextDesignGroup.topSpace == null ? 0 : nextDesignGroup.topSpace
-      nextDesignGroup.topSpace += rows[rowIndex].height
-      nextDesignGroup.topSpace += newDesignGroup.topSpace == null ? 0 : newDesignGroup.topSpace
-
-      // updating rowsToGroups of groups after the removed one
-      rows.slice(rowIndex + 1).forEach((row) => {
-        if (newRowsToGroups[row.index] != null) {
-          newRowsToGroups[row.index] = newRowsToGroups[row.index] - 1
-        }
-      })
-
-      // deleting the group and updating the next one
-      newDesignGroups = [
-        ...designGroups.slice(0, designGroupIndex),
-        nextDesignGroup,
-        ...designGroups.slice(designGroupIndex + 2)
-      ]
-    } else {
-      // deleting the group if there is no more items in there
-      newDesignGroups = [
-        ...designGroups.slice(0, designGroupIndex),
-        ...designGroups.slice(designGroupIndex + 1)
-      ]
-    }
-  } else {
-    // updating the groups
-    newDesignGroups = [
-      ...designGroups.slice(0, designGroupIndex),
-      newDesignGroup,
-      ...designGroups.slice(designGroupIndex + 1)
-    ]
-  }
+  // updating the group
+  newDesignGroups = [
+    ...designGroups.slice(0, referenceGroup),
+    newDesignGroup,
+    ...designGroups.slice(referenceGroup + 1)
+  ]
 
   delete newComponentsInfo[componentId]
 
   return {
     designGroups: newDesignGroups,
-    rowsToGroups: newRowsToGroups,
     componentsInfo: newComponentsInfo,
     updatedDesignItem: newDesignItem
   }
@@ -1031,21 +438,82 @@ function selectComponentInDesign ({ componentId, componentsInfo }) {
   }
 }
 
-function getProjectedFilledAreaWhenResizingDesignItem ({
-  rows,
+function findProjectedFilledArea ({
   baseWidth,
-  defaultNumberOfCols,
-  originalSelectedArea,
-  selectedArea,
-  item,
+  totalCols,
+  designGroups,
+  referenceGroup,
+  colInfo,
+  consumedCols
+}) {
+  let currentGroup = designGroups[referenceGroup]
+  let colWidth = baseWidth / totalCols
+  let { index: startCol } = colInfo
+  let endCol = startCol + (consumedCols - 1)
+  let filled = false
+  let conflict = false
+  let visuallyConsumedCols
+  let areaBox
+
+  endCol = endCol < totalCols ? endCol : endCol - 1
+  visuallyConsumedCols = (endCol - startCol) + 1
+
+  areaBox = {
+    width: visuallyConsumedCols * colWidth,
+    height: colInfo.height,
+    top: colInfo.top,
+    left: colInfo.left
+  }
+
+  for (let i = 0; i < currentGroup.items.length; i++) {
+    let currentItem = currentGroup.items[i]
+
+    if (conflict) {
+      break;
+    }
+
+    // does the projected preview has some conflic with other item in the group?
+    if (currentItem.start <= startCol && currentItem.end >= startCol) {
+      conflict = true
+    }
+  }
+
+  // does the projected preview fills inside the selected area?
+  filled = (
+    totalCols - startCol >= consumedCols
+  )
+
+  return {
+    filled,
+    conflict,
+    group: referenceGroup,
+    start: startCol,
+    end: endCol,
+    areaBox
+  }
+}
+
+function findProjectedFilledAreaWhenResizing ({
+  baseWidth,
+  totalCols,
+  designGroups,
+  referenceGroup,
+  referenceItem,
+  originalHighlightedArea,
+  highlightedArea,
+  minSpace,
+  originalSpace,
   resize
 }) {
+  let currentGroup = designGroups[referenceGroup]
+  let layoutMode = currentGroup.layoutMode
+  let colWidth = baseWidth / totalCols
   let shouldCalculate = false
   let isGrowing = false
   let newSelectedArea
+  let newSelectionIsEmpty
   let step
   let nextCol
-  let startCol
 
   if (resize.direction === 'left') {
     step = -1
@@ -1066,111 +534,54 @@ function getProjectedFilledAreaWhenResizingDesignItem ({
     isGrowing = true
   }
 
-  if (item.layoutMode === 'grid') {
+  if (layoutMode === 'grid') {
+    let baseLeft
+    let currentOffset
     let colReference
-    let baseCol
-    let baseColLeft
     let colLimit
     let sizeLimit
 
+    baseLeft = Math.round(originalHighlightedArea.areaBox.left - (originalHighlightedArea.start * colWidth))
+
     if (resize.direction === 'left') {
-      colReference = selectedArea.startCol
-      baseCol = rows[selectedArea.row].cols[colReference]
-
-      if (colReference === 0 && !isGrowing) {
-        baseColLeft = selectedArea.areaBox.left
-      } else {
-        colReference = colReference - 1
-        baseCol = rows[selectedArea.row].cols[colReference]
-
-        if (baseCol) {
-          baseColLeft = (
-            selectedArea.areaBox.left -
-            baseCol.width
-          )
-        }
-      }
+      currentOffset = originalHighlightedArea.areaBox.left - resize.position
     } else {
-      colReference = selectedArea.endCol
-      baseCol = rows[selectedArea.row].cols[colReference]
-
-      if (colReference === rows[selectedArea.row].cols.length - 1 && !isGrowing) {
-        if (baseCol) {
-          baseColLeft = (
-            selectedArea.areaBox.left +
-            selectedArea.areaBox.width
-          ) - baseCol.width
-        }
-      } else {
-        colReference = colReference + 1
-        baseCol = rows[selectedArea.row].cols[colReference]
-
-        baseColLeft = (
-          selectedArea.areaBox.left +
-          selectedArea.areaBox.width
-        )
-      }
+      currentOffset = originalHighlightedArea.areaBox.left + originalHighlightedArea.areaBox.width + resize.position
     }
 
-    if (!baseCol) {
-      return
-    }
-
-    startCol = findStartCol({
-      rows,
-      point: {
-        side: resize.direction === 'left' ? (
-          isGrowing ? 'left' : 'right'
-        ) : (
-          isGrowing ? 'right' : 'left'
-        ),
-        x: resize.direction === 'left' ? (
-          originalSelectedArea.areaBox.left - resize.position
-        ) : originalSelectedArea.areaBox.left + originalSelectedArea.areaBox.width + resize.position,
-        y: originalSelectedArea.areaBox.top
-      },
-      baseCol: {
-        col: baseCol.index,
-        row: originalSelectedArea.row,
-        top: originalSelectedArea.areaBox.top,
-        left: baseColLeft,
-        width: baseCol.width,
-        height: originalSelectedArea.areaBox.height
-      },
-      step
-    })
+    colReference = Math.floor((currentOffset - baseLeft) / colWidth)
 
     if (isGrowing) {
-      colLimit = resize.direction === 'left' ? 0 : rows[selectedArea.row].cols.length - 1
+      colLimit = resize.direction === 'left' ? 0 : totalCols - 1
       sizeLimit = resize.direction === 'left' ? resize.maxLeft : resize.maxRight
     } else {
       if (resize.direction === 'left') {
-        colLimit = originalSelectedArea.startCol + Math.abs(item.space - item.minSpace)
+        colLimit = originalHighlightedArea.start + Math.abs(originalSpace - minSpace)
       } else {
-        colLimit = originalSelectedArea.endCol - Math.abs(item.space - item.minSpace)
+        colLimit = originalHighlightedArea.end - Math.abs(originalSpace - minSpace)
       }
 
       sizeLimit = resize.direction === 'left' ? resize.minLeft : resize.minRight
     }
 
-    if (startCol.colCoordinate.col === colLimit && resize.position === sizeLimit) {
+    if (resize.position === sizeLimit) {
       shouldCalculate = true
-      nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col]
-    } else if (startCol.filled) {
+      nextCol = colLimit
+    } else {
       let evaluatedCol
 
       if (resize.direction === 'left') {
-        evaluatedCol = selectedArea.startCol
+        evaluatedCol = highlightedArea.start
       } else {
-        evaluatedCol = selectedArea.endCol
+        evaluatedCol = highlightedArea.end
       }
 
       if (isGrowing) {
-        shouldCalculate = Math.abs(evaluatedCol - startCol.colCoordinate.col) > 1
+        shouldCalculate = Math.abs(evaluatedCol - colReference) > 1
       } else {
-        if (resize.position === sizeLimit && Math.abs(evaluatedCol - startCol.colCoordinate.col) >= 1) {
+        if (resize.position === sizeLimit && Math.abs(evaluatedCol - colReference) >= 1) {
           shouldCalculate = true
-        } else if (Math.abs(evaluatedCol - startCol.colCoordinate.col) === 1) {
+        } else if (Math.abs(evaluatedCol - colReference) === 1) {
           shouldCalculate = false
         } else {
           shouldCalculate = true
@@ -1178,46 +589,44 @@ function getProjectedFilledAreaWhenResizingDesignItem ({
       }
 
       if (resize.direction === 'left') {
-        nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col + 1]
+        nextCol = colReference + 1
       } else {
-        nextCol = rows[selectedArea.row].cols[startCol.colCoordinate.col -  1]
+        nextCol = colReference - 1
       }
     }
   } else {
-    let baseColWidth = baseWidth / defaultNumberOfCols
-    let consumedCols = Math.floor(resize.position / baseColWidth)
+    let consumedCols = Math.floor(resize.position / colWidth)
     let evaluatedCol
     let factor
 
     if (resize.direction === 'left') {
-      evaluatedCol = originalSelectedArea.startCol
+      evaluatedCol = originalHighlightedArea.start
       factor = -1
     } else {
-      evaluatedCol = originalSelectedArea.endCol
+      evaluatedCol = originalHighlightedArea.end
       factor = 1
     }
 
     if (resize.position === 0) {
-      nextCol = rows[selectedArea.row].cols[evaluatedCol]
+      nextCol = evaluatedCol
     } else {
-      let newColIndex = evaluatedCol + (consumedCols * factor)
+      let newCol = evaluatedCol + (consumedCols * factor)
 
       if (
-        newColIndex !== 0 &&
-        newColIndex !== rows[selectedArea.row].cols.length - 1
+        newCol !== 0 &&
+        newCol !== totalCols - 1
       ) {
-        newColIndex = newColIndex + factor
+        newCol = newCol + factor
       }
 
-      nextCol = rows[selectedArea.row].cols[newColIndex]
+      nextCol = newCol
     }
 
-    // fixed mode
     if (
-      (nextCol.index === evaluatedCol &&
-      originalSelectedArea.areaBox.width === selectedArea.areaBox.width) ||
-      (nextCol.index === 0 && resize.position === resize.prevPosition) ||
-      (nextCol.index === rows[selectedArea.row].cols.length - 1 &&
+      (nextCol === evaluatedCol &&
+      originalHighlightedArea.areaBox.width === highlightedArea.areaBox.width) ||
+      (nextCol === 0 && resize.position === resize.prevPosition) ||
+      (nextCol === totalCols - 1 &&
       resize.position === resize.prevPosition)
     ) {
       shouldCalculate = false
@@ -1226,62 +635,65 @@ function getProjectedFilledAreaWhenResizingDesignItem ({
     }
   }
 
-  if (!shouldCalculate || !nextCol) {
+  if (
+    !shouldCalculate ||
+    nextCol < 0 ||
+    nextCol > (totalCols - 1)
+  ) {
     return
   }
 
   newSelectedArea = {
-    ...selectedArea,
+    ...highlightedArea,
   }
 
   newSelectedArea.areaBox = {
-    ...selectedArea.areaBox
+    ...highlightedArea.areaBox
   }
 
-  if (item.layoutMode === 'grid') {
+  if (layoutMode === 'grid') {
     let distanceX
     let fromCol
     let toCol
 
-    newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedArea.startCol
-    newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedArea.endCol
+    newSelectedArea.start = resize.direction === 'left' ? nextCol : highlightedArea.start
+    newSelectedArea.end = resize.direction === 'right' ? nextCol : highlightedArea.end
 
-    fromCol = resize.direction === 'left' ? nextCol.index : originalSelectedArea.endCol
-    toCol = resize.direction === 'left' ? originalSelectedArea.startCol : nextCol.index
+    fromCol = resize.direction === 'left' ? nextCol : originalHighlightedArea.end + 1
+    toCol = resize.direction === 'left' ? originalHighlightedArea.start - 1 : nextCol
 
-    distanceX = getDistanceFromCol({
-      rows,
-      fromCol: { row: originalSelectedArea.row, col: fromCol },
-      toCol: { row: originalSelectedArea.row, col: toCol },
-      opts: {
-        includeFrom: resize.direction === 'left' ? nextCol.index !== originalSelectedArea.startCol : undefined,
-        includeTo: resize.direction === 'right' ? nextCol.index !== originalSelectedArea.startCol : undefined,
-      }
-    }).distanceX
+    distanceX = ((toCol - fromCol) + 1) * colWidth
 
-    newSelectedArea.areaBox.width = originalSelectedArea.areaBox.width + distanceX
+    newSelectedArea.areaBox.width = originalHighlightedArea.areaBox.width + distanceX
 
     newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-      originalSelectedArea.areaBox.left - distanceX
-    ) : originalSelectedArea.areaBox.left
+      originalHighlightedArea.areaBox.left - distanceX
+    ) : originalHighlightedArea.areaBox.left
+
+    if (resize.direction === 'left') {
+      let prevItem = currentGroup.items[referenceItem - 1]
+      newSelectionIsEmpty = !prevItem || (prevItem.end < fromCol)
+    } else {
+      let nextItem = currentGroup.items[referenceItem + 1]
+      newSelectionIsEmpty = !nextItem || (nextItem.start > toCol)
+    }
   } else {
-    newSelectedArea.startCol = resize.direction === 'left' ? nextCol.index : selectedArea.startCol
-    newSelectedArea.endCol = resize.direction === 'right' ? nextCol.index : selectedArea.endCol
+    newSelectedArea.start = resize.direction === 'left' ? nextCol : highlightedArea.start
+    newSelectedArea.end = resize.direction === 'right' ? nextCol : highlightedArea.end
 
-    newSelectedArea.areaBox.width = originalSelectedArea.areaBox.width + resize.position
+    newSelectedArea.areaBox.width = originalHighlightedArea.areaBox.width + resize.position
+
     newSelectedArea.areaBox.left = resize.direction === 'left' ? (
-      originalSelectedArea.areaBox.left - resize.position
-    ) : originalSelectedArea.areaBox.left
+      originalHighlightedArea.areaBox.left - resize.position
+    ) : originalHighlightedArea.areaBox.left
+
+    // TODO: do a proper calculation when finishing the fixed mode support
+    newSelectionIsEmpty = true
   }
 
   if (
     (resize.position <= 0) ||
-    areColsEmpty({
-      row: rows[selectedArea.row],
-      fromCol: nextCol.index,
-      toCol: resize.direction === 'left' ? originalSelectedArea.startCol : originalSelectedArea.endCol,
-      excludeTo: true
-    })
+    newSelectionIsEmpty
   ) {
     newSelectedArea.conflict = false
   } else {
@@ -1291,103 +703,10 @@ function getProjectedFilledAreaWhenResizingDesignItem ({
   return newSelectedArea
 }
 
-function updateDesignItem ({
-  rowsToGroups,
-  componentsInfo,
-  designGroups,
-  designItem,
-  current
-}) {
-  let newDesignGroup
-  let newDesignItem
-  let nextDesignItem
-  let designGroupIndex
-  let designItemIndex
-
-  designGroupIndex = rowsToGroups[componentsInfo[designItem.components[0].id].rowIndex]
-
-  newDesignGroup = {
-    ...designGroups[designGroupIndex]
-  }
-
-  if (designItem.index != null) {
-    designItemIndex = designItem.index
-  } else {
-    let found
-
-    newDesignGroup.items.some((item, idx) => {
-      let ok = item.id === designItem.id
-
-      if (ok) {
-        found = idx
-      }
-
-      return ok
-    })
-
-    if (found != null) {
-      designItemIndex = found
-    }
-  }
-
-  newDesignItem = {
-    ...newDesignGroup.items[designItemIndex]
-  }
-
-  nextDesignItem = newDesignGroup.items[designItemIndex + 1]
-
-  if (newDesignGroup.layoutMode === 'grid') {
-    newDesignItem.start = current.start
-    newDesignItem.end = current.end
-    newDesignItem.space = (current.end - current.start) + 1
-
-    if (designItem.start !== current.start) {
-      newDesignItem.leftSpace = newDesignItem.leftSpace == null ? 0 : newDesignItem.leftSpace
-      newDesignItem.leftSpace += (current.start - designItem.start)
-    }
-  }
-
-  if (nextDesignItem) {
-    if (current.end !== designItem.end) {
-      nextDesignItem = { ...nextDesignItem }
-      nextDesignItem.leftSpace = nextDesignItem.leftSpace == null ? 0 : nextDesignItem.leftSpace
-      nextDesignItem.leftSpace += (designItem.end - current.end)
-    }
-
-    newDesignGroup.items = [
-      ...newDesignGroup.items.slice(0, designItemIndex),
-      newDesignItem,
-      nextDesignItem,
-      ...newDesignGroup.items.slice(designItemIndex + 2)
-    ]
-  } else {
-    newDesignGroup.items = [
-      ...newDesignGroup.items.slice(0, designItemIndex),
-      newDesignItem,
-      ...newDesignGroup.items.slice(designItemIndex + 1)
-    ]
-  }
-
-  return [
-    ...designGroups.slice(0, designGroupIndex),
-    newDesignGroup,
-    ...designGroups.slice(designGroupIndex + 1)
-  ]
-}
-
-/**
- *  Grid utils
- */
-export { isInsideOfCol }
-export { findProjectedFilledArea }
-export { generateRows }
-export { generateCols }
-export { updateRows }
-/**
- *  Design group utils
- */
+export { generateDesignGroups }
 export { addComponentToDesign }
 export { removeComponentInDesign }
 export { selectComponentInDesign }
-export { getProjectedFilledAreaWhenResizingDesignItem }
+export { findProjectedFilledArea }
+export { findProjectedFilledAreaWhenResizing }
 export { updateDesignItem }

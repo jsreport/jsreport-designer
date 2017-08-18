@@ -20,7 +20,7 @@ class DesignItem extends PureComponent {
     this.maxResizeLeft = null
     this.maxResizeRight = null
 
-    this.getItem = this.getItem.bind(this)
+    this.getIndex = this.getIndex.bind(this)
     this.setItemNode = this.setItemNode.bind(this)
     this.setSelectionNode = this.setSelectionNode.bind(this)
     this.focusSelection = this.focusSelection.bind(this)
@@ -43,16 +43,8 @@ class DesignItem extends PureComponent {
     return 100 / (numberOfCols / consumedCols)
   }
 
-  getItem () {
-    return {
-      id: this.props.id,
-      index: this.props.index,
-      layoutMode: this.props.layoutMode,
-      minSpace: this.props.minSpace,
-      space: this.props.space,
-      leftSpace: this.props.leftSpace,
-      components: this.props.components
-    }
+  getIndex () {
+    return this.props.getIndex(this.props.id)
   }
 
   setItemNode (el) {
@@ -72,7 +64,6 @@ class DesignItem extends PureComponent {
 
   handleKeyDown (ev) {
     const { onRemoveComponent, selection } = this.props
-    const item = this.getItem()
 
     ev.preventDefault()
     ev.stopPropagation()
@@ -80,7 +71,7 @@ class DesignItem extends PureComponent {
     // when backspace or del key is pressed remove the component
     if ((ev.keyCode === 8 || ev.keyCode === 46) && onRemoveComponent) {
       onRemoveComponent({
-        item,
+        item: this.getIndex(),
         componentId: selection.component
       })
     }
@@ -100,8 +91,6 @@ class DesignItem extends PureComponent {
     let position = 0
     const node = this.node
 
-    const item = this.getItem()
-
     this.originalResizeCoord = {
       x: ev.clientX,
       y: ev.clientY
@@ -111,8 +100,8 @@ class DesignItem extends PureComponent {
 
     if (this.props.onResizeStart) {
       resizeLimits = this.props.onResizeStart({
-        item,
-        node,
+        item: this.getIndex(),
+        itemDimensions: node.getBoundingClientRect(),
         resize: {
           direction,
           position,
@@ -152,9 +141,6 @@ class DesignItem extends PureComponent {
     let resizingState
     let position
     let resizing
-    const node = this.node
-
-    const item = this.getItem()
 
     if (this.state.resizing) {
       previousResizingState = this.state.resizing.state
@@ -200,8 +186,7 @@ class DesignItem extends PureComponent {
 
     if (this.props.onResize) {
       resizingState = this.props.onResize({
-        item,
-        node,
+        item: this.getIndex(),
         resize: {
           direction,
           position,
@@ -243,17 +228,12 @@ class DesignItem extends PureComponent {
   }
 
   handleResizeEnd (ev, direction) {
-    const node = this.node
-
-    const item = this.getItem()
-
     ev.preventDefault();
     ev.stopPropagation();
 
     if (this.props.onResizeEnd) {
       this.props.onResizeEnd({
-        item,
-        node,
+        item: this.getIndex(),
         resize: {
           direction,
           position: this.state.resizing.position,
@@ -360,11 +340,9 @@ class DesignItem extends PureComponent {
 
 DesignItem.propTypes = {
   id: PropTypes.string,
-  index: PropTypes.number.isRequired,
   numberOfCols: PropTypes.number.isRequired,
   layoutMode: PropTypes.oneOf(['grid', 'fixed']).isRequired,
   leftSpace: PropTypes.number,
-  minSpace: PropTypes.number.isRequired,
   space: PropTypes.number.isRequired,
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
@@ -372,7 +350,8 @@ DesignItem.propTypes = {
   onRemoveComponent: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
-  onResizeEnd: PropTypes.func
+  onResizeEnd: PropTypes.func,
+  getIndex: PropTypes.func.isRequired
 }
 
 export default DesignItem

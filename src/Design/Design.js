@@ -3,13 +3,11 @@ import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
-  isInsideOfCol,
   findProjectedFilledArea,
-  generateRows,
-  updateRows,
+  generateDesignGroups,
   addComponentToDesign,
   removeComponentInDesign,
-  getProjectedFilledAreaWhenResizingDesignItem,
+  findProjectedFilledAreaWhenResizing,
   updateDesignItem,
   selectComponentInDesign
 } from './designUtils'
@@ -29,43 +27,31 @@ class Design extends PureComponent {
     super(props)
 
     let {
-      baseWidth,
-      defaultRowHeight,
-      defaultNumberOfRows,
-      defaultNumberOfCols
+      defaultNumberOfRows
     } = this.props
 
-    let initialRows
+    let initialDesignGroups
 
-    this.totalHeightOfRows = null
-
-    this.rowsToGroups = {}
     this.componentsInfo = {}
     this.selectedComponent = null
-    this.selectedArea = null
-    this.selectedAreaWhenResizing = null
+    this.highlightedArea = null
+    this.highlightedAreaWhenResizing = null
     this.isResizing = false
 
-    initialRows = generateRows({
-      baseWidth: baseWidth,
-      numberOfRows: defaultNumberOfRows,
-      numberOfCols: defaultNumberOfCols,
-      height: defaultRowHeight
+    initialDesignGroups = generateDesignGroups({
+      numberOfRows: defaultNumberOfRows
     })
 
-    // last row is placeholder
-    if (initialRows.length > 0) {
-      initialRows[initialRows.length - 1].placeholder = true
+    // last designGroup is placeholder
+    if (initialDesignGroups.length > 0) {
+      initialDesignGroups[initialDesignGroups.length - 1].placeholder = true
     }
 
     this.state = {
-      designGroups: [],
+      designGroups: initialDesignGroups,
       designSelection: null,
-      selectedArea: null,
-      gridRows: initialRows
+      highlightedArea: null
     }
-
-    this.totalHeightOfRows = this.getTotalHeightOfRows(this.state.gridRows)
 
     this.getCanvasRef = this.getCanvasRef.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
@@ -80,8 +66,8 @@ class Design extends PureComponent {
     this.onResizeDesignItemEnd = this.onResizeDesignItemEnd.bind(this)
 
     // memoizing the calculation, only update when the cursor offset has changed
-    this.calculateSelectedAreaWhenDragging = memoize(
-      this.calculateSelectedAreaWhenDragging.bind(this),
+    this.calculateHighlightedAreaWhenDragging = memoize(
+      this.calculateHighlightedAreaWhenDragging.bind(this),
       ({ clientOffset }) => {
         return clientOffset.x + ',' + clientOffset.y
       }
@@ -95,13 +81,6 @@ class Design extends PureComponent {
     window.addEventListener('dragstart', this.handleGeneralClickOrDragStart, true)
   }
 
-  componentWillUpdate (nextProps, nextState) {
-    // re-calculate computed value "totalHeightOfRows" if rows have changed
-    if (this.state.gridRows !== nextState.gridRows) {
-      this.totalHeightOfRows = this.getTotalHeightOfRows(nextState.gridRows)
-    }
-  }
-
   componentWillUnmount () {
     document.removeEventListener('click', this.handleGeneralClickOrDragStart, true)
     window.removeEventListener('dragstart', this.handleGeneralClickOrDragStart, true)
@@ -111,55 +90,48 @@ class Design extends PureComponent {
     this.canvasRef = el
   }
 
-  getTotalHeightOfRows (rows) {
-    return rows.reduce((acu, row) => acu + row.height, 0)
-  }
-
-  calculateSelectedAreaWhenDragging ({ row, col, colDimensions, item, clientOffset }) {
-    let rows = this.state.gridRows
-    let isInside = true
-    let { x: cursorOffsetX, y: cursorOffsetY } = clientOffset
-    let { width, height, top, left } = colDimensions
+  calculateHighlightedAreaWhenDragging ({ group, groupDimensions, item, clientOffset }) {
+    let designGroups = this.state.designGroups
+    let { baseWidth, defaultNumberOfCols } = this.props
+    let { x: cursorOffsetX } = clientOffset
+    let { height, top, left } = groupDimensions
+    let colWidth = baseWidth / defaultNumberOfCols
 
     let colInfo = {
-      col: col.index,
-      row: row.index,
-      width,
       height,
       top,
-      left
+      index: Math.floor((cursorOffsetX - left) / colWidth)
     }
 
-    isInside = isInsideOfCol({
-      point: { x: cursorOffsetX, y: cursorOffsetY },
-      colInfo
-    }).isInside
-
-    if (!isInside) {
-      return
+    if (colInfo.index > defaultNumberOfCols - 1) {
+      colInfo.index = defaultNumberOfCols - 1
     }
 
-    let selectedArea = findProjectedFilledArea({
-      rows,
-      baseColInfo: colInfo,
-      consumedRows: item.consumedRows,
+    colInfo.left = left + (colInfo.index * colWidth)
+
+    let highlightedArea = findProjectedFilledArea({
+      baseWidth,
+      totalCols: defaultNumberOfCols,
+      designGroups,
+      referenceGroup: group,
+      colInfo,
       consumedCols: item.consumedCols
     })
 
-    // saving selectedArea in instance because it will be reset later
+    // saving highlightedArea in instance because it will be reset later
     // and we want to access this value later when adding the component to canvas
-    this.selectedArea = selectedArea
+    this.highlightedArea = highlightedArea
 
     this.setState({
-      selectedArea
+      highlightedArea
     })
   }
 
   addComponentToCanvas ({ item }) {
     let shouldAddComponent = (
-      this.selectedArea &&
-      !this.selectedArea.conflict &&
-      this.selectedArea.filled &&
+      this.highlightedArea &&
+      !this.highlightedArea.conflict &&
+      this.highlightedArea.filled &&
       item
     )
 
@@ -173,67 +145,28 @@ class Design extends PureComponent {
       defaultNumberOfCols
     } = this.props
 
-    let originalRows = this.state.gridRows
     let originalDesignGroups = this.state.designGroups
-    let selectedArea = this.selectedArea
-    let originalRowsToGroups = this.rowsToGroups || {}
+    let highlightedArea = this.highlightedArea
     let originalComponentsInfo = this.componentsInfo || {}
-    let currentRowsToGroups = { ...originalRowsToGroups }
-    let currentComponentsInfo = { ...originalComponentsInfo }
-    let changedRowsInsideGroups = []
-
-    // TODO: Safari has a bug, if you drop a component and if that component causes the scroll bar to appear
-    // then when you scroll the page you will see some part of the drag preview or some lines of the grid
-    // getting draw randomly (a painting issue)
-    // see: https://stackoverflow.com/questions/22842992/how-to-force-safari-to-repaint-positionfixed-elements-on-scroll
-    const {
-      rows: newRows,
-      updatedBaseRow
-    } = updateRows({
-      rows: originalRows,
-      current: {
-        row: selectedArea.row,
-        newHeight: item.size.height,
-        startCol: selectedArea.startCol,
-        endCol: selectedArea.endCol,
-        // since the row to update will have the dropped item, then the row is not empty anymore
-        empty: false
-      },
-      defaultRowHeight: defaultRowHeight,
-      defaultNumberOfCols: defaultNumberOfCols,
-      totalWidth: baseWidth,
-      onRowIndexChange: (currentRow, newIndex) => {
-        if (currentRowsToGroups[currentRow.index]) {
-          changedRowsInsideGroups.push({ old: currentRow.index, new: newIndex })
-          // deleting old references in rows-groups map
-          delete currentRowsToGroups[currentRow.index]
-        }
-      }
-    })
-
-    // updating rows-groups map with the new row indexes
-    changedRowsInsideGroups.forEach((changed) => {
-      currentRowsToGroups[changed.new] = originalRowsToGroups[changed.old]
-    })
 
     const {
       designGroups,
       newComponent,
-      rowsToGroups,
       componentsInfo
     } = addComponentToDesign({
       type: item.name,
       props: item.props
     }, {
-      rows: newRows,
-      rowsToGroups: currentRowsToGroups,
-      componentsInfo: currentComponentsInfo,
+      baseWidth,
+      emptyGroupHeight: defaultRowHeight,
+      numberOfCols: defaultNumberOfCols,
+      componentsInfo: originalComponentsInfo,
       componentSize: item.size,
       designGroups: originalDesignGroups,
-      referenceRow: updatedBaseRow.index,
-      fromCol: {
-        start: selectedArea.startCol,
-        end: selectedArea.endCol
+      referenceGroup: highlightedArea.group,
+      fromArea: {
+        start: highlightedArea.start,
+        end: highlightedArea.end
       }
     })
 
@@ -242,14 +175,12 @@ class Design extends PureComponent {
       returnSelection: true
     })
 
-    this.selectedArea = null
-    this.rowsToGroups = rowsToGroups
+    this.highlightedArea = null
     this.componentsInfo = componentsInfo
 
     this.setState({
-      // clean selectedArea when adding a component
-      selectedArea: null,
-      gridRows: newRows,
+      // clean highlightedArea when adding a component
+      highlightedArea: null,
       designGroups,
       designSelection
     })
@@ -336,70 +267,25 @@ class Design extends PureComponent {
     this.selectComponent(componentId)
   }
 
-  onRemoveDesignComponent ({ item, componentId }) {
-    const {
-      baseWidth,
-      defaultRowHeight,
-      defaultNumberOfCols
-    } = this.props
-
-    let originalRows = this.state.gridRows
+  onRemoveDesignComponent ({ group, item, componentId }) {
     let originalDesignGroups = this.state.designGroups
-    let originalRowsToGroups = this.rowsToGroups
     let originalComponentsInfo = this.componentsInfo
-    let currentDesignGroup
-    let currentDesignItem
     let designSelection
-    let newRows
     let stateToUpdate
 
     if (this.isResizing) {
       return
     }
 
-    currentDesignGroup = originalDesignGroups[
-      originalRowsToGroups[
-        originalComponentsInfo[componentId].rowIndex
-      ]
-    ]
-
-    currentDesignItem = currentDesignGroup.items[item.index]
-
-    if (currentDesignItem.components.length === 1) {
-      // the only component present in the item will be removed
-      // which means that the item will be also removed, so we update
-      // the row and cols to empty state again
-      newRows = updateRows({
-        rows: originalRows,
-        current: {
-          row: originalComponentsInfo[componentId].rowIndex,
-          startCol: currentDesignItem.start,
-          endCol: currentDesignItem.end,
-          // the only item present in group will be removed
-          // which means that the group will be also removed, so we update
-          // the row to have the default row height again
-          newHeight: currentDesignGroup.items.length === 1 ? defaultRowHeight : undefined,
-          empty: true
-        },
-        defaultRowHeight: defaultRowHeight,
-        defaultNumberOfCols: defaultNumberOfCols,
-        totalWidth: baseWidth
-      }).rows
-    } else {
-      newRows = originalRows
-    }
-
     const {
       designGroups,
-      rowsToGroups,
       componentsInfo,
       updatedDesignItem
     } = removeComponentInDesign({
-      rows: newRows,
-      rowsToGroups: originalRowsToGroups,
       componentsInfo: originalComponentsInfo,
       designGroups: originalDesignGroups,
-      designItem: { ...currentDesignItem, index: item.index },
+      referenceGroup: group,
+      referenceItem: item,
       componentId
     })
 
@@ -410,11 +296,9 @@ class Design extends PureComponent {
       })
     }
 
-    this.rowsToGroups = rowsToGroups
     this.componentsInfo = componentsInfo
 
     stateToUpdate = {
-      gridRows: newRows,
       designGroups
     }
 
@@ -425,46 +309,35 @@ class Design extends PureComponent {
     this.setState(stateToUpdate)
   }
 
-  onResizeDesignItemStart ({ item, resize, node }) {
-    const {
-      baseWidth,
-      defaultNumberOfCols
-    } = this.props
+  onResizeDesignItemStart ({ group, item, itemDimensions, resize }) {
+    const { baseWidth, defaultNumberOfCols } = this.props
 
-    let rows = this.state.gridRows
-    let rowsToGroups = this.rowsToGroups
     let designGroups = this.state.designGroups
-    let componentsInfo = this.componentsInfo
+    let colWidth = baseWidth / defaultNumberOfCols
     let currentDesignGroup
     let currentDesignItem
     let canvasDimensions
-    let itemDimensions
     let minLeftPosition
     let minRightPosition
     let maxLeftPosition
     let maxRightPosition
-    let selectedArea
+    let highlightedArea
 
     this.isResizing = true
 
     canvasDimensions = findDOMNode(this.canvasRef).getBoundingClientRect()
-    itemDimensions = node.getBoundingClientRect()
 
     // getting the limits of resizing based on canvas dimensions (rounding values)
     maxLeftPosition = Math.round(itemDimensions.left - canvasDimensions.left)
     maxRightPosition = Math.round(canvasDimensions.right - itemDimensions.right)
 
-    currentDesignGroup = designGroups[
-      rowsToGroups[
-        componentsInfo[item.components[0].id].rowIndex
-      ]
-    ]
+    currentDesignGroup = designGroups[group]
 
     if (!currentDesignGroup) {
       return
     }
 
-    currentDesignItem = currentDesignGroup.items[item.index]
+    currentDesignItem = currentDesignGroup.items[item]
 
     if (!currentDesignItem) {
       return
@@ -473,8 +346,8 @@ class Design extends PureComponent {
     if (currentDesignItem.space !== currentDesignItem.minSpace) {
       let min = Math.abs(currentDesignItem.space - currentDesignItem.minSpace)
 
-      if (item.layoutMode === 'grid') {
-        min = min * (baseWidth / defaultNumberOfCols)
+      if (currentDesignGroup.layoutMode === 'grid') {
+        min = min * colWidth
       }
 
       min = Math.round(min) * -1
@@ -487,24 +360,27 @@ class Design extends PureComponent {
     }
 
     // getting the initial projected area when the resizing starts
-    selectedArea = findProjectedFilledArea({
-      rows,
-      baseColInfo: {
-        col: currentDesignItem.start,
-        row: componentsInfo[item.components[0].id].rowIndex,
+    highlightedArea = findProjectedFilledArea({
+      baseWidth,
+      totalCols: defaultNumberOfCols,
+      designGroups,
+      referenceGroup: group,
+      colInfo: {
+        height: itemDimensions.height,
         top: itemDimensions.top,
-        left: itemDimensions.left
+        left: itemDimensions.left,
+        index: currentDesignItem.start
       },
       consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1
     })
 
-    selectedArea.conflict = false
+    highlightedArea.conflict = false
 
-    this.selectedArea = selectedArea
-    this.selectedAreaWhenResizing = selectedArea
+    this.highlightedArea = highlightedArea
+    this.highlightedAreaWhenResizing = highlightedArea
 
     this.setState({
-      selectedArea
+      highlightedArea
     })
 
     return {
@@ -515,12 +391,23 @@ class Design extends PureComponent {
     }
   }
 
-  onResizeDesignItem ({ item, resize }) {
+  onResizeDesignItem ({ group, item, resize }) {
     const { baseWidth, defaultNumberOfCols } = this.props
 
-    let rows = this.state.gridRows
-    let selectedArea = this.selectedArea
-    let selectedAreaWhenResizing = this.selectedAreaWhenResizing
+    let designGroups = this.state.designGroups
+    let highlightedArea = this.highlightedArea
+    let highlightedAreaWhenResizing = this.highlightedAreaWhenResizing
+    let currentDesignItem
+
+    if (!designGroups[group]) {
+      return
+    }
+
+    currentDesignItem = designGroups[group].items[item]
+
+    if (!currentDesignItem) {
+      return
+    }
 
     this.isResizing = true
 
@@ -528,48 +415,48 @@ class Design extends PureComponent {
     // while resizing you will see that all grid cols bellow the item gets selected (text selection)
     // this must be some way to disable the selection or some way to hide it with CSS
 
-    const newSelectedArea = getProjectedFilledAreaWhenResizingDesignItem({
-      rows,
+    const newHighlightedArea = findProjectedFilledAreaWhenResizing({
       baseWidth,
-      defaultNumberOfCols,
-      originalSelectedArea: selectedArea,
-      selectedArea: selectedAreaWhenResizing,
-      item,
+      totalCols: defaultNumberOfCols,
+      designGroups,
+      originalHighlightedArea: highlightedArea,
+      highlightedArea: highlightedAreaWhenResizing,
+      referenceGroup: group,
+      referenceItem: item,
+      minSpace: currentDesignItem.minSpace,
+      originalSpace: currentDesignItem.space,
       resize
     })
 
-    if (!newSelectedArea) {
+    if (!newHighlightedArea) {
       return
     }
 
-    this.selectedAreaWhenResizing = newSelectedArea
+    this.highlightedAreaWhenResizing = newHighlightedArea
 
     this.setState({
-      selectedArea: newSelectedArea
+      highlightedArea: newHighlightedArea
     })
 
-    return !newSelectedArea.conflict
+    return !newHighlightedArea.conflict
   }
 
-  onResizeDesignItemEnd ({ item, resize }) {
-    const {
-      baseWidth,
-      defaultRowHeight,
-      defaultNumberOfCols
-    } = this.props
-
-    const originalRows = this.state.gridRows
-    const originalSelectedArea = this.selectedArea
-    const selectedArea = this.selectedAreaWhenResizing
+  onResizeDesignItemEnd ({ group, item, resize }) {
+    const originalHighlightedArea = this.highlightedArea
+    const highlightedArea = this.highlightedAreaWhenResizing
     const originalDesignGroups = this.state.designGroups
-    const originalComponentsInfo = this.componentsInfo
-    const rowsToGroups = this.rowsToGroups
+    let currentDesignGroup = originalDesignGroups[group]
+    let currentDesignItem
 
-    const currentDesignGroup = originalDesignGroups[
-      rowsToGroups[
-        originalComponentsInfo[item.components[0].id].rowIndex
-      ]
-    ]
+    if (!currentDesignGroup) {
+      return
+    }
+
+    currentDesignItem = currentDesignGroup.items[item]
+
+    if (!currentDesignItem) {
+      return
+    }
 
     const cleanup = () => {
       // we mark that resizing has ended sometime later,
@@ -581,70 +468,37 @@ class Design extends PureComponent {
         this.isResizing = false
       }, 100)
 
-      this.selectedArea = null
-      this.selectedAreaWhenResizing = null
+      this.highlightedArea = null
+      this.highlightedAreaWhenResizing = null
 
       this.setState({
-        selectedArea: null
+        highlightedArea: null
       })
     }
 
     if (
-      (item.layoutMode === 'grid' &&
-      originalSelectedArea.startCol === selectedArea.startCol &&
-      originalSelectedArea.endCol === selectedArea.endCol) ||
-      (item.layoutMode === 'fixed' &&
-      originalSelectedArea.areaBox.width === selectedArea.areaBox.width) ||
-      selectedArea.conflict
+      (currentDesignItem.layoutMode === 'grid' &&
+      originalHighlightedArea.start === highlightedArea.start &&
+      originalHighlightedArea.end === highlightedArea.end) ||
+      (currentDesignItem.layoutMode === 'fixed' &&
+      originalHighlightedArea.areaBox.width === highlightedArea.areaBox.width) ||
+      highlightedArea.conflict
     ) {
       return cleanup()
     }
 
-    const {
-      rows: newRows
-    } = updateRows({
-      rows: originalRows,
-      previous: {
-        row: originalSelectedArea.row,
-        startCol: originalSelectedArea.startCol,
-        endCol: originalSelectedArea.endCol,
-        // clean the previous cols
-        empty: true
-      },
-      current: {
-        row: selectedArea.row,
-        newHeight: originalRows[selectedArea.row].height,
-        startCol: selectedArea.startCol,
-        endCol: selectedArea.endCol,
-        // since the row still have the item, the cols are not empty
-        empty: false
-      },
-      defaultRowHeight: defaultRowHeight,
-      defaultNumberOfCols: defaultNumberOfCols,
-      totalWidth: baseWidth
-    })
-
-    let itemChange = {
-      start: selectedArea.startCol,
-      end: selectedArea.endCol
-    }
-
-    if (item.layoutMode !== 'grid') {
-      itemChange.left = selectedArea.areaBox.left
-      itemChange.width = selectedArea.areaBox.width
-    }
-
     const newDesignGroups = updateDesignItem({
-      rowsToGroups,
-      componentsInfo: originalComponentsInfo,
       designGroups: originalDesignGroups,
-      designItem: { ...currentDesignGroup.items[item.index], index: item.index },
-      current: itemChange
+      referenceGroup: group,
+      referenceItem: item,
+      current: {
+        start: highlightedArea.start,
+        end: highlightedArea.end
+      }
     })
 
     this.setState({
-      selectedArea: null,
-      gridRows: newRows,
+      highlightedArea: null,
       designGroups: newDesignGroups
     })
 
@@ -653,23 +507,23 @@ class Design extends PureComponent {
 
   onDragEnterCanvas () {
     // clean selected area when dragging starts on canvas
-    this.selectedArea = null
+    this.highlightedArea = null
   }
 
   onDragLeaveCanvas () {
-    if (this.state.selectedArea != null) {
+    if (this.state.highlightedArea != null) {
       // clean selected area (visually) when dragging outside canvas (only when necessary)
       this.setState({
-        selectedArea: null
+        highlightedArea: null
       })
     }
   }
 
   onDragEndCanvas () {
-    if (this.state.selectedArea != null) {
+    if (this.state.highlightedArea != null) {
       // clean selected area (visually) when dragging ends (only when necessary)
       this.setState({
-        selectedArea: null
+        highlightedArea: null
       })
     }
   }
@@ -677,18 +531,16 @@ class Design extends PureComponent {
   render () {
     const {
       baseWidth,
+      defaultRowHeight,
       defaultNumberOfCols
     } = this.props
 
     const {
       designGroups,
-      gridRows,
-      selectedArea,
+      highlightedArea,
       designSelection
     } = this.state
 
-    // using computed value "totalHeightOfRows"
-    let totalHeight = this.totalHeightOfRows
     let paddingLeftRight = 25
 
     return (
@@ -696,8 +548,8 @@ class Design extends PureComponent {
         {DevTools && (
           <DevTools
             baseWidth={baseWidth}
+            emptyGroupHeight={defaultRowHeight}
             numberOfCols={defaultNumberOfCols}
-            gridRows={gridRows}
             designGroups={designGroups}
           />
         )}
@@ -713,21 +565,20 @@ class Design extends PureComponent {
         >
           <Canvas
             ref={this.getCanvasRef}
-            width={baseWidth}
-            height={totalHeight}
+            baseWidth={baseWidth}
             numberOfCols={defaultNumberOfCols}
-            gridRows={gridRows}
-            selectedArea={selectedArea}
+            emptyGroupHeight={defaultRowHeight}
+            highlightedArea={highlightedArea}
             designGroups={designGroups}
             designSelection={designSelection}
             onClick={this.onClickCanvas}
             onClickComponent={this.onClickDesignComponent}
             onRemoveComponent={this.onRemoveDesignComponent}
             onDragEnter={this.onDragEnterCanvas}
+            onDragOver={this.calculateHighlightedAreaWhenDragging}
             onDragLeave={this.onDragLeaveCanvas}
             onDragEnd={this.onDragEndCanvas}
             onDrop={this.addComponentToCanvas}
-            onColDragOver={this.calculateSelectedAreaWhenDragging}
             onResizeItemStart={this.onResizeDesignItemStart}
             onResizeItem={this.onResizeDesignItem}
             onResizeItemEnd={this.onResizeDesignItemEnd}
