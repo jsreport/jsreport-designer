@@ -52,6 +52,7 @@ class DesignContainer extends PureComponent {
       highlightedArea,
       onDragOver,
       onClickComponent,
+      onDragStartComponent,
       onRemoveComponent,
       onResizeItemStart,
       onResizeItem,
@@ -103,6 +104,7 @@ class DesignContainer extends PureComponent {
               items={designGroup.items}
               onDragOver={onDragOver}
               onClickComponent={onClickComponent}
+              onDragStartComponent={onDragStartComponent}
               onRemoveComponent={onRemoveComponent}
               onResizeItemStart={onResizeItemStart}
               onResizeItem={onResizeItem}
@@ -126,6 +128,7 @@ DesignContainer.propTypes = {
   groups: PropTypes.array.isRequired,
   onDragOver: PropTypes.func,
   onClickComponent: PropTypes.func,
+  onDragStartComponent: PropTypes.func,
   onRemoveComponent: PropTypes.func,
   onResizeItemStart: PropTypes.func,
   onResizeItem: PropTypes.func,

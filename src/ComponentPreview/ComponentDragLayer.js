@@ -5,13 +5,15 @@ import { ComponentTypes } from '../Constants'
 import ComponentDragPreviewBox from './ComponentDragPreviewBox'
 import './ComponentDragLayer.css'
 
-function getPreviewLayerStyles (props) {
+function getDragLayerStyles (dragItemType, props) {
   const {
-    componentMeta,
     initialSourceOffset,
     currentSourceOffset,
     initialPointerOffset
   } = props
+
+  let itemWidth = 0
+  let itemHeight = 0
 
   if (!initialSourceOffset || !initialPointerOffset || !currentSourceOffset) {
     return {
@@ -19,14 +21,17 @@ function getPreviewLayerStyles (props) {
     }
   }
 
+  itemWidth = props.componentMeta.size.width
+  itemHeight = props.componentMeta.size.height
+
   let movementX, movementY
 
   let previewItemDistanceXRelativeToSource = (
-    initialPointerOffset.x - (initialSourceOffset.x + (componentMeta.size.width / 2))
+    initialPointerOffset.x - (initialSourceOffset.x + (itemWidth / 2))
   )
 
   let previewItemDistanceYRelativeToSource = (
-    initialPointerOffset.y - (initialSourceOffset.y + (componentMeta.size.height / 2))
+    initialPointerOffset.y - (initialSourceOffset.y + (itemHeight / 2))
   )
 
   movementX = currentSourceOffset.x + previewItemDistanceXRelativeToSource
@@ -56,6 +61,7 @@ class ComponentDragLayer extends Component {
   renderPreview (dragItemType, defaultWidth, componentMeta) {
     switch (dragItemType) {
       case ComponentTypes.COMPONENT_TYPE:
+      case ComponentTypes.COMPONENT:
         return (
           <ComponentDragPreviewBox
             defaultWidth={defaultWidth}
@@ -82,7 +88,7 @@ class ComponentDragLayer extends Component {
         display: 'none'
       }
     } else {
-      styles = getPreviewLayerStyles(this.props)
+      styles = getDragLayerStyles(dragItemType, this.props)
     }
 
     return (

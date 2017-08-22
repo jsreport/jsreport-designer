@@ -9,17 +9,18 @@
   user-select: none;
 }
 
+/*pseudo-element to prevent any dom element inside to a component*/
+/*to be draggable (since images an links are draggable by default*/
+/*we need to disable that behaviour)*/
 .DesignComponent:before {
-  /*pseudo-element to prevent any dom element inside to a component*/
-  /*to be draggable (since images an links are draggable by default
-  /*we need to disable that behaviour)*/
-  display: block;
   content: "";
+  display: block;
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
+  z-index: 0;
 }
 
 .DesignComponent[data-selected] {
@@ -27,4 +28,20 @@
   /*the width and height of element*/
   outline: 1px dashed rgba(0, 0, 0, 0.8);
   z-index: 1;
+}
+
+.DesignComponent[data-dragging],
+.DesignComponent[data-dragging-placeholder] {
+  outline: 0;
+  z-index: 1;
+}
+
+.DesignComponent[data-dragging-placeholder] {
+  outline: 2px solid rgba(9, 110, 179, 0.6);
+  color: inherit;
+  opacity: 0.5;
+}
+
+.DesignComponent[data-dragging] {
+  opacity: 0;
 }

@@ -85,10 +85,7 @@ class ComponentBar extends PureComponent {
     this.componentBarItemReplacement.style.width = `${width}px`
     this.componentBarItemReplacement.style.height = `${height}px`
 
-    // NOTE: this color should be equal to background color of ComponentBarItem on hover
-    componentBarItemClone.style.backgroundColor = 'rgba(0, 0, 0, 0.3)'
-    componentBarItemClone.style.color = 'inherit'
-    componentBarItemClone.style.opacity = '0.7'
+    componentBarItemClone.dataset.draggingPlaceholder = true
 
     this.componentBarItemClone = componentBarItemClone
     this.componentBarItemReplacement.appendChild(componentBarItemClone)

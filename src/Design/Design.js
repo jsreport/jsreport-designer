@@ -60,6 +60,7 @@ class Design extends PureComponent {
     this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
     this.onClickCanvas = this.onClickCanvas.bind(this)
     this.onClickDesignComponent = this.onClickDesignComponent.bind(this)
+    this.onDragStartDesignComponent = this.onDragStartDesignComponent.bind(this)
     this.onRemoveDesignComponent = this.onRemoveDesignComponent.bind(this)
     this.onResizeDesignItemStart = this.onResizeDesignItemStart.bind(this)
     this.onResizeDesignItem = this.onResizeDesignItem.bind(this)
@@ -265,6 +266,12 @@ class Design extends PureComponent {
     ev.stopPropagation()
 
     this.selectComponent(componentId)
+  }
+
+  onDragStartDesignComponent () {
+    this.clearDesignSelection()
+
+
   }
 
   onRemoveDesignComponent ({ group, item, componentId }) {
@@ -573,6 +580,7 @@ class Design extends PureComponent {
             designSelection={designSelection}
             onClick={this.onClickCanvas}
             onClickComponent={this.onClickDesignComponent}
+            onDragStartComponent={this.onDragStartDesignComponent}
             onRemoveComponent={this.onRemoveDesignComponent}
             onDragEnter={this.onDragEnterCanvas}
             onDragOver={this.calculateHighlightedAreaWhenDragging}

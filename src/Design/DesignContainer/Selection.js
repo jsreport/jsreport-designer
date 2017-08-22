@@ -4,19 +4,51 @@ import Resizer from './Resizer'
 import './Selection.css'
 
 class Selection extends PureComponent {
+  constructor (props) {
+    super(props)
+
+    this.state = {
+      isResizing: false
+    }
+
+    this.handleResizeStart = this.handleResizeStart.bind(this)
+    this.handleResizeEnd = this.handleResizeEnd.bind(this)
+  }
+
+  handleResizeStart (...args) {
+    if (this.props.onResizeStart) {
+      this.props.onResizeStart.apply(undefined, args)
+    }
+
+    this.setState({
+      isResizing: true
+    })
+  }
+
+  handleResizeEnd (...args) {
+    if (this.props.onResizeEnd) {
+      this.props.onResizeEnd.apply(undefined, args)
+    }
+
+    this.setState({
+      isResizing: false
+    })
+  }
+
   render () {
+    const { isResizing } = this.state
+
     const {
       state,
       left,
       right,
       onKeyDown,
-      onResizeStart,
-      onResize,
-      onResizeEnd
+      onResize
     } = this.props
 
     let styles = {}
-    let space = 4
+    let space = 5
+    let extraProps = {}
 
     if (left != null) {
       styles.left = `${(left * -1) - space}px`
@@ -38,6 +70,10 @@ class Selection extends PureComponent {
       styles.borderColor = '#c54040'
     }
 
+    if (isResizing) {
+      extraProps['data-resizing'] = true
+    }
+
     return (
       <div
         className="Selection"
@@ -46,20 +82,21 @@ class Selection extends PureComponent {
         // tab index necessary to make key events to work
         tabIndex="0"
         draggable={false}
+        {...extraProps}
       >
         <Resizer
           key="resize-left-picker"
           direction="left"
-          onResizeStart={onResizeStart}
+          onResizeStart={this.handleResizeStart}
           onResize={onResize}
-          onResizeEnd={onResizeEnd}
+          onResizeEnd={this.handleResizeEnd}
         />
         <Resizer
           key="resize-right-picker"
           direction="right"
-          onResizeStart={onResizeStart}
+          onResizeStart={this.handleResizeStart}
           onResize={onResize}
-          onResizeEnd={onResizeEnd}
+          onResizeEnd={this.handleResizeEnd}
         />
       </div>
     )

@@ -5,7 +5,7 @@ import { DragSource } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
 import './ComponentBarItem.css'
 
-const componentSource = {
+const componentTypeSource = {
   beginDrag (props, monitor, component) {
     component.node = findDOMNode(component)
 
@@ -117,8 +117,8 @@ class ComponentBarItem extends Component {
             backgroundColor: 'transparent',
             color: 'transparent',
             position: 'absolute',
-            top: 0,
-            left: 0
+            top: -100,
+            left: -100
           }}
         >
           {`DragPreview-${componentType.name}`}
@@ -188,6 +188,12 @@ class ComponentBarItem extends Component {
       isDragging
     } = this.props
 
+    let extraProps = {}
+
+    if (isOver) {
+      extraProps['data-over'] = true
+    }
+
     return connectToDragSourceConditionally(
       // making the drag source invisible (transparent) while dragging, necessary to make
       // the invisible preview work in a cross-browser way,
@@ -209,14 +215,15 @@ class ComponentBarItem extends Component {
           // which leads to feel the interaction somehow slow.
           // the rule of thumb is: if the drag source node has changed its position while the dragging
           // then the animation is not show
-          top: isDragging ? -0.1 : 0,
-          backgroundColor: isDragging ? 'transparent' : (isOver ? 'rgba(0, 0, 0, 0.3)' : null),
+          top: isDragging ? -0.1 : null,
+          backgroundColor: isDragging ? 'transparent' : null,
           // we apply the pointer style on mouse over event to prevent the cursor to stay the same
           // when dropping
           cursor: isOver && !isDragging ? 'pointer' : 'default',
           color: isDragging ? 'transparent' : null,
-          opacity: isDragging ? 0.99 : 1
+          opacity: isDragging ? 0.99 : null
         }}
+        {...extraProps}
       >
         <span className={'ComponentBarItem-icon fa fa-' + componentType.icon} />
         <span className="ComponentBarItem-name">{componentType.name}</span>
@@ -237,4 +244,4 @@ ComponentBarItem.propTypes = {
   componentType: PropTypes.object.isRequired
 };
 
-export default DragSource(ComponentTypes.COMPONENT_TYPE, componentSource, collect)(ComponentBarItem)
+export default DragSource(ComponentTypes.COMPONENT_TYPE, componentTypeSource, collect)(ComponentBarItem)

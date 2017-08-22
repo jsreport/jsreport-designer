@@ -1,3 +1,4 @@
-import DesignComponent from './DesignComponent'
+import DesignComponent, { Component } from './DesignComponent'
 
 export default DesignComponent
+export { Component }

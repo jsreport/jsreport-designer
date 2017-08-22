@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import DesignComponent from '../DesignComponent'
+import { Component as DesignComponent } from '../DesignComponent'
 import './ComponentPreviewLayer.css'
 
 const componentRegistry = require('../shared/componentRegistry')
@@ -63,7 +63,7 @@ class ComponentPreviewLayer extends PureComponent {
 
     return (
       <div className="ComponentPreviewLayer">
-        <div style={{width: '50px', height: '50px', overflow: 'hidden'}}>
+        <div className="ComponentPreviewLayer-list">
           {componentCollection.map(this.renderComponentPreview)}
         </div>
       </div>

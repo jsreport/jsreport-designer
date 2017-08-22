@@ -5,3 +5,12 @@
   visibility: hidden;
   z-index: -1;
 }
+
+.ComponentPreviewLayer-list {
+  width: 50px;
+  height: 50px;
+  overflow: hidden;
+  position: absolute;
+  bottom: 0;
+  z-index: -1;
+}

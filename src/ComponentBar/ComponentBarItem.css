@@ -10,6 +10,16 @@
   width: 100%;
 }
 
+.ComponentBarItem[data-over],
+.ComponentBarItem[data-dragging-placeholder] {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.ComponentBarItem[data-dragging-placeholder] {
+  color: inherit;
+  opacity: 0.7;
+}
+
 .ComponentBarItem-icon {
   display: block;
   font-size: 1.5rem;

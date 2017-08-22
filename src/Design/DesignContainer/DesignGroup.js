@@ -6,6 +6,8 @@ import Grid from '../Grid'
 import DesignItem from './DesignItem'
 import './DesignGroup.css'
 
+import DesignComponent from '../../DesignComponent'
+
 const groupTarget = {
   hover (props, monitor, component) {
     let id = props.id
@@ -126,6 +128,7 @@ class DesignGroup extends PureComponent {
       selection,
       items,
       onClickComponent,
+      onDragStartComponent,
       connectDropTarget
     } = this.props
 
@@ -171,6 +174,7 @@ class DesignGroup extends PureComponent {
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
               onClickComponent={onClickComponent}
+              onDragStartComponent={onDragStartComponent}
               onRemoveComponent={this.handleComponentRemove}
               onResizeStart={this.handleResizeItemStart}
               onResize={this.handleResizeItem}
@@ -196,6 +200,7 @@ DesignGroup.propTypes = {
   items: PropTypes.array.isRequired,
   onDragOver: PropTypes.func,
   onClickComponent: PropTypes.func,
+  onDragStartComponent: PropTypes.func,
   onRemoveComponent: PropTypes.func,
   onResizeItemStart: PropTypes.func,
   onResizeItem: PropTypes.func,

@@ -23,16 +23,22 @@ class DesignItem extends PureComponent {
     this.getIndex = this.getIndex.bind(this)
     this.setItemNode = this.setItemNode.bind(this)
     this.setSelectionNode = this.setSelectionNode.bind(this)
+    this.cloneComponent = this.cloneComponent.bind(this)
+    this.removeComponentClone = this.removeComponentClone.bind(this)
     this.focusSelection = this.focusSelection.bind(this)
     this.handleClick = this.handleClick.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
     this.handleResizeStart = this.handleResizeStart.bind(this)
     this.handleResize = this.handleResize.bind(this)
     this.handleResizeEnd = this.handleResizeEnd.bind(this)
+    this.handleDragStartComponent = this.handleDragStartComponent.bind(this)
+    this.handleDragEndComponent = this.handleDragEndComponent.bind(this)
   }
 
   componentDidMount () {
     this.focusSelection()
+
+    this.initialDesignItemScroll = this.node.scrollTop
   }
 
   componentDidUpdate () {
@@ -53,6 +59,32 @@ class DesignItem extends PureComponent {
 
   setSelectionNode (el) {
     this.selection = el
+  }
+
+  cloneComponent (componentNode) {
+    let designItemDimensions = this.node.getBoundingClientRect()
+    let { top, left, width, height } = componentNode.getBoundingClientRect()
+    let componentClone = componentNode.cloneNode(true)
+
+    this.componentReplacement.style.display = 'block'
+    this.componentReplacement.style.top = `${top -  designItemDimensions.top}px`
+    this.componentReplacement.style.left = `${left - designItemDimensions.left}px`
+    this.componentReplacement.style.width = `${width}px`
+    this.componentReplacement.style.height = `${height}px`
+
+    componentClone.dataset.draggingPlaceholder = true
+
+    this.componentClone = componentClone
+    this.componentReplacement.appendChild(componentClone)
+  }
+
+  removeComponentClone () {
+    this.componentReplacement.style.display = 'none'
+
+    if (this.componentClone) {
+      this.componentReplacement.removeChild(this.componentClone)
+      this.componentClone = null
+    }
   }
 
   focusSelection () {
@@ -260,6 +292,24 @@ class DesignItem extends PureComponent {
     })
   }
 
+  handleDragStartComponent (node) {
+    this.cloneComponent(node)
+
+    if (this.props.onDragStartComponent) {
+      return this.props.onDragStartComponent()
+    }
+
+    return {}
+  }
+
+  handleDragEndComponent () {
+    this.removeComponentClone()
+
+    if (this.props.onDragEndComponent) {
+      return this.props.onDragEndComponent()
+    }
+  }
+
   render () {
     const {
       numberOfCols,
@@ -331,8 +381,21 @@ class DesignItem extends PureComponent {
             selected={selection && selection.component === component.id ? true : undefined}
             componentProps={component.props}
             onClick={onClickComponent}
+            onDragStart={this.handleDragStartComponent}
+            onDragEnd={this.handleDragEndComponent}
           />
         ))}
+        {/* placeholder for the DesignComponent replacement while dragging */}
+        <div
+          draggable="false"
+          key="DesignComponent-replacement"
+          ref={(el) => this.componentReplacement = el}
+          style={{
+            display: 'none',
+            pointerEvents: 'none',
+            position: 'absolute'
+          }}
+        />
       </div>
     )
   }
@@ -347,6 +410,7 @@ DesignItem.propTypes = {
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
   onClickComponent: PropTypes.func,
+  onDragStartComponent: PropTypes.func,
   onRemoveComponent: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
