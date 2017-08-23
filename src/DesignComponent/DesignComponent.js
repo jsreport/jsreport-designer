@@ -77,11 +77,27 @@ class DesignComponent extends PureComponent {
     this.props.componentRef(this.props.type, findDOMNode(el))
   }
 
+  getTemporalNode () {
+    if (this.tmpNode) {
+      return this.tmpNode
+    }
+
+    this.tmpNode = document.createElement('div')
+    return this.tmpNode
+  }
+
   connectToDragSourceConditionally (...args) {
     const connectDragSource = this.props.connectDragSource
     let element
 
     if (!connectDragSource) {
+      return args[0]
+    }
+
+    if (this.props.isDragging) {
+      // while dragging we change the drag source to a temporal node that it is not attached to the DOM,
+      // this is needed to instruct react-dnd that it should cancel the default dragend's animation (snap back of item)
+      connectDragSource.apply(undefined, [this.getTemporalNode(), ...args.slice(1)])
       element = args[0]
     } else {
       element = connectDragSource.apply(undefined, args)
@@ -128,6 +144,7 @@ class DesignComponent extends PureComponent {
       type,
       componentProps,
       selected,
+      selectedPreview,
       isDragging
     } = this.props
 
@@ -135,6 +152,10 @@ class DesignComponent extends PureComponent {
 
     if (selected) {
       extraProps['data-selected'] = true
+    }
+
+    if (selectedPreview) {
+      extraProps['data-selected-preview'] = true
     }
 
     if (isDragging) {
@@ -157,6 +178,7 @@ class DesignComponent extends PureComponent {
 DesignComponent.propTypes = {
   id: PropTypes.string,
   selected: PropTypes.bool,
+  selectedPreview: PropTypes.bool,
   type: PropTypes.string.isRequired,
   componentProps: PropTypes.object.isRequired,
   componentRef: PropTypes.func,

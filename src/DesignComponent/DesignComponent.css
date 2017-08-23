@@ -23,25 +23,41 @@
   z-index: 0;
 }
 
+.DesignComponent[data-selected],
+.DesignComponent[data-selected-preview],
+.DesignComponent[data-dragging-placeholder] {
+  z-index: 1;
+}
+
 .DesignComponent[data-selected] {
   /*is important to use outline because outline does not consume*/
   /*the width and height of element*/
   outline: 1px dashed rgba(0, 0, 0, 0.8);
-  z-index: 1;
 }
 
-.DesignComponent[data-dragging],
-.DesignComponent[data-dragging-placeholder] {
-  outline: 0;
-  z-index: 1;
+.DesignComponent[data-selected-preview] {
+  /*if the component is selected in preview use border instead of outline*/
+  /*because Safari has issues when using outline in drag snapshots*/
+  border: 1px dashed rgba(0, 0, 0, 0.8);
 }
 
 .DesignComponent[data-dragging-placeholder] {
   outline: 2px solid rgba(9, 110, 179, 0.6);
   color: inherit;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .DesignComponent[data-dragging] {
+  background-color: transparent;
+  color: transparent;
+  cursor: default;
+  /*when dragging we move the item just a little back to be able to cancel*/
+  /*the default snap back animation of the browser when dragging ends, we care about this*/
+  /*because the animation causes that the "dragend" event is delayed until the animation is finished,*/
+  /*which leads to feel the interaction somehow slow.*/
+  /*the rule of thumb is: if the drag source node has changed its position while the dragging*/
+  /*then the animation is not show*/
+  transform: translate(-0.1px, -0.1px);
+  outline: 0;
   opacity: 0;
 }

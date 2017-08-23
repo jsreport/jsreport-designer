@@ -17,7 +17,7 @@ class ComponentDragPreviewBox extends PureComponent {
         <DesignComponent
           type={componentMeta.name}
           componentProps={componentMeta.props}
-          selected={true}
+          selectedPreview={true}
         />
       </div>
     )
