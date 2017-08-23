@@ -85,19 +85,19 @@ class DevTools extends Component {
     }
   }
 
-  onClickInspectGroups () {
+  onInspectGroupsClick () {
     this.setState({
       inspectDesignGroups: JSON.stringify(this.props.designGroups, null, 2)
     })
   }
 
-  onClickInspectPayload () {
+  onInspectPayloadClick () {
     this.setState({
       inspectDesignPayload: JSON.stringify(this.getDesignPayload(), null, 2)
     })
   }
 
-  onClickPreview (recipe) {
+  onPreviewClick (recipe) {
     jsreportClient.render('_blank', {
       template: {
         design: this.getDesignPayload(),
@@ -121,10 +121,10 @@ class DevTools extends Component {
       <div style={{ position: 'absolute', top: '8px', right: '200px', zIndex: 100 }}>
         <b>GRID: {numberOfCols} x {designGroups.length}, TOTAL ROWS: {designGroups.length}</b>
         {' '}
-        <button onClick={() => this.onClickInspectGroups()}>Inspect Design groups</button>
-        <button onClick={() => this.onClickInspectPayload()}>Inspect Design payload</button>
-        <button onClick={() => this.onClickPreview('phantom-pdf')}>Preview pdf</button>
-        <button onClick={() => this.onClickPreview('html')}>Preview html</button>
+        <button onClick={() => this.onInspectGroupsClick()}>Inspect Design groups</button>
+        <button onClick={() => this.onInspectPayloadClick()}>Inspect Design payload</button>
+        <button onClick={() => this.onPreviewClick('phantom-pdf')}>Preview pdf</button>
+        <button onClick={() => this.onPreviewClick('html')}>Preview html</button>
         {
           inspectDesignGroups && (
             <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '360px', zIndex: 100 }}>

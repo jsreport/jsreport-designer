@@ -65,8 +65,8 @@ class Canvas extends PureComponent {
     )
 
     this.isDraggingOver = this.isDraggingOver.bind(this)
-    this.handleResizeItemStart = this.handleResizeItemStart.bind(this)
-    this.handleResizeItemEnd = this.handleResizeItemEnd.bind(this)
+    this.handleItemResizeStart = this.handleItemResizeStart.bind(this)
+    this.handleItemResizeEnd = this.handleItemResizeEnd.bind(this)
   }
 
   componentWillReceiveProps (nextProps) {
@@ -94,17 +94,17 @@ class Canvas extends PureComponent {
     return this.props.isDragOver
   }
 
-  handleResizeItemStart (...args) {
-    if (this.props.onResizeItemStart) {
-      return this.props.onResizeItemStart(...args)
+  handleItemResizeStart (...args) {
+    if (this.props.onItemResizeStart) {
+      return this.props.onItemResizeStart(...args)
     }
 
     return
   }
 
-  handleResizeItemEnd (...args) {
-    if (this.props.onResizeItemEnd) {
-      return this.props.onResizeItemEnd(...args)
+  handleItemResizeEnd (...args) {
+    if (this.props.onItemResizeEnd) {
+      return this.props.onItemResizeEnd(...args)
     }
 
     return
@@ -136,10 +136,10 @@ class Canvas extends PureComponent {
       canDrop,
       onDragOver,
       onClick,
-      onClickComponent,
-      onDragStartComponent,
-      onRemoveComponent,
-      onResizeItem
+      onComponentClick,
+      onComponentDragStart,
+      onComponentRemove,
+      onItemResize
     } = this.props
 
     let canvasStyles = {
@@ -172,12 +172,12 @@ class Canvas extends PureComponent {
           highlightedArea={highlightedArea}
           groups={designGroups}
           onDragOver={onDragOver}
-          onClickComponent={onClickComponent}
-          onDragStartComponent={onDragStartComponent}
-          onRemoveComponent={onRemoveComponent}
-          onResizeItemStart={this.handleResizeItemStart}
-          onResizeItem={onResizeItem}
-          onResizeItemEnd={this.handleResizeItemEnd}
+          onComponentClick={onComponentClick}
+          onComponentDragStart={onComponentDragStart}
+          onComponentRemove={onComponentRemove}
+          onItemResizeStart={this.handleItemResizeStart}
+          onItemResize={onItemResize}
+          onItemResizeEnd={this.handleItemResizeEnd}
         />
       </div>
     )
@@ -200,12 +200,12 @@ Canvas.propTypes = {
   onDragLeave: PropTypes.func,
   onDragEnd: PropTypes.func,
   onDrop: PropTypes.func,
-  onClickComponent: PropTypes.func,
-  onDragStartComponent: PropTypes.func,
-  onRemoveComponent: PropTypes.func,
-  onResizeItemStart: PropTypes.func,
-  onResizeItem: PropTypes.func,
-  onResizeItemEnd: PropTypes.func
+  onComponentClick: PropTypes.func,
+  onComponentDragStart: PropTypes.func,
+  onComponentRemove: PropTypes.func,
+  onItemResizeStart: PropTypes.func,
+  onItemResize: PropTypes.func,
+  onItemResizeEnd: PropTypes.func
 }
 
 export default DropTarget(ComponentTypes.COMPONENT_TYPE, canvasTarget, collect)(Canvas);

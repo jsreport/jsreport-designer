@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
 import { ComponentTypes } from '../Constants'
@@ -7,8 +6,6 @@ import './ComponentBarItem.css'
 
 const componentTypeSource = {
   beginDrag (props, monitor, component) {
-    component.node = findDOMNode(component)
-
     if (props.onDragStart) {
       return props.onDragStart(props.componentType, component.node)
     }
@@ -48,8 +45,6 @@ const componentTypeSource = {
       }
     }
 
-    component.node = null
-
     if (props.onDragEnd) {
       props.onDragEnd(props.componentType)
     }
@@ -75,6 +70,7 @@ class ComponentBarItem extends Component {
     this.node = null
     this.tmpNode = null
 
+    this.setNode = this.setNode.bind(this)
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
     this.onMouseOver = this.onMouseOver.bind(this)
     this.onMouseLeave = this.onMouseLeave.bind(this)
@@ -93,6 +89,10 @@ class ComponentBarItem extends Component {
     this.props.connectDragPreview(this.getEmptyPreview(), {
       captureDraggingState: true
     });
+  }
+
+  setNode (el) {
+    this.node = el
   }
 
   getEmptyPreview (createElement) {
@@ -205,6 +205,7 @@ class ComponentBarItem extends Component {
       // when some styles are applied directly using :hover,
       // we apply the style to the item on the javascript events instead
       <div
+        ref={this.setNode}
         className="ComponentBarItem"
         onMouseOver={this.onMouseOver}
         onMouseLeave={this.onMouseLeave}

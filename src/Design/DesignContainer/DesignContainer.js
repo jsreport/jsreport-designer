@@ -51,12 +51,12 @@ class DesignContainer extends PureComponent {
       selection,
       highlightedArea,
       onDragOver,
-      onClickComponent,
-      onDragStartComponent,
-      onRemoveComponent,
-      onResizeItemStart,
-      onResizeItem,
-      onResizeItemEnd
+      onComponentClick,
+      onComponentDragStart,
+      onComponentRemove,
+      onItemResizeStart,
+      onItemResize,
+      onItemResizeEnd
     } = this.props
 
     const styles = {
@@ -103,12 +103,12 @@ class DesignContainer extends PureComponent {
               selection={selection && selection.group === designGroup.id ? selection.data[selection.group] : undefined}
               items={designGroup.items}
               onDragOver={onDragOver}
-              onClickComponent={onClickComponent}
-              onDragStartComponent={onDragStartComponent}
-              onRemoveComponent={onRemoveComponent}
-              onResizeItemStart={onResizeItemStart}
-              onResizeItem={onResizeItem}
-              onResizeItemEnd={onResizeItemEnd}
+              onComponentClick={onComponentClick}
+              onComponentDragStart={onComponentDragStart}
+              onComponentRemove={onComponentRemove}
+              onItemResizeStart={onItemResizeStart}
+              onItemResize={onItemResize}
+              onItemResizeEnd={onItemResizeEnd}
               getIndex={this.getIndexOfGroup}
             />
           )
@@ -127,12 +127,12 @@ DesignContainer.propTypes = {
   highlightedArea: PropTypes.object,
   groups: PropTypes.array.isRequired,
   onDragOver: PropTypes.func,
-  onClickComponent: PropTypes.func,
-  onDragStartComponent: PropTypes.func,
-  onRemoveComponent: PropTypes.func,
-  onResizeItemStart: PropTypes.func,
-  onResizeItem: PropTypes.func,
-  onResizeItemEnd: PropTypes.func
+  onComponentClick: PropTypes.func,
+  onComponentDragStart: PropTypes.func,
+  onComponentRemove: PropTypes.func,
+  onItemResizeStart: PropTypes.func,
+  onItemResize: PropTypes.func,
+  onItemResizeEnd: PropTypes.func
 }
 
 export default DesignContainer

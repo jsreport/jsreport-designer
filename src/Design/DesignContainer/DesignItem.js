@@ -31,8 +31,8 @@ class DesignItem extends PureComponent {
     this.handleResizeStart = this.handleResizeStart.bind(this)
     this.handleResize = this.handleResize.bind(this)
     this.handleResizeEnd = this.handleResizeEnd.bind(this)
-    this.handleDragStartComponent = this.handleDragStartComponent.bind(this)
-    this.handleDragEndComponent = this.handleDragEndComponent.bind(this)
+    this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
+    this.handleComponentDragEnd = this.handleComponentDragEnd.bind(this)
   }
 
   componentDidMount () {
@@ -95,14 +95,14 @@ class DesignItem extends PureComponent {
   }
 
   handleKeyDown (ev) {
-    const { onRemoveComponent, selection } = this.props
+    const { onComponentRemove, selection } = this.props
 
     ev.preventDefault()
     ev.stopPropagation()
 
     // when backspace or del key is pressed remove the component
-    if ((ev.keyCode === 8 || ev.keyCode === 46) && onRemoveComponent) {
-      onRemoveComponent({
+    if ((ev.keyCode === 8 || ev.keyCode === 46) && onComponentRemove) {
+      onComponentRemove({
         item: this.getIndex(),
         componentId: selection.component
       })
@@ -292,17 +292,17 @@ class DesignItem extends PureComponent {
     })
   }
 
-  handleDragStartComponent (node) {
-    this.cloneComponent(node)
+  handleComponentDragStart (componentInfo, componentNode) {
+    this.cloneComponent(componentNode)
 
-    if (this.props.onDragStartComponent) {
-      return this.props.onDragStartComponent()
+    if (this.props.onComponentDragStart) {
+      return this.props.onComponentDragStart(componentInfo, componentNode)
     }
 
     return {}
   }
 
-  handleDragEndComponent () {
+  handleComponentDragEnd () {
     this.removeComponentClone()
 
     if (this.props.onDragEndComponent) {
@@ -318,7 +318,7 @@ class DesignItem extends PureComponent {
       space,
       selection,
       components,
-      onClickComponent
+      onComponentClick
     } = this.props
 
     const {
@@ -380,9 +380,9 @@ class DesignItem extends PureComponent {
             type={component.type}
             selected={selection && selection.component === component.id ? true : undefined}
             componentProps={component.props}
-            onClick={onClickComponent}
-            onDragStart={this.handleDragStartComponent}
-            onDragEnd={this.handleDragEndComponent}
+            onClick={onComponentClick}
+            onDragStart={this.handleComponentDragStart}
+            onDragEnd={this.handleComponentDragEnd}
           />
         ))}
         {/* placeholder for the DesignComponent replacement while dragging */}
@@ -409,9 +409,9 @@ DesignItem.propTypes = {
   space: PropTypes.number.isRequired,
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
-  onClickComponent: PropTypes.func,
-  onDragStartComponent: PropTypes.func,
-  onRemoveComponent: PropTypes.func,
+  onComponentClick: PropTypes.func,
+  onComponentDragStart: PropTypes.func,
+  onComponentRemove: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
   onResizeEnd: PropTypes.func,

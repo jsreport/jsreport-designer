@@ -55,16 +55,16 @@ class Design extends PureComponent {
 
     this.getCanvasRef = this.getCanvasRef.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
-    this.onDragEnterCanvas = this.onDragEnterCanvas.bind(this)
-    this.onDragLeaveCanvas = this.onDragLeaveCanvas.bind(this)
-    this.onDragEndCanvas = this.onDragEndCanvas.bind(this)
-    this.onClickCanvas = this.onClickCanvas.bind(this)
-    this.onClickDesignComponent = this.onClickDesignComponent.bind(this)
-    this.onDragStartDesignComponent = this.onDragStartDesignComponent.bind(this)
-    this.onRemoveDesignComponent = this.onRemoveDesignComponent.bind(this)
-    this.onResizeDesignItemStart = this.onResizeDesignItemStart.bind(this)
-    this.onResizeDesignItem = this.onResizeDesignItem.bind(this)
-    this.onResizeDesignItemEnd = this.onResizeDesignItemEnd.bind(this)
+    this.onCanvasDragEnter = this.onCanvasDragEnter.bind(this)
+    this.onCanvasDragLeave = this.onCanvasDragLeave.bind(this)
+    this.onCanvasDragEnd = this.onCanvasDragEnd.bind(this)
+    this.onCanvasClick = this.onCanvasClick.bind(this)
+    this.onDesignComponentClick = this.onDesignComponentClick.bind(this)
+    this.onDesignComponentDragStart = this.onDesignComponentDragStart.bind(this)
+    this.onDesignComponentRemove = this.onDesignComponentRemove.bind(this)
+    this.onDesignItemResizeStart = this.onDesignItemResizeStart.bind(this)
+    this.onDesignItemResize = this.onDesignItemResize.bind(this)
+    this.onDesignItemResizeEnd = this.onDesignItemResizeEnd.bind(this)
 
     // memoizing the calculation, only update when the cursor offset has changed
     this.calculateHighlightedAreaWhenDragging = memoize(
@@ -253,14 +253,14 @@ class Design extends PureComponent {
     }
   }
 
-  onClickCanvas () {
+  onCanvasClick () {
     // clear design selection when canvas is clicked,
     // the selection is not clear if the click was inside a component
     // because component's click handler prevent the click event to be propagated to the parent
     this.clearDesignSelection()
   }
 
-  onClickDesignComponent (ev, componentId) {
+  onDesignComponentClick (ev, componentId) {
     // stop progagation of click
     ev.preventDefault()
     ev.stopPropagation()
@@ -268,13 +268,24 @@ class Design extends PureComponent {
     this.selectComponent(componentId)
   }
 
-  onDragStartDesignComponent () {
+  onDesignComponentDragStart (componentInfo, componentNode) {
+    let componentDimensions
+
     this.clearDesignSelection()
 
+    componentDimensions = componentNode.getBoundingClientRect()
 
+    return {
+      name: componentInfo.type,
+      props: componentInfo.props,
+      size: {
+        width: componentDimensions.width,
+        height: componentDimensions.height
+      }
+    }
   }
 
-  onRemoveDesignComponent ({ group, item, componentId }) {
+  onDesignComponentRemove ({ group, item, componentId }) {
     let originalDesignGroups = this.state.designGroups
     let originalComponentsInfo = this.componentsInfo
     let designSelection
@@ -316,7 +327,7 @@ class Design extends PureComponent {
     this.setState(stateToUpdate)
   }
 
-  onResizeDesignItemStart ({ group, item, itemDimensions, resize }) {
+  onDesignItemResizeStart ({ group, item, itemDimensions, resize }) {
     const { baseWidth, defaultNumberOfCols } = this.props
 
     let designGroups = this.state.designGroups
@@ -398,7 +409,7 @@ class Design extends PureComponent {
     }
   }
 
-  onResizeDesignItem ({ group, item, resize }) {
+  onDesignItemResize ({ group, item, resize }) {
     const { baseWidth, defaultNumberOfCols } = this.props
 
     let designGroups = this.state.designGroups
@@ -448,7 +459,7 @@ class Design extends PureComponent {
     return !newHighlightedArea.conflict
   }
 
-  onResizeDesignItemEnd ({ group, item, resize }) {
+  onDesignItemResizeEnd ({ group, item, resize }) {
     const originalHighlightedArea = this.highlightedArea
     const highlightedArea = this.highlightedAreaWhenResizing
     const originalDesignGroups = this.state.designGroups
@@ -512,12 +523,12 @@ class Design extends PureComponent {
     cleanup()
   }
 
-  onDragEnterCanvas () {
+  onCanvasDragEnter () {
     // clean selected area when dragging starts on canvas
     this.highlightedArea = null
   }
 
-  onDragLeaveCanvas () {
+  onCanvasDragLeave () {
     if (this.state.highlightedArea != null) {
       // clean selected area (visually) when dragging outside canvas (only when necessary)
       this.setState({
@@ -526,7 +537,7 @@ class Design extends PureComponent {
     }
   }
 
-  onDragEndCanvas () {
+  onCanvasDragEnd () {
     if (this.state.highlightedArea != null) {
       // clean selected area (visually) when dragging ends (only when necessary)
       this.setState({
@@ -578,18 +589,18 @@ class Design extends PureComponent {
             highlightedArea={highlightedArea}
             designGroups={designGroups}
             designSelection={designSelection}
-            onClick={this.onClickCanvas}
-            onClickComponent={this.onClickDesignComponent}
-            onDragStartComponent={this.onDragStartDesignComponent}
-            onRemoveComponent={this.onRemoveDesignComponent}
-            onDragEnter={this.onDragEnterCanvas}
+            onClick={this.onCanvasClick}
+            onComponentClick={this.onDesignComponentClick}
+            onComponentDragStart={this.onDesignComponentDragStart}
+            onComponentRemove={this.onDesignComponentRemove}
+            onDragEnter={this.onCanvasDragEnter}
             onDragOver={this.calculateHighlightedAreaWhenDragging}
-            onDragLeave={this.onDragLeaveCanvas}
-            onDragEnd={this.onDragEndCanvas}
+            onDragLeave={this.onCanvasDragLeave}
+            onDragEnd={this.onCanvasDragEnd}
             onDrop={this.addComponentToCanvas}
-            onResizeItemStart={this.onResizeDesignItemStart}
-            onResizeItem={this.onResizeDesignItem}
-            onResizeItemEnd={this.onResizeDesignItemEnd}
+            onItemResizeStart={this.onDesignItemResizeStart}
+            onItemResize={this.onDesignItemResize}
+            onItemResizeEnd={this.onDesignItemResizeEnd}
           />
         </div>
       </div>

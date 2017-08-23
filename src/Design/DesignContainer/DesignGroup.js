@@ -6,8 +6,6 @@ import Grid from '../Grid'
 import DesignItem from './DesignItem'
 import './DesignGroup.css'
 
-import DesignComponent from '../../DesignComponent'
-
 const groupTarget = {
   hover (props, monitor, component) {
     let id = props.id
@@ -63,9 +61,9 @@ class DesignGroup extends PureComponent {
     this.getIndexOfItem = this.getIndexOfItem.bind(this)
     this.getIndex = this.getIndex.bind(this)
     this.getNode = this.getNode.bind(this)
-    this.handleResizeItemStart = this.handleResizeItemStart.bind(this)
-    this.handleResizeItem = this.handleResizeItem.bind(this)
-    this.handleResizeItemEnd = this.handleResizeItemEnd.bind(this)
+    this.handleItemResizeStart = this.handleItemResizeStart.bind(this)
+    this.handleItemResize = this.handleItemResize.bind(this)
+    this.handleItemResizeEnd = this.handleItemResizeEnd.bind(this)
     this.handleComponentRemove = this.handleComponentRemove.bind(this)
   }
 
@@ -81,27 +79,27 @@ class DesignGroup extends PureComponent {
     return this.itemsIndexCache[itemId]
   }
 
-  handleResizeItemStart (args) {
-    if (this.props.onResizeItemStart) {
-      return this.props.onResizeItemStart({
+  handleItemResizeStart (args) {
+    if (this.props.onItemResizeStart) {
+      return this.props.onItemResizeStart({
         ...args,
         group: this.getIndex()
       })
     }
   }
 
-  handleResizeItem (args) {
-    if (this.props.onResizeItem) {
-      return this.props.onResizeItem({
+  handleItemResize (args) {
+    if (this.props.onItemResize) {
+      return this.props.onItemResize({
         ...args,
         group: this.getIndex()
       })
     }
   }
 
-  handleResizeItemEnd (args) {
-    if (this.props.onResizeItemEnd) {
-      return this.props.onResizeItemEnd({
+  handleItemResizeEnd (args) {
+    if (this.props.onItemResizeEnd) {
+      return this.props.onItemResizeEnd({
         ...args,
         group: this.getIndex()
       })
@@ -109,8 +107,8 @@ class DesignGroup extends PureComponent {
   }
 
   handleComponentRemove (args) {
-    if (this.props.onRemoveComponent) {
-      this.props.onRemoveComponent({
+    if (this.props.onComponentRemove) {
+      this.props.onComponentRemove({
         ...args,
         group: this.getIndex()
       })
@@ -127,8 +125,8 @@ class DesignGroup extends PureComponent {
       layoutMode,
       selection,
       items,
-      onClickComponent,
-      onDragStartComponent,
+      onComponentClick,
+      onComponentDragStart,
       connectDropTarget
     } = this.props
 
@@ -173,12 +171,12 @@ class DesignGroup extends PureComponent {
               space={designItem.space}
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
-              onClickComponent={onClickComponent}
-              onDragStartComponent={onDragStartComponent}
-              onRemoveComponent={this.handleComponentRemove}
-              onResizeStart={this.handleResizeItemStart}
-              onResize={this.handleResizeItem}
-              onResizeEnd={this.handleResizeItemEnd}
+              onComponentClick={onComponentClick}
+              onComponentDragStart={onComponentDragStart}
+              onComponentRemove={this.handleComponentRemove}
+              onResizeStart={this.handleItemResizeStart}
+              onResize={this.handleItemResize}
+              onResizeEnd={this.handleItemResizeEnd}
               getIndex={this.getIndexOfItem}
             />
           )
@@ -199,12 +197,12 @@ DesignGroup.propTypes = {
   selection: PropTypes.object,
   items: PropTypes.array.isRequired,
   onDragOver: PropTypes.func,
-  onClickComponent: PropTypes.func,
-  onDragStartComponent: PropTypes.func,
-  onRemoveComponent: PropTypes.func,
-  onResizeItemStart: PropTypes.func,
-  onResizeItem: PropTypes.func,
-  onResizeItemEnd: PropTypes.func,
+  onComponentClick: PropTypes.func,
+  onComponentDragStart: PropTypes.func,
+  onComponentRemove: PropTypes.func,
+  onItemResizeStart: PropTypes.func,
+  onItemResize: PropTypes.func,
+  onItemResizeEnd: PropTypes.func,
   getIndex: PropTypes.func.isRequired,
   connectDropTarget: PropTypes.func.isRequired
 }

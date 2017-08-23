@@ -8,22 +8,11 @@ const componentRegistry = require('../shared/componentRegistry')
 
 const componentSource = {
   beginDrag(props, monitor, component) {
-    let componentDimensions
-
     if (props.onDragStart) {
-      props.onDragStart(component.node)
+      return props.onDragStart(component.getComponentInfo(), component.node)
     }
 
-    componentDimensions = component.node.getBoundingClientRect()
-
-    return {
-      name: props.type,
-      props: props.componentProps,
-      size: {
-        width: componentDimensions.width,
-        height: componentDimensions.height
-      }
-    }
+    return {}
   },
 
   endDrag (props) {
@@ -48,6 +37,7 @@ class DesignComponent extends PureComponent {
     this.cacheProps = {}
 
     this.getComponentRef = this.getComponentRef.bind(this)
+    this.getComponentInfo = this.getComponentInfo.bind(this)
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
     this.handleClick = this.handleClick.bind(this)
     this.renderComponent = this.renderComponent.bind(this)
@@ -84,6 +74,14 @@ class DesignComponent extends PureComponent {
 
     this.tmpNode = document.createElement('div')
     return this.tmpNode
+  }
+
+  getComponentInfo () {
+    return {
+      id: this.props.id,
+      type: this.props.type,
+      props: this.props.componentProps
+    }
   }
 
   connectToDragSourceConditionally (...args) {
