@@ -25,30 +25,41 @@ const groupTarget = {
 
     if (props.onDragOver) {
       props.onDragOver({
-        group: getIndex(id),
-        groupDimensions,
+        canvasInfo: {
+          group: getIndex(id),
+          // taking the index from the value saved in design item's dragEnter
+          item: component.draggingInDesignItem,
+          groupDimensions
+        },
         item,
         clientOffset
       })
     }
   },
 
-  drop (props, monitor) {
+  drop (props, monitor, component) {
     let id = props.id
     let getIndex = props.getIndex
 
     let result = {
-      group: getIndex(id),
+      canvasInfo: {
+        group: getIndex(id),
+        // taking the index from drop result of design item
+        item: monitor.didDrop() ? monitor.getDropResult().itemIndex : null
+      },
       clientOffset: monitor.getClientOffset()
     }
+
+    component.draggingInDesignItem = null
 
     return result
   }
 }
 
-function collect (connect) {
+function collect (connect, monitor) {
   return {
-    connectDropTarget: connect.dropTarget()
+    connectDropTarget: connect.dropTarget(),
+    isDraggingOver: monitor.isOver()
   }
 }
 
@@ -57,6 +68,7 @@ class DesignGroup extends PureComponent {
     super(props)
 
     this.itemsIndexCache = null
+    this.draggingInDesignItem = null
 
     this.getIndexOfItem = this.getIndexOfItem.bind(this)
     this.getIndex = this.getIndex.bind(this)
@@ -64,6 +76,9 @@ class DesignGroup extends PureComponent {
     this.handleItemResizeStart = this.handleItemResizeStart.bind(this)
     this.handleItemResize = this.handleItemResize.bind(this)
     this.handleItemResizeEnd = this.handleItemResizeEnd.bind(this)
+    this.handleItemDragEnter = this.handleItemDragEnter.bind(this)
+    this.handleItemDragLeave = this.handleItemDragLeave.bind(this)
+    this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
     this.handleComponentRemove = this.handleComponentRemove.bind(this)
   }
 
@@ -106,6 +121,25 @@ class DesignGroup extends PureComponent {
     }
   }
 
+  handleItemDragEnter ({ itemIndex }) {
+    this.draggingInDesignItem = itemIndex
+  }
+
+  handleItemDragLeave ({ itemIndex }) {
+    if (this.draggingInDesignItem === itemIndex) {
+      this.draggingInDesignItem = null
+    }
+  }
+
+  handleComponentDragStart (componentInfo, componentNode) {
+    if (this.props.onComponentDragStart) {
+      return this.props.onComponentDragStart({
+        ...componentInfo,
+        group: this.getIndex()
+      }, componentNode)
+    }
+  }
+
   handleComponentRemove (args) {
     if (this.props.onComponentRemove) {
       this.props.onComponentRemove({
@@ -126,8 +160,8 @@ class DesignGroup extends PureComponent {
       selection,
       items,
       onComponentClick,
-      onComponentDragStart,
-      connectDropTarget
+      connectDropTarget,
+      isDraggingOver
     } = this.props
 
     let styles = {}
@@ -142,6 +176,10 @@ class DesignGroup extends PureComponent {
     }
 
     extraProps[`data-layout-${layoutMode}-mode`] = true
+
+    if (isDraggingOver) {
+      extraProps['data-dragging-over'] = true
+    }
 
     this.itemsIndexCache = {}
 
@@ -172,11 +210,13 @@ class DesignGroup extends PureComponent {
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
               onComponentClick={onComponentClick}
-              onComponentDragStart={onComponentDragStart}
+              onComponentDragStart={this.handleComponentDragStart}
               onComponentRemove={this.handleComponentRemove}
               onResizeStart={this.handleItemResizeStart}
               onResize={this.handleItemResize}
               onResizeEnd={this.handleItemResizeEnd}
+              onDragEnter={this.handleItemDragEnter}
+              onDragLeave={this.handleItemDragLeave}
               getIndex={this.getIndexOfItem}
             />
           )
@@ -204,7 +244,11 @@ DesignGroup.propTypes = {
   onItemResize: PropTypes.func,
   onItemResizeEnd: PropTypes.func,
   getIndex: PropTypes.func.isRequired,
-  connectDropTarget: PropTypes.func.isRequired
+  connectDropTarget: PropTypes.func.isRequired,
+  isDraggingOver: PropTypes.bool.isRequired
 }
 
-export default DropTarget(ComponentTypes.COMPONENT_TYPE, groupTarget, collect)(DesignGroup)
+export default DropTarget([
+  ComponentTypes.COMPONENT_TYPE,
+  ComponentTypes.COMPONENT,
+], groupTarget, collect)(DesignGroup)

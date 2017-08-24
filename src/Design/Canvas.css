@@ -8,7 +8,6 @@
 /*of a container that is using "outline" (the container grows with the absolute node)*/
 .Canvas:before {
   display: block;
-  position: absolute;
   content: "";
   position: absolute;
   top: -1px;
@@ -32,5 +31,5 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  border: 2px dotted rgb(168, 230, 79);
+  border: 2px dotted #a8e64f;
 }

@@ -8,11 +8,30 @@ class DesignContainer extends PureComponent {
   constructor (props) {
     super(props)
 
+    this.state = {
+      isDragging: false
+    }
+
     this.groupsIndexCache = null
 
     this.getContainerNode = this.getContainerNode.bind(this)
     this.getIndexOfGroup = this.getIndexOfGroup.bind(this)
     this.getRelativePositionInsideContainer = this.getRelativePositionInsideContainer.bind(this)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (this.props.dragging === false && nextProps.dragging === true) {
+      clearTimeout(this.draggingTimeout)
+
+      // show the grid lines a little bit later
+      this.draggingTimeout = setTimeout(() => {
+        this.setState({ isDragging: true })
+      }, 100)
+    } else if (this.props.dragging === true && nextProps.dragging === false) {
+      clearTimeout(this.draggingTimeout)
+
+      this.setState({ isDragging: false })
+    }
   }
 
   getContainerNode (el) {
@@ -42,11 +61,12 @@ class DesignContainer extends PureComponent {
   }
 
   render () {
+    const { isDragging } = this.state
+
     const {
       baseWidth,
       numberOfCols,
       emptyGroupHeight,
-      dragging,
       groups,
       selection,
       highlightedArea,
@@ -65,7 +85,7 @@ class DesignContainer extends PureComponent {
 
     let extraProps = {}
 
-    if (dragging) {
+    if (isDragging) {
       extraProps['data-dragging'] = true
     }
 

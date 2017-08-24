@@ -444,7 +444,8 @@ function findProjectedFilledArea ({
   designGroups,
   referenceGroup,
   colInfo,
-  consumedCols
+  consumedCols,
+  noConflictItem
 }) {
   let currentGroup = designGroups[referenceGroup]
   let colWidth = baseWidth / totalCols
@@ -455,7 +456,7 @@ function findProjectedFilledArea ({
   let visuallyConsumedCols
   let areaBox
 
-  endCol = endCol < totalCols ? endCol : endCol - 1
+  endCol = endCol < totalCols ? endCol : totalCols - 1
   visuallyConsumedCols = (endCol - startCol) + 1
 
   areaBox = {
@@ -472,8 +473,15 @@ function findProjectedFilledArea ({
       break;
     }
 
+    if (noConflictItem != null && i === noConflictItem) {
+      continue;
+    }
+
     // does the projected preview has some conflic with other item in the group?
-    if (currentItem.start <= startCol && currentItem.end >= startCol) {
+    if (
+      (currentItem.start <= startCol && currentItem.end >= startCol) ||
+      (currentItem.start <= endCol && currentItem.end >= endCol)
+    ) {
       conflict = true
     }
   }

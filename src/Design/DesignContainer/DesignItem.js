@@ -1,9 +1,35 @@
 import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
+import { DropTarget } from 'react-dnd'
 import PropTypes from 'prop-types'
+import { ComponentTypes } from '../../Constants'
 import Selection from './Selection'
 import DesignComponent from '../../DesignComponent'
 import './DesignItem.css'
+
+const itemTarget = {
+  hover (props, monitor, component) {
+    if (!monitor.isOver() && props.onDragEnter) {
+      // first time hover
+      props.onDragEnter({
+        itemIndex: component.getIndex()
+      })
+    }
+  },
+
+  drop (props, monitor, component) {
+    return {
+      itemIndex: component.getIndex()
+    }
+  }
+}
+
+function collect (connect, monitor) {
+  return {
+    connectDropTarget: connect.dropTarget(),
+    isDraggingOver: monitor.isOver()
+  }
+}
 
 class DesignItem extends PureComponent {
   constructor (props) {
@@ -39,6 +65,14 @@ class DesignItem extends PureComponent {
     this.focusSelection()
 
     this.initialDesignItemScroll = this.node.scrollTop
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (this.props.isDraggingOver === true && !nextProps.isDraggingOver) {
+      nextProps.onDragLeave && nextProps.onDragLeave({
+        itemIndex: this.getIndex()
+      })
+    }
   }
 
   componentDidUpdate () {
@@ -296,7 +330,10 @@ class DesignItem extends PureComponent {
     this.cloneComponent(componentNode)
 
     if (this.props.onComponentDragStart) {
-      return this.props.onComponentDragStart(componentInfo, componentNode)
+      return this.props.onComponentDragStart({
+        item: this.getIndex(),
+        ...componentInfo
+      }, componentNode)
     }
 
     return {}
@@ -318,7 +355,9 @@ class DesignItem extends PureComponent {
       space,
       selection,
       components,
-      onComponentClick
+      onComponentClick,
+      connectDropTarget,
+      isDraggingOver
     } = this.props
 
     const {
@@ -346,13 +385,17 @@ class DesignItem extends PureComponent {
       }
     }
 
+    extraProps[`data-layout-${layoutMode}-mode`] = true
+
     if (selection != null) {
       extraProps['data-selected'] = true
     }
 
-    extraProps[`data-layout-${layoutMode}-mode`] = true
+    if (isDraggingOver) {
+      extraProps['data-dragging-over'] = true
+    }
 
-    return (
+    return connectDropTarget(
       <div
         ref={this.setItemNode}
         className="DesignItem"
@@ -415,7 +458,14 @@ DesignItem.propTypes = {
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
   onResizeEnd: PropTypes.func,
-  getIndex: PropTypes.func.isRequired
+  onDragEnter: PropTypes.func,
+  onDragLeave: PropTypes.func,
+  getIndex: PropTypes.func.isRequired,
+  connectDropTarget: PropTypes.func.isRequired,
+  isDraggingOver: PropTypes.bool.isRequired
 }
 
-export default DesignItem
+export default DropTarget([
+  ComponentTypes.COMPONENT_TYPE,
+  ComponentTypes.COMPONENT,
+], itemTarget, collect)(DesignItem)

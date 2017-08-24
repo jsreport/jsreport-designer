@@ -44,7 +44,7 @@
 .DesignComponent[data-dragging-placeholder] {
   outline: 2px solid rgba(9, 110, 179, 0.6);
   color: inherit;
-  opacity: 0.4;
+  opacity: 0.6;
 }
 
 .DesignComponent[data-dragging] {

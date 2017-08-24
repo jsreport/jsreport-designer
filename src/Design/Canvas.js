@@ -9,8 +9,11 @@ import './Canvas.css'
 const canvasTarget = {
   hover (props, monitor, component) {
     if (!monitor.isOver() && props.onDragEnter) {
+      component.currentDragType = monitor.getItemType()
+
       // first time hover
       props.onDragEnter({
+        dragType: component.currentDragType,
         item: monitor.getItem(),
         initialSourceClientOffset: monitor.getInitialSourceClientOffset(),
         initialClientOffset: monitor.getInitialClientOffset(),
@@ -30,13 +33,15 @@ const canvasTarget = {
       let dropResult = monitor.getDropResult()
 
       return props.onDrop({
-        group: dropResult.group,
+        dragType: component.currentDragType,
+        canvasInfo: dropResult.canvasInfo,
         item: monitor.getItem(),
         clientOffset: dropResult.clientOffset
       })
     }
 
     props.onDrop({
+      dragType: component.currentDragType,
       item: monitor.getItem(),
       clientOffset: monitor.getClientOffset()
     })
@@ -58,11 +63,13 @@ class Canvas extends PureComponent {
 
     // it is important to throttle the launching of the event to avoid having a
     // bad experience while dragging
-    this.onDragOver = throttle(
-      this.onDragOver.bind(this),
+    this.handleDragOver = throttle(
+      this.handleDragOver.bind(this),
       100,
       { leading: true }
     )
+
+    this.currentDragType = null
 
     this.isDraggingOver = this.isDraggingOver.bind(this)
     this.handleItemResizeStart = this.handleItemResizeStart.bind(this)
@@ -78,6 +85,7 @@ class Canvas extends PureComponent {
         (this.props.canDrop === true && nextProps.canDrop === true)
       ) {
         nextProps.onDragLeave && nextProps.onDragLeave({
+          dragType: this.currentDragType,
           item: nextProps.item
         })
       }
@@ -85,6 +93,7 @@ class Canvas extends PureComponent {
 
     if (this.props.item && !nextProps.item) {
       nextProps.onDragEnd && nextProps.onDragEnd({
+        dragType: this.currentDragType,
         item: this.props.item
       })
     }
@@ -110,7 +119,7 @@ class Canvas extends PureComponent {
     return
   }
 
-  onDragOver (params) {
+  handleDragOver (params) {
     // ensuring that "onDragOver" is not being fired when
     // isDragOver is not true in Canvas.
     // this scenario is possible just because we are throttling the original
@@ -120,7 +129,10 @@ class Canvas extends PureComponent {
       return
     }
 
-    this.props.onDragOver && this.props.onDragOver(params)
+    this.props.onDragOver && this.props.onDragOver({
+      dragType: this.currentDragType,
+      ...params
+    })
   }
 
   render () {
@@ -134,7 +146,6 @@ class Canvas extends PureComponent {
       connectDropTarget,
       isDragOver,
       canDrop,
-      onDragOver,
       onClick,
       onComponentClick,
       onComponentDragStart,
@@ -171,7 +182,7 @@ class Canvas extends PureComponent {
           selection={designSelection}
           highlightedArea={highlightedArea}
           groups={designGroups}
-          onDragOver={onDragOver}
+          onDragOver={this.handleDragOver}
           onComponentClick={onComponentClick}
           onComponentDragStart={onComponentDragStart}
           onComponentRemove={onComponentRemove}
@@ -208,4 +219,7 @@ Canvas.propTypes = {
   onItemResizeEnd: PropTypes.func
 }
 
-export default DropTarget(ComponentTypes.COMPONENT_TYPE, canvasTarget, collect)(Canvas);
+export default DropTarget([
+  ComponentTypes.COMPONENT_TYPE,
+  ComponentTypes.COMPONENT,
+], canvasTarget, collect)(Canvas);

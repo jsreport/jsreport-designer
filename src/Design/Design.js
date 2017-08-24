@@ -11,6 +11,7 @@ import {
   updateDesignItem,
   selectComponentInDesign
 } from './designUtils'
+import { ComponentTypes } from '../Constants'
 import Canvas from './Canvas'
 import './Design.css'
 
@@ -91,12 +92,14 @@ class Design extends PureComponent {
     this.canvasRef = el
   }
 
-  calculateHighlightedAreaWhenDragging ({ group, groupDimensions, item, clientOffset }) {
+  calculateHighlightedAreaWhenDragging ({ dragType, canvasInfo, item, clientOffset }) {
     let designGroups = this.state.designGroups
     let { baseWidth, defaultNumberOfCols } = this.props
     let { x: cursorOffsetX } = clientOffset
-    let { height, top, left } = groupDimensions
+    let { height, top, left } = canvasInfo.groupDimensions
     let colWidth = baseWidth / defaultNumberOfCols
+    let highlightedArea
+    let noConflictItem
 
     let colInfo = {
       height,
@@ -110,13 +113,18 @@ class Design extends PureComponent {
 
     colInfo.left = left + (colInfo.index * colWidth)
 
-    let highlightedArea = findProjectedFilledArea({
+    if (dragType === ComponentTypes.COMPONENT && item.canvas.group === canvasInfo.group) {
+      noConflictItem = item.canvas.item
+    }
+
+    highlightedArea = findProjectedFilledArea({
       baseWidth,
       totalCols: defaultNumberOfCols,
       designGroups,
-      referenceGroup: group,
+      referenceGroup: canvasInfo.group,
       colInfo,
-      consumedCols: item.consumedCols
+      consumedCols: item.consumedCols,
+      noConflictItem
     })
 
     // saving highlightedArea in instance because it will be reset later
@@ -128,7 +136,12 @@ class Design extends PureComponent {
     })
   }
 
-  addComponentToCanvas ({ item }) {
+  addComponentToCanvas ({ dragType, canvasInfo, item }) {
+    if (dragType === 'COMPONENT') {
+      console.log('dropping from drag component not implement yet..')
+      return
+    }
+
     let shouldAddComponent = (
       this.highlightedArea &&
       !this.highlightedArea.conflict &&
@@ -269,7 +282,22 @@ class Design extends PureComponent {
   }
 
   onDesignComponentDragStart (componentInfo, componentNode) {
+    const designGroups = this.state.designGroups
+    let currentDesignGroup
+    let currentDesignItem
     let componentDimensions
+
+    currentDesignGroup = designGroups[componentInfo.group]
+
+    if (!currentDesignGroup) {
+      return
+    }
+
+    currentDesignItem = currentDesignGroup.items[componentInfo.item]
+
+    if (!currentDesignItem) {
+      return
+    }
 
     this.clearDesignSelection()
 
@@ -281,6 +309,11 @@ class Design extends PureComponent {
       size: {
         width: componentDimensions.width,
         height: componentDimensions.height
+      },
+      consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1,
+      canvas: {
+        group: componentInfo.group,
+        item: componentInfo.item
       }
     }
   }
