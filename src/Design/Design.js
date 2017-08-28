@@ -3,6 +3,7 @@ import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import {
+  getConsumedColsFromWidth,
   findProjectedFilledArea,
   generateDesignGroups,
   addComponentToDesign,
@@ -11,7 +12,7 @@ import {
   updateDesignItem,
   selectComponentInDesign
 } from './designUtils'
-import { ComponentTypes } from '../Constants'
+import { ComponentDragTypes } from '../Constants'
 import Canvas from './Canvas'
 import './Design.css'
 
@@ -56,6 +57,7 @@ class Design extends PureComponent {
 
     this.getCanvasRef = this.getCanvasRef.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
+    this.handleDropOnCanvas = this.handleDropOnCanvas.bind(this)
     this.onCanvasDragEnter = this.onCanvasDragEnter.bind(this)
     this.onCanvasDragLeave = this.onCanvasDragLeave.bind(this)
     this.onCanvasDragEnd = this.onCanvasDragEnd.bind(this)
@@ -74,8 +76,6 @@ class Design extends PureComponent {
         return clientOffset.x + ',' + clientOffset.y
       }
     )
-
-    this.addComponentToCanvas = this.addComponentToCanvas.bind(this)
   }
 
   componentDidMount () {
@@ -98,8 +98,9 @@ class Design extends PureComponent {
     let { x: cursorOffsetX } = clientOffset
     let { height, top, left } = canvasInfo.groupDimensions
     let colWidth = baseWidth / defaultNumberOfCols
-    let highlightedArea
+    let targetItem = canvasInfo.item
     let noConflictItem
+    let highlightedArea
 
     let colInfo = {
       height,
@@ -113,7 +114,7 @@ class Design extends PureComponent {
 
     colInfo.left = left + (colInfo.index * colWidth)
 
-    if (dragType === ComponentTypes.COMPONENT && item.canvas.group === canvasInfo.group) {
+    if (dragType === ComponentDragTypes.COMPONENT && item.canvas.group === canvasInfo.group) {
       noConflictItem = item.canvas.item
     }
 
@@ -127,76 +128,25 @@ class Design extends PureComponent {
       noConflictItem
     })
 
+    if (dragType === ComponentDragTypes.COMPONENT && targetItem != null) {
+      let currentDesignItem = designGroups[canvasInfo.group].items[targetItem]
+
+      highlightedArea.contextBox = {
+        top: highlightedArea.areaBox.top,
+        left: left + (currentDesignItem.start * colWidth),
+        width: ((currentDesignItem.end - currentDesignItem.start) + 1) * colWidth,
+        height: highlightedArea.areaBox.height,
+      }
+    } else {
+      highlightedArea.context = null
+    }
+
     // saving highlightedArea in instance because it will be reset later
     // and we want to access this value later when adding the component to canvas
     this.highlightedArea = highlightedArea
 
     this.setState({
       highlightedArea
-    })
-  }
-
-  addComponentToCanvas ({ dragType, canvasInfo, item }) {
-    if (dragType === 'COMPONENT') {
-      console.log('dropping from drag component not implement yet..')
-      return
-    }
-
-    let shouldAddComponent = (
-      this.highlightedArea &&
-      !this.highlightedArea.conflict &&
-      this.highlightedArea.filled &&
-      item
-    )
-
-    if (!shouldAddComponent) {
-      return
-    }
-
-    const {
-      baseWidth,
-      defaultRowHeight,
-      defaultNumberOfCols
-    } = this.props
-
-    let originalDesignGroups = this.state.designGroups
-    let highlightedArea = this.highlightedArea
-    let originalComponentsInfo = this.componentsInfo || {}
-
-    const {
-      designGroups,
-      newComponent,
-      componentsInfo
-    } = addComponentToDesign({
-      type: item.name,
-      props: item.props
-    }, {
-      baseWidth,
-      emptyGroupHeight: defaultRowHeight,
-      numberOfCols: defaultNumberOfCols,
-      componentsInfo: originalComponentsInfo,
-      componentSize: item.size,
-      designGroups: originalDesignGroups,
-      referenceGroup: highlightedArea.group,
-      fromArea: {
-        start: highlightedArea.start,
-        end: highlightedArea.end
-      }
-    })
-
-    const designSelection = this.selectComponent(newComponent.id, {
-      componentsInfo: componentsInfo,
-      returnSelection: true
-    })
-
-    this.highlightedArea = null
-    this.componentsInfo = componentsInfo
-
-    this.setState({
-      // clean highlightedArea when adding a component
-      highlightedArea: null,
-      designGroups,
-      designSelection
     })
   }
 
@@ -266,6 +216,115 @@ class Design extends PureComponent {
     }
   }
 
+  handleDropOnCanvas ({ dragType, canvasInfo, item }) {
+    const {
+      baseWidth,
+      defaultRowHeight,
+      defaultNumberOfCols
+    } = this.props
+
+    let originalDesignGroups = this.state.designGroups
+    let highlightedArea = this.highlightedArea
+    let originalComponentsInfo = this.componentsInfo || {}
+    let currentComponentsInfo
+    let currentDesignGroups
+    let originDesignItem
+    let currentDesignItem
+    let componentToProcess
+
+    let shouldProcessComponent = (
+      highlightedArea != null &&
+      !highlightedArea.conflict &&
+      highlightedArea.filled &&
+      item != null
+    )
+
+    if (dragType === ComponentDragTypes.COMPONENT) {
+      if (item.canvas.item != null) {
+        originDesignItem = originalDesignGroups[item.canvas.group].items[item.canvas.item]
+      }
+
+      if (canvasInfo.item != null) {
+        currentDesignItem = originalDesignGroups[canvasInfo.group].items[canvasInfo.item]
+      }
+    }
+
+    if (
+      shouldProcessComponent &&
+      currentDesignItem
+    ) {
+      // process the component if there is a change in group/item or position
+      shouldProcessComponent = (
+        (item.canvas.group !== canvasInfo.group &&
+        item.canvas.item !== canvasInfo.item) ||
+        (highlightedArea.end > currentDesignItem.end ||
+        highlightedArea.start < currentDesignItem.start)
+      )
+    }
+
+    if (!shouldProcessComponent) {
+      return
+    }
+
+    if (dragType === ComponentDragTypes.COMPONENT) {
+      let removeResult
+
+      componentToProcess = originDesignItem.components[item.canvas.component]
+
+      removeResult = removeComponentInDesign({
+        componentsInfo: originalComponentsInfo,
+        designGroups: originalDesignGroups,
+        referenceGroup: item.canvas.group,
+        referenceItem: item.canvas.item,
+        componentId: componentToProcess.id
+      })
+
+      currentDesignGroups = removeResult.designGroups
+      currentComponentsInfo = removeResult.componentsInfo
+    } else {
+      componentToProcess = {
+        type: item.name,
+        props: item.props
+      }
+
+      currentDesignGroups = originalDesignGroups
+      currentComponentsInfo = originalComponentsInfo
+    }
+
+    const {
+      designGroups,
+      newComponent,
+      componentsInfo
+    } = addComponentToDesign(componentToProcess, {
+      baseWidth,
+      emptyGroupHeight: defaultRowHeight,
+      numberOfCols: defaultNumberOfCols,
+      componentsInfo: currentComponentsInfo,
+      componentSize: item.size,
+      designGroups: currentDesignGroups,
+      referenceGroup: highlightedArea.group,
+      area: {
+        start: highlightedArea.start,
+        end: highlightedArea.end
+      }
+    })
+
+    const designSelection = this.selectComponent(newComponent.id, {
+      componentsInfo: componentsInfo,
+      returnSelection: true
+    })
+
+    this.highlightedArea = null
+    this.componentsInfo = componentsInfo
+
+    this.setState({
+      // clean highlightedArea when adding a component
+      highlightedArea: null,
+      designGroups,
+      designSelection
+    })
+  }
+
   onCanvasClick () {
     // clear design selection when canvas is clicked,
     // the selection is not clear if the click was inside a component
@@ -283,6 +342,7 @@ class Design extends PureComponent {
 
   onDesignComponentDragStart (componentInfo, componentNode) {
     const designGroups = this.state.designGroups
+    const { baseWidth, defaultNumberOfCols } = this.props
     let currentDesignGroup
     let currentDesignItem
     let componentDimensions
@@ -304,16 +364,21 @@ class Design extends PureComponent {
     componentDimensions = componentNode.getBoundingClientRect()
 
     return {
+      id: componentInfo.id,
       name: componentInfo.type,
       props: componentInfo.props,
       size: {
         width: componentDimensions.width,
         height: componentDimensions.height
       },
-      consumedCols: (currentDesignItem.end - currentDesignItem.start) + 1,
+      consumedCols: getConsumedColsFromWidth({
+        baseColWidth: baseWidth / defaultNumberOfCols,
+        width: componentDimensions.width
+      }),
       canvas: {
         group: componentInfo.group,
-        item: componentInfo.item
+        item: componentInfo.item,
+        component: componentInfo.component
       }
     }
   }
@@ -630,7 +695,7 @@ class Design extends PureComponent {
             onDragOver={this.calculateHighlightedAreaWhenDragging}
             onDragLeave={this.onCanvasDragLeave}
             onDragEnd={this.onCanvasDragEnd}
-            onDrop={this.addComponentToCanvas}
+            onDrop={this.handleDropOnCanvas}
             onItemResizeStart={this.onDesignItemResizeStart}
             onItemResize={this.onDesignItemResize}
             onItemResizeEnd={this.onDesignItemResizeEnd}

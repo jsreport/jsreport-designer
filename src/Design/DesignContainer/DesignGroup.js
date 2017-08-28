@@ -1,19 +1,21 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { DropTarget } from 'react-dnd'
-import { ComponentTypes } from '../../Constants'
+import { ComponentDragTypes } from '../../Constants'
 import Grid from '../Grid'
 import DesignItem from './DesignItem'
 import './DesignGroup.css'
 
 const groupTarget = {
   hover (props, monitor, component) {
-    let id = props.id
-    let getIndex = props.getIndex
     let groupNode = component.node
     let groupDimensions = groupNode.getBoundingClientRect()
     let item = monitor.getItem()
     let clientOffset = monitor.getClientOffset()
+
+    if (!monitor.isOver()) {
+      component.draggingStart = Date.now()
+    }
 
     // don't fire the event until the cursor is over the group
     if (
@@ -23,10 +25,20 @@ const groupTarget = {
       return
     }
 
+    // show dragging over styles after 200ms of beign over the group
+    if (
+      (Date.now() - component.draggingStart) > 200 &&
+      !component.state.isDraggingOver
+    ) {
+      component.setState({
+        isDraggingOver: true
+      })
+    }
+
     if (props.onDragOver) {
       props.onDragOver({
         canvasInfo: {
-          group: getIndex(id),
+          group: component.getIndex(),
           // taking the index from the value saved in design item's dragEnter
           item: component.draggingInDesignItem,
           groupDimensions
@@ -38,12 +50,9 @@ const groupTarget = {
   },
 
   drop (props, monitor, component) {
-    let id = props.id
-    let getIndex = props.getIndex
-
     let result = {
       canvasInfo: {
-        group: getIndex(id),
+        group: component.getIndex(),
         // taking the index from drop result of design item
         item: monitor.didDrop() ? monitor.getDropResult().itemIndex : null
       },
@@ -59,7 +68,7 @@ const groupTarget = {
 function collect (connect, monitor) {
   return {
     connectDropTarget: connect.dropTarget(),
-    isDraggingOver: monitor.isOver()
+    isOver: monitor.isOver()
   }
 }
 
@@ -69,6 +78,11 @@ class DesignGroup extends PureComponent {
 
     this.itemsIndexCache = null
     this.draggingInDesignItem = null
+    this.draggingStart = null
+
+    this.state = {
+      isDraggingOver: false
+    }
 
     this.getIndexOfItem = this.getIndexOfItem.bind(this)
     this.getIndex = this.getIndex.bind(this)
@@ -80,6 +94,16 @@ class DesignGroup extends PureComponent {
     this.handleItemDragLeave = this.handleItemDragLeave.bind(this)
     this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
     this.handleComponentRemove = this.handleComponentRemove.bind(this)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (this.props.isOver && !nextProps.isOver) {
+      this.draggingStart = null
+
+      this.setState({
+        isDraggingOver: false
+      })
+    }
   }
 
   getNode (el) {
@@ -150,6 +174,8 @@ class DesignGroup extends PureComponent {
   }
 
   render () {
+    const { isDraggingOver } = this.state
+
     let {
       baseWidth,
       numberOfCols,
@@ -160,8 +186,7 @@ class DesignGroup extends PureComponent {
       selection,
       items,
       onComponentClick,
-      connectDropTarget,
-      isDraggingOver
+      connectDropTarget
     } = this.props
 
     let styles = {}
@@ -205,7 +230,6 @@ class DesignGroup extends PureComponent {
               numberOfCols={numberOfCols}
               layoutMode={layoutMode}
               leftSpace={designItem.leftSpace}
-              minSpace={designItem.minSpace}
               space={designItem.space}
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
@@ -245,10 +269,10 @@ DesignGroup.propTypes = {
   onItemResizeEnd: PropTypes.func,
   getIndex: PropTypes.func.isRequired,
   connectDropTarget: PropTypes.func.isRequired,
-  isDraggingOver: PropTypes.bool.isRequired
+  isOver: PropTypes.bool.isRequired
 }
 
 export default DropTarget([
-  ComponentTypes.COMPONENT_TYPE,
-  ComponentTypes.COMPONENT,
+  ComponentDragTypes.COMPONENT_TYPE,
+  ComponentDragTypes.COMPONENT,
 ], groupTarget, collect)(DesignGroup)

@@ -98,13 +98,22 @@ class DesignContainer extends PureComponent {
         style={styles}
         {...extraProps}
       >
+        {highlightedArea && highlightedArea.contextBox && (
+          <HighlightedArea
+            width={highlightedArea.contextBox.width}
+            height={highlightedArea.contextBox.height}
+            top={this.getRelativePositionInsideContainer(highlightedArea.contextBox.top, 'top')}
+            left={this.getRelativePositionInsideContainer(highlightedArea.contextBox.left, 'left')}
+            color={'rgba(0, 147, 255, 0.1)'}
+          />
+        )}
         {highlightedArea && (
           <HighlightedArea
             width={highlightedArea.areaBox.width}
             height={highlightedArea.areaBox.height}
             top={this.getRelativePositionInsideContainer(highlightedArea.areaBox.top, 'top')}
             left={this.getRelativePositionInsideContainer(highlightedArea.areaBox.left, 'left')}
-            isValid={!highlightedArea.conflict && highlightedArea.filled}
+            color={(!highlightedArea.conflict && highlightedArea.filled) ? 'rgba(194, 236, 203, 0.6)' : 'rgba(226, 145, 145, 0.6)'}
           />
         )}
         {groups.map((designGroup, index) => {

@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import throttle from 'lodash/throttle'
 import { DropTarget } from 'react-dnd'
-import { ComponentTypes } from '../Constants'
+import { ComponentDragTypes } from '../Constants'
 import DesignContainer from './DesignContainer'
 import './Canvas.css'
 
@@ -220,6 +220,6 @@ Canvas.propTypes = {
 }
 
 export default DropTarget([
-  ComponentTypes.COMPONENT_TYPE,
-  ComponentTypes.COMPONENT,
+  ComponentDragTypes.COMPONENT_TYPE,
+  ComponentDragTypes.COMPONENT,
 ], canvasTarget, collect)(Canvas);

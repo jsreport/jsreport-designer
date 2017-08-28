@@ -2,6 +2,12 @@ import shortid from 'shortid'
 
 const DEFAULT_LAYOUT_MODE = 'grid'
 
+function getConsumedColsFromWidth ({ baseColWidth, width }) {
+  return Math.ceil(
+    width < baseColWidth ? 1 : width / baseColWidth
+  )
+}
+
 function generateDesignGroup ({ items, layoutMode, topSpace } = {}) {
   let newGroup = {
     id: 'DG-' + shortid.generate(),
@@ -126,11 +132,12 @@ function addComponentToDesign (component, {
   componentSize,
   designGroups,
   referenceGroup,
-  fromArea
+  area
 }) {
   let layoutMode = designGroups[referenceGroup].layoutMode
   let colWidth = baseWidth / numberOfCols
   let compProps = component.props || {}
+  let componentMinSpace
   let currentGroup
   let newComponent
   let newDesignGroups
@@ -148,10 +155,23 @@ function addComponentToDesign (component, {
   }
 
   // component information
-  newComponent = {
-    ...component,
-    id: 'DC-' + shortid.generate(),
-    props: compProps
+  if (component.id != null) {
+    newComponent = {
+      ...component,
+      props: compProps
+    }
+  } else {
+    newComponent = {
+      ...component,
+      id: 'DC-' + shortid.generate(),
+      props: compProps
+    }
+  }
+
+  if (layoutMode === 'grid') {
+    componentMinSpace = (area.end - area.start) + 1
+  } else {
+    componentMinSpace = Math.ceil(componentSize.width)
   }
 
   // check to see if we should create a new group or update an existing one
@@ -163,16 +183,16 @@ function addComponentToDesign (component, {
     newItem = generateDesignItem({
       colWidth,
       layoutMode,
-      start: fromArea.start,
-      end: fromArea.end,
+      start: area.start,
+      end: area.end,
       components: [newComponent],
       baseSize: componentSize
     })
 
     if (layoutMode === 'grid') {
-      leftSpaceBeforeItem = fromArea.start
+      leftSpaceBeforeItem = area.start
     } else {
-      leftSpaceBeforeItem = fromArea.start * colWidth
+      leftSpaceBeforeItem = area.start * colWidth
     }
 
     if (leftSpaceBeforeItem > 0) {
@@ -208,19 +228,19 @@ function addComponentToDesign (component, {
     currentGroup.items.forEach((item, index) => {
       if (
         componentInExistingItemIndex == null &&
-        item.start <= fromArea.start &&
-        item.end >= fromArea.start
+        item.start <= area.start &&
+        item.end >= area.start
       ) {
         // getting the index of the first item
         componentInExistingItemIndex = index
       }
 
-      if (itemAfterNewIndex == null && fromArea.end < item.start) {
+      if (itemAfterNewIndex == null && area.end < item.start) {
         // getting the index of the first item after
         itemAfterNewIndex = index
       }
 
-      if (item.end < fromArea.start) {
+      if (item.end < area.start) {
         // getting the index of the last item before
         itemBeforeNewIndex = index
       }
@@ -232,6 +252,7 @@ function addComponentToDesign (component, {
       // adding component to existing item
       currentItem = {
         ...currentItem,
+        minSpace: componentMinSpace > currentItem.minSpace ? componentMinSpace : currentItem.minSpace,
         components: [
           ...currentItem.components,
           newComponent
@@ -244,23 +265,23 @@ function addComponentToDesign (component, {
       currentItem = generateDesignItem({
         colWidth,
         layoutMode,
-        start: fromArea.start,
-        end: fromArea.end,
+        start: area.start,
+        end: area.end,
         components: [newComponent],
         baseSize: componentSize
       })
 
       if (layoutMode === 'grid') {
         if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = (fromArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1
+          leftSpaceBeforeItem = (area.start - currentGroup.items[itemBeforeNewIndex].end) - 1
         } else {
-          leftSpaceBeforeItem = fromArea.start
+          leftSpaceBeforeItem = area.start
         }
       } else {
         if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = ((fromArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1) * colWidth
+          leftSpaceBeforeItem = ((area.start - currentGroup.items[itemBeforeNewIndex].end) - 1) * colWidth
         } else {
-          leftSpaceBeforeItem = fromArea.start * colWidth
+          leftSpaceBeforeItem = area.start * colWidth
         }
       }
 
@@ -291,9 +312,9 @@ function addComponentToDesign (component, {
               let newLeftSpace
 
               if (layoutMode === 'grid') {
-                newLeftSpace = (item.start - fromArea.end) - 1
+                newLeftSpace = (item.start - area.end) - 1
               } else {
-                newLeftSpace = ((item.start - fromArea.end) - 1) * colWidth
+                newLeftSpace = ((item.start - area.end) - 1) * colWidth
               }
 
               // updating left space if necessary
@@ -711,6 +732,7 @@ function findProjectedFilledAreaWhenResizing ({
   return newSelectedArea
 }
 
+export { getConsumedColsFromWidth }
 export { generateDesignGroups }
 export { addComponentToDesign }
 export { removeComponentInDesign }

@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import { DropTarget } from 'react-dnd'
 import PropTypes from 'prop-types'
-import { ComponentTypes } from '../../Constants'
+import { ComponentDragTypes } from '../../Constants'
 import Selection from './Selection'
 import DesignComponent from '../../DesignComponent'
 import './DesignItem.css'
@@ -39,6 +39,7 @@ class DesignItem extends PureComponent {
       resizing: null
     }
 
+    this.componentsIndexCache = null
     this.originalResizeCoord = null
     this.prevPosition = null
     this.minResizeLeft = null
@@ -47,7 +48,9 @@ class DesignItem extends PureComponent {
     this.maxResizeRight = null
 
     this.getIndex = this.getIndex.bind(this)
+    this.getIndexOfComponent = this.getIndexOfComponent.bind(this)
     this.setItemNode = this.setItemNode.bind(this)
+    this.setComponentReplacementNode = this.setComponentReplacementNode.bind(this)
     this.setSelectionNode = this.setSelectionNode.bind(this)
     this.cloneComponent = this.cloneComponent.bind(this)
     this.removeComponentClone = this.removeComponentClone.bind(this)
@@ -87,8 +90,16 @@ class DesignItem extends PureComponent {
     return this.props.getIndex(this.props.id)
   }
 
+  getIndexOfComponent (componentId) {
+    return this.componentsIndexCache[componentId]
+  }
+
   setItemNode (el) {
     this.node = el
+  }
+
+  setComponentReplacementNode (el) {
+    this.componentReplacement = el
   }
 
   setSelectionNode (el) {
@@ -113,10 +124,17 @@ class DesignItem extends PureComponent {
   }
 
   removeComponentClone () {
-    this.componentReplacement.style.display = 'none'
+    if (this.componentReplacement) {
+      this.componentReplacement.style.display = 'none'
+    }
 
     if (this.componentClone) {
-      this.componentReplacement.removeChild(this.componentClone)
+      if (this.componentReplacement) {
+        this.componentReplacement.removeChild(this.componentClone)
+      } else {
+        this.componentClone.parentNode && this.componentClone.parentNode.removeChild(this.componentClone)
+      }
+
       this.componentClone = null
     }
   }
@@ -341,10 +359,6 @@ class DesignItem extends PureComponent {
 
   handleComponentDragEnd () {
     this.removeComponentClone()
-
-    if (this.props.onDragEndComponent) {
-      return this.props.onDragEndComponent()
-    }
   }
 
   render () {
@@ -395,6 +409,8 @@ class DesignItem extends PureComponent {
       extraProps['data-dragging-over'] = true
     }
 
+    this.componentsIndexCache = {}
+
     return connectDropTarget(
       <div
         ref={this.setItemNode}
@@ -416,23 +432,28 @@ class DesignItem extends PureComponent {
             onResizeEnd={this.handleResizeEnd}
           />
         )}
-        {components.map((component) => (
-          <DesignComponent
-            key={component.id}
-            id={component.id}
-            type={component.type}
-            selected={selection && selection.component === component.id ? true : undefined}
-            componentProps={component.props}
-            onClick={onComponentClick}
-            onDragStart={this.handleComponentDragStart}
-            onDragEnd={this.handleComponentDragEnd}
-          />
-        ))}
+        {components.map((component, index) => {
+          this.componentsIndexCache[component.id] = index
+
+          return (
+            <DesignComponent
+              key={component.id}
+              id={component.id}
+              type={component.type}
+              selected={selection && selection.component === component.id ? true : undefined}
+              componentProps={component.props}
+              onClick={onComponentClick}
+              onDragStart={this.handleComponentDragStart}
+              onDragEnd={this.handleComponentDragEnd}
+              getIndex={this.getIndexOfComponent}
+            />
+          )
+        })}
         {/* placeholder for the DesignComponent replacement while dragging */}
         <div
           draggable="false"
           key="DesignComponent-replacement"
-          ref={(el) => this.componentReplacement = el}
+          ref={this.setComponentReplacementNode}
           style={{
             display: 'none',
             pointerEvents: 'none',
@@ -466,6 +487,6 @@ DesignItem.propTypes = {
 }
 
 export default DropTarget([
-  ComponentTypes.COMPONENT_TYPE,
-  ComponentTypes.COMPONENT,
+  ComponentDragTypes.COMPONENT_TYPE,
+  ComponentDragTypes.COMPONENT,
 ], itemTarget, collect)(DesignItem)

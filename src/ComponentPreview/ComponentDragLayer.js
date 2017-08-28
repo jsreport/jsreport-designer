@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { DragLayer } from 'react-dnd'
-import { ComponentTypes } from '../Constants'
+import { ComponentDragTypes } from '../Constants'
 import ComponentDragPreviewBox from './ComponentDragPreviewBox'
 import './ComponentDragLayer.css'
 
@@ -60,8 +60,8 @@ function collect (monitor) {
 class ComponentDragLayer extends Component {
   renderPreview (dragItemType, defaultWidth, componentMeta) {
     switch (dragItemType) {
-      case ComponentTypes.COMPONENT_TYPE:
-      case ComponentTypes.COMPONENT:
+      case ComponentDragTypes.COMPONENT_TYPE:
+      case ComponentDragTypes.COMPONENT:
         return (
           <ComponentDragPreviewBox
             defaultWidth={defaultWidth}

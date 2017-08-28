@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
-import { ComponentTypes } from '../Constants'
+import { ComponentDragTypes } from '../Constants'
 import './ComponentBarItem.css'
 
 const componentTypeSource = {
@@ -245,4 +245,4 @@ ComponentBarItem.propTypes = {
   componentType: PropTypes.object.isRequired
 };
 
-export default DragSource(ComponentTypes.COMPONENT_TYPE, componentTypeSource, collect)(ComponentBarItem)
+export default DragSource(ComponentDragTypes.COMPONENT_TYPE, componentTypeSource, collect)(ComponentBarItem)

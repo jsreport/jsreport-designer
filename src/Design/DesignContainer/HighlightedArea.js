@@ -8,14 +8,14 @@ class HighlightedArea extends PureComponent {
       height,
       top,
       left,
-      isValid
+      color
     } = this.props
 
     return (
       <div style={{
         display: 'inline-block',
         position: 'absolute',
-        backgroundColor: isValid ? 'rgba(194, 236, 203, 0.6)' : 'rgba(226, 145, 145, 0.6)',
+        backgroundColor: color,
         top,
         left,
         width,
@@ -34,7 +34,7 @@ HighlightedArea.propTypes = {
   height: PropTypes.number.isRequired,
   top: PropTypes.number.isRequired,
   left: PropTypes.number.isRequired,
-  isValid: PropTypes.bool.isRequired,
+  color: PropTypes.string.isRequired,
 }
 
 export default HighlightedArea

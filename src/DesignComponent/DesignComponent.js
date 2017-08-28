@@ -2,14 +2,17 @@ import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
-import { ComponentTypes } from '../Constants'
+import { ComponentDragTypes } from '../Constants'
 import './DesignComponent.css'
 const componentRegistry = require('../shared/componentRegistry')
 
 const componentSource = {
   beginDrag(props, monitor, component) {
     if (props.onDragStart) {
-      return props.onDragStart(component.getComponentInfo(), component.node)
+      return props.onDragStart({
+        component: component.getIndex(),
+        ...component.getComponentInfo()
+      }, component.node)
     }
 
     return {}
@@ -36,6 +39,7 @@ class DesignComponent extends PureComponent {
 
     this.cacheProps = {}
 
+    this.getIndex = this.getIndex.bind(this)
     this.getComponentRef = this.getComponentRef.bind(this)
     this.getComponentInfo = this.getComponentInfo.bind(this)
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
@@ -51,6 +55,14 @@ class DesignComponent extends PureComponent {
     this.props.connectDragPreview(this.node, {
       captureDraggingState: true
     })
+  }
+
+  getIndex () {
+    if (!this.props.getIndex) {
+      return
+    }
+
+    return this.props.getIndex(this.props.id)
   }
 
   getComponentRef (el) {
@@ -183,10 +195,11 @@ DesignComponent.propTypes = {
   onClick: PropTypes.func,
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
+  getIndex: PropTypes.func,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool
 }
 
-export default DragSource(ComponentTypes.COMPONENT, componentSource, collect)(DesignComponent)
+export default DragSource(ComponentDragTypes.COMPONENT, componentSource, collect)(DesignComponent)
 export { DesignComponent as Component }

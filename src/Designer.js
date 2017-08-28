@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
+import { getConsumedColsFromWidth } from './Design/designUtils'
 import SplitPane from './SplitPane'
 import ComponentBar from './ComponentBar'
 import Design from './Design'
@@ -71,9 +72,10 @@ class Designer extends Component {
 
     item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
 
-    item.consumedCols = Math.ceil(
-      item.size.width < baseColWidth ? 1 : item.size.width / baseColWidth
-    )
+    item.consumedCols = getConsumedColsFromWidth({
+      baseColWidth,
+      width: item.size.width
+    })
 
     return item;
   }
