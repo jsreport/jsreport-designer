@@ -1,4 +1,8 @@
 
+.DesignGroup {
+  position: relative;
+}
+
 .DesignGroup:before,
 .DesignGroup:after {
   content: " ";
