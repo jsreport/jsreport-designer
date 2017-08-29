@@ -37,26 +37,40 @@ function generateDesignItem ({
   layoutMode,
   start,
   end,
+  minSpace,
   components = [],
   baseSize
 }) {
   let space
-  let minSpace
+  let currentMinSpace
+
+  if (minSpace != null) {
+    if (layoutMode === 'grid') {
+      currentMinSpace = minSpace
+    } else {
+      currentMinSpace = Math.ceil(minSpace)
+    }
+  }
 
   if (layoutMode === 'grid') {
     space = (end - start) + 1
-    minSpace = space
+
+    if (currentMinSpace == null) {
+      currentMinSpace = space
+    }
   } else {
     space = ((end - start) + 1) * colWidth
 
-    minSpace = Math.ceil(baseSize.width)
+    if (currentMinSpace == null) {
+      currentMinSpace = Math.ceil(baseSize.width)
+    }
   }
 
   return {
     id: 'DI-' + shortid.generate(),
     start,
     end,
-    minSpace,
+    minSpace: currentMinSpace,
     space,
     components: components
   }
@@ -185,6 +199,7 @@ function addComponentToDesign (component, {
       layoutMode,
       start: area.start,
       end: area.end,
+      minSpace: area.minSpace,
       components: [newComponent],
       baseSize: componentSize
     })
@@ -267,6 +282,7 @@ function addComponentToDesign (component, {
         layoutMode,
         start: area.start,
         end: area.end,
+        minSpace: area.minSpace,
         components: [newComponent],
         baseSize: componentSize
       })

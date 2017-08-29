@@ -27,7 +27,7 @@ const groupTarget = {
 
     // show dragging over styles after 200ms of beign over the group
     if (
-      (Date.now() - component.draggingStart) > 200 &&
+      (Date.now() - component.draggingStart) > 150 &&
       !component.state.isDraggingOver
     ) {
       component.setState({

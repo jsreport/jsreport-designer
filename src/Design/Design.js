@@ -98,7 +98,7 @@ class Design extends PureComponent {
     let { x: cursorOffsetX } = clientOffset
     let { height, top, left } = canvasInfo.groupDimensions
     let colWidth = baseWidth / defaultNumberOfCols
-    let targetItem = canvasInfo.item
+    let targetDesignItemIndex = canvasInfo.item
     let noConflictItem
     let highlightedArea
 
@@ -128,13 +128,13 @@ class Design extends PureComponent {
       noConflictItem
     })
 
-    if (dragType === ComponentDragTypes.COMPONENT && targetItem != null) {
-      let currentDesignItem = designGroups[canvasInfo.group].items[targetItem]
+    if (dragType === ComponentDragTypes.COMPONENT && targetDesignItemIndex != null) {
+      let targetDesignItem = designGroups[canvasInfo.group].items[targetDesignItemIndex]
 
       highlightedArea.contextBox = {
         top: highlightedArea.areaBox.top,
-        left: left + (currentDesignItem.start * colWidth),
-        width: ((currentDesignItem.end - currentDesignItem.start) + 1) * colWidth,
+        left: left + (targetDesignItem.start * colWidth),
+        width: ((targetDesignItem.end - targetDesignItem.start) + 1) * colWidth,
         height: highlightedArea.areaBox.height,
       }
     } else {
@@ -226,10 +226,12 @@ class Design extends PureComponent {
     let originalDesignGroups = this.state.designGroups
     let highlightedArea = this.highlightedArea
     let originalComponentsInfo = this.componentsInfo || {}
+    let targetMinSpace
     let currentComponentsInfo
     let currentDesignGroups
     let originDesignItem
-    let currentDesignItem
+    let targetDesignGroup
+    let targetDesignItem
     let componentToProcess
 
     let shouldProcessComponent = (
@@ -239,26 +241,28 @@ class Design extends PureComponent {
       item != null
     )
 
+    targetDesignGroup = originalDesignGroups[canvasInfo.group]
+
     if (dragType === ComponentDragTypes.COMPONENT) {
       if (item.canvas.item != null) {
         originDesignItem = originalDesignGroups[item.canvas.group].items[item.canvas.item]
       }
 
       if (canvasInfo.item != null) {
-        currentDesignItem = originalDesignGroups[canvasInfo.group].items[canvasInfo.item]
+        targetDesignItem = targetDesignGroup.items[canvasInfo.item]
       }
     }
 
     if (
       shouldProcessComponent &&
-      currentDesignItem
+      targetDesignItem
     ) {
       // process the component if there is a change in group/item or position
       shouldProcessComponent = (
         (item.canvas.group !== canvasInfo.group &&
         item.canvas.item !== canvasInfo.item) ||
-        (highlightedArea.end > currentDesignItem.end ||
-        highlightedArea.start < currentDesignItem.start)
+        (highlightedArea.end > targetDesignItem.end ||
+        highlightedArea.start < targetDesignItem.start)
       )
     }
 
@@ -270,6 +274,14 @@ class Design extends PureComponent {
       let removeResult
 
       componentToProcess = originDesignItem.components[item.canvas.component]
+
+      if (targetDesignItem == null) {
+        if (targetDesignGroup.layoutMode === 'grid') {
+          targetMinSpace = item.componentConsumedCols
+        } else {
+          targetMinSpace = item.size.width
+        }
+      }
 
       removeResult = removeComponentInDesign({
         componentsInfo: originalComponentsInfo,
@@ -305,7 +317,8 @@ class Design extends PureComponent {
       referenceGroup: highlightedArea.group,
       area: {
         start: highlightedArea.start,
-        end: highlightedArea.end
+        end: highlightedArea.end,
+        minSpace: targetMinSpace
       }
     })
 
@@ -343,25 +356,40 @@ class Design extends PureComponent {
   onDesignComponentDragStart (componentInfo, componentNode) {
     const designGroups = this.state.designGroups
     const { baseWidth, defaultNumberOfCols } = this.props
-    let currentDesignGroup
-    let currentDesignItem
+    let originDesignGroup
+    let originDesignItem
     let componentDimensions
+    let consumedCols
+    let componentConsumedCols
 
-    currentDesignGroup = designGroups[componentInfo.group]
+    originDesignGroup = designGroups[componentInfo.group]
 
-    if (!currentDesignGroup) {
+    if (!originDesignGroup) {
       return
     }
 
-    currentDesignItem = currentDesignGroup.items[componentInfo.item]
+    originDesignItem = originDesignGroup.items[componentInfo.item]
 
-    if (!currentDesignItem) {
+    if (!originDesignItem) {
       return
     }
 
     this.clearDesignSelection()
 
     componentDimensions = componentNode.getBoundingClientRect()
+
+    componentConsumedCols = getConsumedColsFromWidth({
+      baseColWidth: baseWidth / defaultNumberOfCols,
+      width: componentDimensions.width
+    })
+
+    // if the origin component comes from an item that only has one component
+    // then preserve design item size in the target
+    if (originDesignItem.components.length === 1) {
+      consumedCols = (originDesignItem.end - originDesignItem.start) + 1
+    } else {
+      consumedCols = componentConsumedCols
+    }
 
     return {
       id: componentInfo.id,
@@ -371,10 +399,8 @@ class Design extends PureComponent {
         width: componentDimensions.width,
         height: componentDimensions.height
       },
-      consumedCols: getConsumedColsFromWidth({
-        baseColWidth: baseWidth / defaultNumberOfCols,
-        width: componentDimensions.width
-      }),
+      consumedCols,
+      componentConsumedCols,
       canvas: {
         group: componentInfo.group,
         item: componentInfo.item,
