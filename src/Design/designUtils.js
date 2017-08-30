@@ -220,8 +220,11 @@ function addComponentToDesign (component, {
       items: [newItem]
     })
 
+    newComponentInfo.index = 0
     newComponentInfo.groupId = currentGroup.id
+    newComponentInfo.groupIndex = referenceGroup
     newComponentInfo.itemId = newItem.id
+    newComponentInfo.itemIndex = 0
 
     // adding group before placeholder
     newDesignGroups = [
@@ -264,6 +267,8 @@ function addComponentToDesign (component, {
     if (componentInExistingItemIndex != null) {
       currentItem = currentGroup.items[componentInExistingItemIndex]
 
+      newComponentInfo.index = currentItem.components.length
+
       // adding component to existing item
       currentItem = {
         ...currentItem,
@@ -275,6 +280,8 @@ function addComponentToDesign (component, {
       }
     } else {
       let leftSpaceBeforeItem
+
+      newComponentInfo.index = 0
 
       // creating new item
       currentItem = generateDesignItem({
@@ -306,6 +313,8 @@ function addComponentToDesign (component, {
       }
 
       if (componentInExistingItemIndex != null) {
+        newComponentInfo.itemIndex = componentInExistingItemIndex
+
         currentGroup.items = [
           ...currentGroup.items.slice(0, componentInExistingItemIndex),
           currentItem,
@@ -313,12 +322,16 @@ function addComponentToDesign (component, {
         ]
       } else {
         if (itemAfterNewIndex == null) {
+          newComponentInfo.itemIndex = currentGroup.items.length
+
           // if there is no item after the new item, insert it as the last
           currentGroup.items = [
             ...currentGroup.items,
             currentItem
           ]
         } else {
+          newComponentInfo.itemIndex = itemAfterNewIndex
+
           // updating items order with the new item
           currentGroup.items = [
             ...currentGroup.items.slice(0, itemAfterNewIndex),
@@ -354,6 +367,8 @@ function addComponentToDesign (component, {
       newComponentInfo.groupId = currentGroup.id
       newComponentInfo.itemId = currentItem.id
 
+      newComponentInfo.groupIndex = referenceGroup
+
       newDesignGroups = [
         ...designGroups.slice(0, referenceGroup),
         currentGroup,
@@ -368,6 +383,56 @@ function addComponentToDesign (component, {
     designGroups: newDesignGroups,
     newComponent,
     componentsInfo: newComponentsInfo
+  }
+}
+
+function updateComponentInDesign ({
+  designGroups,
+  referenceGroup,
+  referenceItem,
+  referenceComponent,
+  props
+}) {
+  let newDesignGroups
+  let newDesignGroup
+  let newDesignItem
+  let newDesignComponent
+
+  newDesignGroup = {
+    ...designGroups[referenceGroup]
+  }
+
+  newDesignItem = {
+    ...newDesignGroup.items[referenceItem]
+  }
+
+  newDesignComponent = {
+    ...newDesignItem.components[referenceComponent]
+  }
+
+  newDesignComponent.props = { ...props }
+
+  newDesignItem.components = [
+    ...newDesignItem.components.slice(0, referenceComponent),
+    newDesignComponent,
+    ...newDesignItem.components.slice(referenceComponent + 1)
+  ]
+
+  newDesignGroup.items = [
+    ...newDesignGroup.items.slice(0, referenceItem),
+    newDesignItem,
+    ...newDesignGroup.items.slice(referenceItem + 1),
+  ]
+
+  newDesignGroups = [
+    ...designGroups.slice(0, referenceGroup),
+    newDesignGroup,
+    ...designGroups.slice(referenceGroup + 1)
+  ]
+
+  return {
+    designGroups: newDesignGroups,
+    updatedComponent: null
   }
 }
 
@@ -462,12 +527,15 @@ function selectComponentInDesign ({ componentId, componentsInfo }) {
 
   return {
     group: componentInGroupInfo.groupId,
+    index: componentInGroupInfo.groupIndex,
     data: {
       [componentInGroupInfo.groupId]: {
         item: componentInGroupInfo.itemId,
+        index: componentInGroupInfo.itemIndex,
         data: {
           [componentInGroupInfo.itemId]: {
-            component: componentId
+            component: componentId,
+            index: componentInGroupInfo.index
           }
         }
       }
@@ -751,6 +819,7 @@ function findProjectedFilledAreaWhenResizing ({
 export { getConsumedColsFromWidth }
 export { generateDesignGroups }
 export { addComponentToDesign }
+export { updateComponentInDesign }
 export { removeComponentInDesign }
 export { selectComponentInDesign }
 export { findProjectedFilledArea }

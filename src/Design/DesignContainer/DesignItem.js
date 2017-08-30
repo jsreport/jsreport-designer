@@ -65,9 +65,9 @@ class DesignItem extends PureComponent {
   }
 
   componentDidMount () {
-    this.focusSelection()
-
-    this.initialDesignItemScroll = this.node.scrollTop
+    if (this.props.selection != null) {
+      this.focusSelection()
+    }
   }
 
   componentWillReceiveProps (nextProps) {
@@ -78,8 +78,11 @@ class DesignItem extends PureComponent {
     }
   }
 
-  componentDidUpdate () {
-    this.focusSelection()
+  componentDidUpdate (prevProps, prevState) {
+    // after resizing, focus again
+    if (prevState.resizing != null && this.state.resizing == null) {
+      this.focusSelection()
+    }
   }
 
   getWidthInPercentage ({ numberOfCols, consumedCols }) {

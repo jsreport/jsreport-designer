@@ -7,6 +7,7 @@ import {
   findProjectedFilledArea,
   generateDesignGroups,
   addComponentToDesign,
+  updateComponentInDesign,
   removeComponentInDesign,
   findProjectedFilledAreaWhenResizing,
   updateDesignItem,
@@ -58,6 +59,7 @@ class Design extends PureComponent {
     this.getCanvasRef = this.getCanvasRef.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
     this.handleDropOnCanvas = this.handleDropOnCanvas.bind(this)
+    this.handleComponentPropsChange = this.handleComponentPropsChange.bind(this)
     this.onCanvasDragEnter = this.onCanvasDragEnter.bind(this)
     this.onCanvasDragLeave = this.onCanvasDragLeave.bind(this)
     this.onCanvasDragEnd = this.onCanvasDragEnd.bind(this)
@@ -81,6 +83,20 @@ class Design extends PureComponent {
   componentDidMount () {
     document.addEventListener('click', this.handleGeneralClickOrDragStart, true)
     window.addEventListener('dragstart', this.handleGeneralClickOrDragStart, true)
+  }
+
+  componentWillUpdate (nextProps, nextState) {
+    if (
+      (this.state.designSelection == null && nextState.designSelection != null) ||
+      (this.state.designSelection != null && nextState.designSelection == null) ||
+      (this.state.designSelection != null && this.state.designSelection !== nextState.designSelection)
+    ) {
+      nextProps.onDesignSelectionChange && nextProps.onDesignSelectionChange({
+        designGroups: nextState.designGroups,
+        designSelection: nextState.designSelection,
+        onComponentPropsChange: this.handleComponentPropsChange
+      })
+    }
   }
 
   componentWillUnmount () {
@@ -211,9 +227,29 @@ class Design extends PureComponent {
     canvasNode = findDOMNode(this.canvasRef)
     clickOutsideCanvas = !canvasNode.contains(ev.target)
 
+    if (this.props.onGlobalClick) {
+      clickOutsideCanvas = this.props.onGlobalClick(clickOutsideCanvas, ev.target)
+    }
+
     if (clickOutsideCanvas) {
       this.clearDesignSelection()
     }
+  }
+
+  handleComponentPropsChange (canvasInfo, newProps) {
+    let originalDesignGroups = this.state.designGroups
+
+    const { designGroups } = updateComponentInDesign({
+      designGroups: originalDesignGroups,
+      referenceGroup: canvasInfo.group,
+      referenceItem: canvasInfo.item,
+      referenceComponent: canvasInfo.component,
+      props: newProps
+    })
+
+    this.setState({
+      designGroups
+    })
   }
 
   handleDropOnCanvas ({ dragType, canvasInfo, item }) {
@@ -446,6 +482,8 @@ class Design extends PureComponent {
 
     if (designSelection) {
       stateToUpdate.designSelection = designSelection
+    } else {
+      stateToUpdate.designSelection = null
     }
 
     this.setState(stateToUpdate)
@@ -736,7 +774,9 @@ Design.propTypes = {
   baseWidth: PropTypes.number.isRequired,
   defaultRowHeight: PropTypes.number.isRequired,
   defaultNumberOfRows: PropTypes.number.isRequired,
-  defaultNumberOfCols: PropTypes.number.isRequired
+  defaultNumberOfCols: PropTypes.number.isRequired,
+  onGlobalClick: PropTypes.func,
+  onDesignSelectionChange: PropTypes.func
 }
 
 export default Design

@@ -1,9 +1,10 @@
 import React, { Component } from 'react'
+import { findDOMNode } from 'react-dom'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 import { getConsumedColsFromWidth } from './Design/designUtils'
 import SplitPane from './SplitPane'
-import ComponentBar from './ComponentBar'
+import ToolBar from './ToolBar'
 import Design from './Design'
 import { ComponentDragLayer, ComponentPreviewLayer } from './ComponentPreview'
 import './Designer.css'
@@ -24,14 +25,73 @@ class Designer extends Component {
       defaultNumberOfRows: 7,
       defaultNumberOfCols: 12,
       defaultRowHeight: 78,
-      componentCollection: componentRegistry.getComponentsDefinition()
+      componentCollection: componentRegistry.getComponentsDefinition(),
+      propertiesEdition: null
     }
 
     this.componentPreviewNodes = null
 
+    this.setToolBarNode = this.setToolBarNode.bind(this)
+    this.handleGlobalClick = this.handleGlobalClick.bind(this)
+    this.handleDesignSelectionChange = this.handleDesignSelectionChange.bind(this)
     this.onComponentPreviewNodesChange = this.onComponentPreviewNodesChange.bind(this)
     this.onComponentBarItemDragStart = this.onComponentBarItemDragStart.bind(this)
     this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
+  }
+
+  setToolBarNode (el) {
+    this.toolBar = findDOMNode(el)
+  }
+
+  handleGlobalClick (clickOutsideCanvas, target) {
+    if (this.toolBar.contains(target) && this.state.propertiesEdition != null) {
+      // prevents de-selecting when a click is emitted on toolbar
+      return false
+    }
+
+    return clickOutsideCanvas
+  }
+
+  handleDesignSelectionChange ({ designGroups, designSelection, onComponentPropsChange }) {
+    let currentComponent
+    let groupIndex
+    let itemIndex
+    let componentIndex
+
+    if (!designSelection) {
+      return this.setState({
+        propertiesEdition: null
+      })
+    }
+
+    groupIndex = designSelection.index
+
+    currentComponent = designGroups[groupIndex]
+
+    itemIndex = designSelection.data[designSelection.group].index
+
+    currentComponent = currentComponent.items[itemIndex]
+
+    componentIndex = designSelection.data[designSelection.group].data[
+      designSelection.data[designSelection.group].item
+    ].index
+
+    currentComponent = currentComponent.components[componentIndex]
+
+    this.setState({
+      propertiesEdition: {
+        id: currentComponent.id,
+        type: currentComponent.type,
+        properties: currentComponent.props,
+        onChange: (newProps) => {
+          onComponentPropsChange({
+            group: groupIndex,
+            item: itemIndex,
+            component: componentIndex
+          }, newProps)
+        }
+      }
+    })
   }
 
   onComponentPreviewNodesChange (previewNodes) {
@@ -98,7 +158,8 @@ class Designer extends Component {
       defaultRowHeight,
       defaultNumberOfRows,
       defaultNumberOfCols,
-      componentCollection
+      componentCollection,
+      propertiesEdition
     } = this.state
 
     const currentColWidth = baseWidth / defaultNumberOfCols
@@ -115,7 +176,9 @@ class Designer extends Component {
             split="vertical"
             resizerClassName="resizer"
           >
-            <ComponentBar
+            <ToolBar
+              ref={this.setToolBarNode}
+              propertiesEdition={propertiesEdition}
               componentCollection={componentCollection}
               onItemDragStart={this.onComponentBarItemDragStart}
               onItemDragEnd={this.onComponentBarItemDragEnd}
@@ -125,6 +188,8 @@ class Designer extends Component {
               defaultRowHeight={defaultRowHeight}
               defaultNumberOfRows={defaultNumberOfRows}
               defaultNumberOfCols={defaultNumberOfCols}
+              onGlobalClick={this.handleGlobalClick}
+              onDesignSelectionChange={this.handleDesignSelectionChange}
             />
           </SplitPane>
           <ComponentDragLayer defaultWidth={currentColWidth} />

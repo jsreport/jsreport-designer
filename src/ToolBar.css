@@ -1,0 +1,40 @@
+
+/*$tertiaryBackgroundColor:rgb(85, 85, 85);*/
+
+.ToolBar {
+  background-color: rgb(85, 85, 85);
+  color: #FFFFFF;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ToolBar-content {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
+  min-height: 0;
+  min-width: 0;
+  transition: transform 0.2s ease;
+}
+
+.ToolBar-offset {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  transition: opacity 0.2s ease;
+}

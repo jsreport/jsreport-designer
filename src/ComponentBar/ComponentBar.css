@@ -4,8 +4,6 @@
 /*$tertiaryBackgroundColor:rgb(85, 85, 85);*/
 
 .ComponentBar {
-  background-color: rgb(85, 85, 85);
-  color: #FFFFFF;
   display: flex;
   flex: 1;
   flex-direction: column;
