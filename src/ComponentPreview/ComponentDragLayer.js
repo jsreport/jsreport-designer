@@ -12,8 +12,10 @@ function getDragLayerStyles (dragItemType, props) {
     initialPointerOffset
   } = props
 
-  let itemWidth = 0
-  let itemHeight = 0
+  let pointerPosition = {
+    x: 0,
+    y: 0
+  }
 
   if (!initialSourceOffset || !initialPointerOffset || !currentSourceOffset) {
     return {
@@ -21,17 +23,23 @@ function getDragLayerStyles (dragItemType, props) {
     }
   }
 
-  itemWidth = props.componentMeta.size.width
-  itemHeight = props.componentMeta.size.height
+  if (props.componentMeta.pointerPreviewPosition) {
+    pointerPosition = props.componentMeta.pointerPreviewPosition
+  } else {
+    pointerPosition = {
+      x: initialPointerOffset.x - initialSourceOffset.x,
+      y: initialPointerOffset.y - initialSourceOffset.y
+    }
+  }
 
   let movementX, movementY
 
   let previewItemDistanceXRelativeToSource = (
-    initialPointerOffset.x - (initialSourceOffset.x + (itemWidth / 2))
+    initialPointerOffset.x - (initialSourceOffset.x + pointerPosition.x)
   )
 
   let previewItemDistanceYRelativeToSource = (
-    initialPointerOffset.y - (initialSourceOffset.y + (itemHeight / 2))
+    initialPointerOffset.y - (initialSourceOffset.y + pointerPosition.y)
   )
 
   movementX = currentSourceOffset.x + previewItemDistanceXRelativeToSource

@@ -130,6 +130,11 @@ class Designer extends Component {
       height: componentDimensions.height
     }
 
+    item.pointerPreviewPosition = {
+      x: componentDimensions.width / 2,
+      y: componentDimensions.height / 2
+    }
+
     item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
 
     item.consumedCols = getConsumedColsFromWidth({
