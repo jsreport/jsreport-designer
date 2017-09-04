@@ -60,6 +60,7 @@ class DesignItem extends PureComponent {
     this.handleResizeStart = this.handleResizeStart.bind(this)
     this.handleResize = this.handleResize.bind(this)
     this.handleResizeEnd = this.handleResizeEnd.bind(this)
+    this.handleComponentClick = this.handleComponentClick.bind(this)
     this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
     this.handleComponentDragEnd = this.handleComponentDragEnd.bind(this)
   }
@@ -81,6 +82,11 @@ class DesignItem extends PureComponent {
   componentDidUpdate (prevProps, prevState) {
     // after resizing, focus again
     if (prevState.resizing != null && this.state.resizing == null) {
+      this.focusSelection()
+    }
+
+    // when selecting an item again, give focus back
+    if (prevProps.selection == null && this.props.selection != null) {
       this.focusSelection()
     }
   }
@@ -347,6 +353,14 @@ class DesignItem extends PureComponent {
     })
   }
 
+  handleComponentClick (...args) {
+    if (this.props.onComponentClick) {
+      this.focusSelection()
+
+      return this.props.onComponentClick.apply(undefined, args)
+    }
+  }
+
   handleComponentDragStart (componentInfo, componentNode) {
     this.cloneComponent(componentNode)
 
@@ -372,7 +386,6 @@ class DesignItem extends PureComponent {
       space,
       selection,
       components,
-      onComponentClick,
       connectDropTarget,
       isDraggingOver
     } = this.props
@@ -383,6 +396,11 @@ class DesignItem extends PureComponent {
 
     let extraProps = {}
     let itemStyles = {}
+
+    // let itemStyles = {
+    //   display: 'inline-block',
+    //   verticalAlign: 'top'
+    // }
 
     if (resizing) {
       itemStyles.opacity = 0.5
@@ -445,7 +463,7 @@ class DesignItem extends PureComponent {
               type={component.type}
               selected={selection && selection.component === component.id ? true : undefined}
               componentProps={component.props}
-              onClick={onComponentClick}
+              onClick={this.handleComponentClick}
               onDragStart={this.handleComponentDragStart}
               onDragEnd={this.handleComponentDragEnd}
               getIndex={this.getIndexOfComponent}
