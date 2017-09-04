@@ -554,12 +554,19 @@ function findProjectedFilledArea ({
 }) {
   let currentGroup = designGroups[referenceGroup]
   let colWidth = baseWidth / totalCols
-  let { index: startCol } = colInfo
-  let endCol = startCol + (consumedCols - 1)
+  let { index: startCol, startOffset } = colInfo
   let filled = false
   let conflict = false
+  let endCol
   let visuallyConsumedCols
   let areaBox
+
+  if (startOffset == null) {
+    endCol = (startCol + consumedCols) - 1
+  } else {
+    endCol = ((startCol - startOffset) + consumedCols) - 1
+    endCol = endCol > 0 ? endCol : 0
+  }
 
   endCol = endCol < totalCols ? endCol : totalCols - 1
   visuallyConsumedCols = (endCol - startCol) + 1
@@ -592,9 +599,12 @@ function findProjectedFilledArea ({
   }
 
   // does the projected preview fills inside the selected area?
-  filled = (
-    totalCols - startCol >= consumedCols
-  )
+  if (visuallyConsumedCols !== consumedCols) {
+    filled = false
+  } else {
+    filled = totalCols - startCol
+    filled = filled >= consumedCols
+  }
 
   return {
     filled,

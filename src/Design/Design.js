@@ -108,7 +108,14 @@ class Design extends PureComponent {
     this.canvasRef = el
   }
 
-  calculateHighlightedAreaWhenDragging ({ dragType, canvasInfo, item, clientOffset }) {
+  calculateHighlightedAreaWhenDragging ({
+    dragType,
+    canvasInfo,
+    item,
+    initialClientOffset,
+    initialSourceClientOffset,
+    clientOffset
+  }) {
     let designGroups = this.state.designGroups
     let { baseWidth, defaultNumberOfCols } = this.props
     let { x: cursorOffsetX } = clientOffset
@@ -117,15 +124,36 @@ class Design extends PureComponent {
     let targetDesignItemIndex = canvasInfo.item
     let noConflictItem
     let highlightedArea
+    let originColIndex
 
     let colInfo = {
       height,
-      top,
-      index: Math.floor((cursorOffsetX - left) / colWidth)
+      top
     }
 
-    if (colInfo.index > defaultNumberOfCols - 1) {
+    if (item.consumedCols === 1) {
+      // when only 1 col will be consumed start col should be
+      // based on cursor position for the best experience
+      originColIndex = cursorOffsetX - left
+    } else if (item.pointerPreviewPosition != null) {
+      // when pointer position has been defined in the preview
+      // start col should be based on the left corner
+      originColIndex = (cursorOffsetX - item.pointerPreviewPosition.x) - left
+    } else {
+      // when pointer position has been not defined in the preview
+      // get pointer position and then start col should be based on the left corner
+      originColIndex = (cursorOffsetX - (initialClientOffset.x - initialSourceClientOffset.x)) - left
+    }
+
+    originColIndex = Math.floor(originColIndex / colWidth)
+
+    if (originColIndex < 0) {
+      colInfo.startOffset = Math.abs(originColIndex)
+      colInfo.index = 0
+    } else if (originColIndex > defaultNumberOfCols - 1) {
       colInfo.index = defaultNumberOfCols - 1
+    } else {
+      colInfo.index = originColIndex
     }
 
     colInfo.left = left + (colInfo.index * colWidth)

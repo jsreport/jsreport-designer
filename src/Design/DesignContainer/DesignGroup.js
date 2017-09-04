@@ -11,7 +11,9 @@ const groupTarget = {
     let groupNode = component.node
     let groupDimensions = groupNode.getBoundingClientRect()
     let item = monitor.getItem()
+    let initialClientOffset = monitor.getInitialClientOffset()
     let clientOffset = monitor.getClientOffset()
+    let initialSourceClientOffset = monitor.getInitialSourceClientOffset()
 
     if (!monitor.isOver()) {
       component.draggingStart = Date.now()
@@ -44,7 +46,9 @@ const groupTarget = {
           groupDimensions
         },
         item,
-        clientOffset
+        initialClientOffset,
+        clientOffset,
+        initialSourceClientOffset
       })
     }
   },
