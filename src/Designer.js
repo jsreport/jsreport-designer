@@ -6,7 +6,7 @@ import { getConsumedColsFromWidth } from './Design/designUtils'
 import SplitPane from './SplitPane'
 import ToolBar from './ToolBar'
 import Design from './Design'
-import { ComponentDragLayer, ComponentPreviewLayer } from './ComponentPreview'
+import { ComponentDragLayer, ComponentCollectionPreviewLayer } from './ComponentPreview'
 import './Designer.css'
 
 const componentRegistry = require('./shared/componentRegistry')
@@ -197,9 +197,9 @@ class Designer extends Component {
               onDesignSelectionChange={this.handleDesignSelectionChange}
             />
           </SplitPane>
-          <ComponentDragLayer defaultWidth={currentColWidth} />
-          <ComponentPreviewLayer
-            defaultWidth={currentColWidth}
+          <ComponentDragLayer colWidth={currentColWidth} />
+          <ComponentCollectionPreviewLayer
+            colWidth={currentColWidth}
             componentCollection={componentCollection}
             onPreviewNodesChange={this.onComponentPreviewNodesChange}
           />

@@ -1,11 +1,11 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { Component as DesignComponent } from '../DesignComponent'
-import './ComponentPreviewLayer.css'
+import './ComponentCollectionPreviewLayer.css'
 
 const componentRegistry = require('../shared/componentRegistry')
 
-class ComponentPreviewLayer extends PureComponent {
+class ComponentCollectionPreviewLayer extends PureComponent {
   constructor (props) {
     super(props)
 
@@ -42,11 +42,11 @@ class ComponentPreviewLayer extends PureComponent {
 
   renderComponentPreview (componentType) {
     const {
-      defaultWidth
+      colWidth
     } = this.props
 
     return (
-      <div key={componentType.id} style={{ width: `${defaultWidth}px`, display: 'none' }}>
+      <div key={componentType.id} style={{ width: `${colWidth}px`, display: 'none' }}>
         <DesignComponent
           componentRef={this.getRefPreviewNode}
           type={componentType.name}
@@ -62,8 +62,8 @@ class ComponentPreviewLayer extends PureComponent {
     } = this.props
 
     return (
-      <div className="ComponentPreviewLayer">
-        <div className="ComponentPreviewLayer-list">
+      <div className="ComponentCollectionPreviewLayer">
+        <div className="ComponentCollectionPreviewLayer-list">
           {componentCollection.map(this.renderComponentPreview)}
         </div>
       </div>
@@ -71,10 +71,10 @@ class ComponentPreviewLayer extends PureComponent {
   }
 }
 
-ComponentPreviewLayer.propTypes = {
-  defaultWidth: PropTypes.number.isRequired,
+ComponentCollectionPreviewLayer.propTypes = {
+  colWidth: PropTypes.number.isRequired,
   componentCollection: PropTypes.array.isRequired,
   onPreviewNodesChange: PropTypes.func
 }
 
-export default ComponentPreviewLayer
+export default ComponentCollectionPreviewLayer
