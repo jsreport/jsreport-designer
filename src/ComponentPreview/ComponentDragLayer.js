@@ -66,12 +66,13 @@ function collect (monitor) {
 }
 
 class ComponentDragLayer extends Component {
-  renderPreview (dragItemType, colWidth, componentMeta) {
+  renderPreview (dataInput, dragItemType, colWidth, componentMeta) {
     switch (dragItemType) {
       case ComponentDragTypes.COMPONENT_TYPE:
       case ComponentDragTypes.COMPONENT:
         return (
           <ComponentDragPreviewBox
+            dataInput={dataInput}
             width={colWidth * (componentMeta.consumedCols != null ? componentMeta.consumedCols : 1)}
             componentMeta={componentMeta}
           />
@@ -83,6 +84,7 @@ class ComponentDragLayer extends Component {
 
   render () {
     const {
+      dataInput,
       colWidth,
       componentMeta,
       dragItemType,
@@ -102,7 +104,7 @@ class ComponentDragLayer extends Component {
     return (
       <div className='ComponentDragLayer'>
         <div style={styles}>
-          {isDragging && this.renderPreview(dragItemType, colWidth, componentMeta)}
+          {isDragging && this.renderPreview(dataInput, dragItemType, colWidth, componentMeta)}
         </div>
       </div>
     )
@@ -110,6 +112,7 @@ class ComponentDragLayer extends Component {
 }
 
 ComponentDragLayer.propTypes = {
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   colWidth: PropTypes.number.isRequired,
   componentMeta: PropTypes.object,
   dragItemType: PropTypes.string,

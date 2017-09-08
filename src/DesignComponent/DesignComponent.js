@@ -134,7 +134,9 @@ class DesignComponent extends PureComponent {
     }
 
     if (shouldRenderAgain) {
-      content = renderComponentFromTemplate(componentProps)
+      let dataInput = this.props.getDataInput()
+
+      content = renderComponentFromTemplate(componentProps, dataInput != null ? dataInput.data : null)
 
       this.cacheProps[type] = {
         props: componentProps,
@@ -196,6 +198,7 @@ DesignComponent.propTypes = {
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
   getIndex: PropTypes.func,
+  getDataInput: PropTypes.func.isRequired,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool

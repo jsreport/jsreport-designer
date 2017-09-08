@@ -13,6 +13,11 @@ class ComponentCollectionPreviewLayer extends PureComponent {
 
     this.renderComponentPreview = this.renderComponentPreview.bind(this)
     this.getRefPreviewNode = this.getRefPreviewNode.bind(this)
+    this.getDataInput = this.getDataInput.bind(this)
+  }
+
+  getDataInput () {
+    return this.props.dataInput
   }
 
   getRefPreviewNode (componentTypeName, el) {
@@ -51,6 +56,7 @@ class ComponentCollectionPreviewLayer extends PureComponent {
           componentRef={this.getRefPreviewNode}
           type={componentType.name}
           componentProps={this.getDefaultPropsForComponent(componentType.name)}
+          getDataInput={this.getDataInput}
         />
       </div>
     )
@@ -73,6 +79,7 @@ class ComponentCollectionPreviewLayer extends PureComponent {
 
 ComponentCollectionPreviewLayer.propTypes = {
   colWidth: PropTypes.number.isRequired,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   componentCollection: PropTypes.array.isRequired,
   onPreviewNodesChange: PropTypes.func
 }

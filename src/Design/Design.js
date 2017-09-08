@@ -22,7 +22,7 @@ const IS_DEV = true
 let DevTools
 
 if (IS_DEV) {
-  DevTools = require('../DevTools').default
+  DevTools = require('./DevTools').default
 }
 
 class Design extends PureComponent {
@@ -57,6 +57,7 @@ class Design extends PureComponent {
     }
 
     this.getCanvasRef = this.getCanvasRef.bind(this)
+    this.getDataInput = this.getDataInput.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
     this.handleDropOnCanvas = this.handleDropOnCanvas.bind(this)
     this.handleComponentPropsChange = this.handleComponentPropsChange.bind(this)
@@ -106,6 +107,10 @@ class Design extends PureComponent {
 
   getCanvasRef (el) {
     this.canvasRef = el
+  }
+
+  getDataInput () {
+    return this.props.dataInput
   }
 
   calculateHighlightedAreaWhenDragging ({
@@ -738,6 +743,7 @@ class Design extends PureComponent {
 
   render () {
     const {
+      dataInput,
       baseWidth,
       defaultRowHeight,
       defaultNumberOfCols
@@ -755,6 +761,7 @@ class Design extends PureComponent {
       <div className="Design-container">
         {DevTools && (
           <DevTools
+            dataInput={dataInput && dataInput.data}
             baseWidth={baseWidth}
             emptyGroupHeight={defaultRowHeight}
             numberOfCols={defaultNumberOfCols}
@@ -779,6 +786,7 @@ class Design extends PureComponent {
             highlightedArea={highlightedArea}
             designGroups={designGroups}
             designSelection={designSelection}
+            getDataInput={this.getDataInput}
             onClick={this.onCanvasClick}
             onComponentClick={this.onDesignComponentClick}
             onComponentDragStart={this.onDesignComponentDragStart}
@@ -803,6 +811,7 @@ Design.propTypes = {
   defaultRowHeight: PropTypes.number.isRequired,
   defaultNumberOfRows: PropTypes.number.isRequired,
   defaultNumberOfCols: PropTypes.number.isRequired,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onGlobalClick: PropTypes.func,
   onDesignSelectionChange: PropTypes.func
 }

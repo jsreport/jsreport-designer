@@ -26,7 +26,8 @@ class Designer extends Component {
       defaultNumberOfCols: 12,
       defaultRowHeight: 78,
       componentCollection: componentRegistry.getComponentsDefinition(),
-      propertiesEdition: null
+      propertiesEdition: null,
+      dataInput: null
     }
 
     this.componentPreviewNodes = null
@@ -34,6 +35,7 @@ class Designer extends Component {
     this.setToolBarNode = this.setToolBarNode.bind(this)
     this.handleGlobalClick = this.handleGlobalClick.bind(this)
     this.handleDesignSelectionChange = this.handleDesignSelectionChange.bind(this)
+    this.handleCommandSave = this.handleCommandSave.bind(this)
     this.onComponentPreviewNodesChange = this.onComponentPreviewNodesChange.bind(this)
     this.onComponentBarItemDragStart = this.onComponentBarItemDragStart.bind(this)
     this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
@@ -91,6 +93,12 @@ class Designer extends Component {
           }, newProps)
         }
       }
+    })
+  }
+
+  handleCommandSave (dataInput) {
+    this.setState({
+      dataInput
     })
   }
 
@@ -164,7 +172,8 @@ class Designer extends Component {
       defaultNumberOfRows,
       defaultNumberOfCols,
       componentCollection,
-      propertiesEdition
+      propertiesEdition,
+      dataInput
     } = this.state
 
     const currentColWidth = baseWidth / defaultNumberOfCols
@@ -177,7 +186,7 @@ class Designer extends Component {
             minSize={150}
             primary="first"
             collapsable="first"
-            collapsedText="Components"
+            collapsedText="Toolbar"
             split="vertical"
             resizerClassName="resizer"
           >
@@ -185,6 +194,8 @@ class Designer extends Component {
               ref={this.setToolBarNode}
               propertiesEdition={propertiesEdition}
               componentCollection={componentCollection}
+              dataInput={dataInput}
+              onCommandSave={this.handleCommandSave}
               onItemDragStart={this.onComponentBarItemDragStart}
               onItemDragEnd={this.onComponentBarItemDragEnd}
             />
@@ -193,13 +204,15 @@ class Designer extends Component {
               defaultRowHeight={defaultRowHeight}
               defaultNumberOfRows={defaultNumberOfRows}
               defaultNumberOfCols={defaultNumberOfCols}
+              dataInput={dataInput}
               onGlobalClick={this.handleGlobalClick}
               onDesignSelectionChange={this.handleDesignSelectionChange}
             />
           </SplitPane>
-          <ComponentDragLayer colWidth={currentColWidth} />
+          <ComponentDragLayer dataInput={dataInput} colWidth={currentColWidth} />
           <ComponentCollectionPreviewLayer
             colWidth={currentColWidth}
+            dataInput={dataInput}
             componentCollection={componentCollection}
             onPreviewNodesChange={this.onComponentPreviewNodesChange}
           />

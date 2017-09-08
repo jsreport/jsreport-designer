@@ -1,5 +1,6 @@
 var Promise = require('bluebird')
 var assign = require('lodash/assign')
+var get = require('lodash/get')
 var Handlebars = require('handlebars')
 // requiring inline just for now because we don't have any webpack setup yet
 global.designComponents = {}
@@ -23,6 +24,7 @@ function loadComponents (_componentsToLoad) {
     var isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
     var exportValue = isBrowser ? global.designComponents[component.name] : (component.location ? require(component.location) : undefined)
     var componentTemplate
+    var compiledTemplate
 
     // just for now if the component has no source set a default component,
     // this should probably just throw an error later
@@ -39,13 +41,25 @@ function loadComponents (_componentsToLoad) {
 
     componentTemplate = exportValue.template()
 
-    exportValue = assign({}, exportValue, {
-      render: Handlebars.compile(componentTemplate, {
-        explicitPartialContext: true
-      })
+    compiledTemplate = Handlebars.compile(componentTemplate, {
+      explicitPartialContext: true
     })
 
-    Handlebars.registerPartial(component.name, componentTemplate)
+    exportValue = assign({}, exportValue, {
+      render: function (props, data) {
+        let newProps = assign({}, props)
+
+        // checking for binded props
+        Object.keys(props).forEach(function (propName) {
+          if (typeof props[propName] === 'object' && props[propName].bindedToData) {
+            // resolving data binding
+            newProps[propName] = get(data, newProps[propName].expression, undefined)
+          }
+        })
+
+        return compiledTemplate(newProps)
+      }
+    })
 
     componentsDefinition[component.name] = componentsDefinition[component.name] || component
     components[component.name] = exportValue

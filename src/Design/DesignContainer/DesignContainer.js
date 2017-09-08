@@ -70,6 +70,7 @@ class DesignContainer extends PureComponent {
       groups,
       selection,
       highlightedArea,
+      getDataInput,
       onDragOver,
       onComponentClick,
       onComponentDragStart,
@@ -131,6 +132,7 @@ class DesignContainer extends PureComponent {
               layoutMode={designGroup.layoutMode}
               selection={selection && selection.group === designGroup.id ? selection.data[selection.group] : undefined}
               items={designGroup.items}
+              getDataInput={getDataInput}
               onDragOver={onDragOver}
               onComponentClick={onComponentClick}
               onComponentDragStart={onComponentDragStart}
@@ -155,6 +157,7 @@ DesignContainer.propTypes = {
   selection: PropTypes.object,
   highlightedArea: PropTypes.object,
   groups: PropTypes.array.isRequired,
+  getDataInput: PropTypes.func,
   onDragOver: PropTypes.func,
   onComponentClick: PropTypes.func,
   onComponentDragStart: PropTypes.func,

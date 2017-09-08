@@ -102,7 +102,8 @@ class DevTools extends Component {
       template: {
         design: this.getDesignPayload(),
         recipe: recipe
-      }
+      },
+      data: this.props.dataInput
     })
   }
 

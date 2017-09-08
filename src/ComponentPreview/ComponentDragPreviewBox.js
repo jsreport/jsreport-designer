@@ -3,6 +3,16 @@ import PropTypes from 'prop-types'
 import { Component as DesignComponent } from '../DesignComponent'
 
 class ComponentDragPreviewBox extends PureComponent {
+  constructor (props) {
+    super(props)
+
+    this.getDataInput = this.getDataInput.bind(this)
+  }
+
+  getDataInput () {
+    return this.props.dataInput
+  }
+
   render () {
     const {
       width,
@@ -16,6 +26,7 @@ class ComponentDragPreviewBox extends PureComponent {
       }}>
         <DesignComponent
           type={componentMeta.name}
+          getDataInput={this.getDataInput}
           componentProps={componentMeta.props}
           selectedPreview={true}
         />
@@ -25,6 +36,7 @@ class ComponentDragPreviewBox extends PureComponent {
 }
 
 ComponentDragPreviewBox.propTypes = {
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   width: PropTypes.number.isRequired,
   componentMeta: PropTypes.object.isRequired
 }

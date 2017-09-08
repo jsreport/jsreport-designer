@@ -387,7 +387,8 @@ class DesignItem extends PureComponent {
       selection,
       components,
       connectDropTarget,
-      isDraggingOver
+      isDraggingOver,
+      getDataInput
     } = this.props
 
     const {
@@ -467,6 +468,7 @@ class DesignItem extends PureComponent {
               onDragStart={this.handleComponentDragStart}
               onDragEnd={this.handleComponentDragEnd}
               getIndex={this.getIndexOfComponent}
+              getDataInput={getDataInput}
             />
           )
         })}
@@ -494,6 +496,7 @@ DesignItem.propTypes = {
   space: PropTypes.number.isRequired,
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
+  getDataInput: PropTypes.func,
   onComponentClick: PropTypes.func,
   onComponentDragStart: PropTypes.func,
   onComponentRemove: PropTypes.func,

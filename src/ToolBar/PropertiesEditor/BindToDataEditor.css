@@ -1,0 +1,33 @@
+
+.BindToDataEditor-field-container {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  user-select: none;
+}
+
+.BindToDataEditor-field-properties {
+  font-style: italic;
+}
+
+.BindToDataEditor-field-properties.collapsed {
+  max-height: 0;
+  overflow: hidden;
+  transition: .15s;
+}
+
+.BindToDataEditor-field-header,
+.BindToDataEditor-field-item {
+  cursor: pointer;
+}
+
+.BindToDataEditor-field-item.selected {
+  background: #007acc;
+  color: #fff;
+}
+
+.BindToDataEditor-field-item:hover,
+.BindToDataEditor-field-item.selected:hover {
+  background: #1c97ea;
+  color: #fff;
+}

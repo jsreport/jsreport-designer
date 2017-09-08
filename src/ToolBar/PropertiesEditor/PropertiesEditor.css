@@ -39,3 +39,7 @@
   width: 100%;
   margin-top: 0.3rem;
 }
+
+.PropertiesEditor-prop input {
+  width: 100%;
+}

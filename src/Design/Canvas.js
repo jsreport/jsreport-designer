@@ -146,6 +146,7 @@ class Canvas extends PureComponent {
       connectDropTarget,
       isDragOver,
       canDrop,
+      getDataInput,
       onClick,
       onComponentClick,
       onComponentDragStart,
@@ -182,6 +183,7 @@ class Canvas extends PureComponent {
           selection={designSelection}
           highlightedArea={highlightedArea}
           groups={designGroups}
+          getDataInput={getDataInput}
           onDragOver={this.handleDragOver}
           onComponentClick={onComponentClick}
           onComponentDragStart={onComponentDragStart}
@@ -205,6 +207,7 @@ Canvas.propTypes = {
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,
   isDragOver: PropTypes.bool.isRequired,
+  getDataInput: PropTypes.func,
   onClick: PropTypes.func,
   onDragEnter: PropTypes.func,
   onDragOver: PropTypes.func,
