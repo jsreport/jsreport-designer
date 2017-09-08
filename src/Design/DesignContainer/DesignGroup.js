@@ -159,12 +159,12 @@ class DesignGroup extends PureComponent {
     }
   }
 
-  handleComponentDragStart (componentInfo, componentNode) {
+  handleComponentDragStart (componentInfo, componentRef) {
     if (this.props.onComponentDragStart) {
       return this.props.onComponentDragStart({
         ...componentInfo,
         group: this.getIndex()
-      }, componentNode)
+      }, componentRef)
     }
   }
 
@@ -189,7 +189,7 @@ class DesignGroup extends PureComponent {
       layoutMode,
       selection,
       items,
-      getDataInput,
+      dataInput,
       onComponentClick,
       connectDropTarget
     } = this.props
@@ -238,7 +238,7 @@ class DesignGroup extends PureComponent {
               space={designItem.space}
               selection={selection && selection.item === designItem.id ? selection.data[selection.item] : undefined}
               components={designItem.components}
-              getDataInput={getDataInput}
+              dataInput={dataInput}
               onComponentClick={onComponentClick}
               onComponentDragStart={this.handleComponentDragStart}
               onComponentRemove={this.handleComponentRemove}
@@ -266,7 +266,7 @@ DesignGroup.propTypes = {
   placeholder: PropTypes.bool,
   selection: PropTypes.object,
   items: PropTypes.array.isRequired,
-  getDataInput: PropTypes.func,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onDragOver: PropTypes.func,
   onComponentClick: PropTypes.func,
   onComponentDragStart: PropTypes.func,

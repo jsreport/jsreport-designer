@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import get from 'lodash/get'
 import './BindToDataEditor.css'
 
 class BindToDataEditor extends PureComponent {
@@ -12,10 +13,33 @@ class BindToDataEditor extends PureComponent {
       fieldCollapse: {}
     }
 
+    if (
+      this.state.selectedField != null &&
+      (props.dataInput == null ||
+      get(props.dataInput.data, this.state.selectedField.expression, undefined) === undefined)
+    ) {
+      this.state.isDirty = true
+      this.state.selectedField = null
+    }
+
     this.select = this.select.bind(this)
     this.collapse = this.collapse.bind(this)
     this.handleUnselect = this.handleUnselect.bind(this)
     this.handleSave = this.handleSave.bind(this)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (
+      this.props.dataInput !== nextProps.dataInput &&
+      this.state.selectedField != null &&
+      (nextProps.dataInput == null ||
+      get(nextProps.dataInput.data, this.state.selectedField.expression, undefined) === undefined)
+    ) {
+      this.setState({
+        isDirty: true,
+        selectedField: null
+      })
+    }
   }
 
   select (field) {

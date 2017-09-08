@@ -5,16 +5,11 @@ import { Component as DesignComponent } from '../DesignComponent'
 class ComponentDragPreviewBox extends PureComponent {
   constructor (props) {
     super(props)
-
-    this.getDataInput = this.getDataInput.bind(this)
-  }
-
-  getDataInput () {
-    return this.props.dataInput
   }
 
   render () {
     const {
+      dataInput,
       width,
       componentMeta
     } = this.props
@@ -26,8 +21,9 @@ class ComponentDragPreviewBox extends PureComponent {
       }}>
         <DesignComponent
           type={componentMeta.name}
-          getDataInput={this.getDataInput}
+          dataInput={dataInput}
           componentProps={componentMeta.props}
+          rawContent={componentMeta.rawContent}
           selectedPreview={true}
         />
       </div>

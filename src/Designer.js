@@ -145,6 +145,8 @@ class Designer extends Component {
 
     item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
 
+    item.rawContent = componentPreviewNode.instance.getRawContent()
+
     item.consumedCols = getConsumedColsFromWidth({
       baseColWidth,
       width: item.size.width
@@ -212,7 +214,6 @@ class Designer extends Component {
           <ComponentDragLayer dataInput={dataInput} colWidth={currentColWidth} />
           <ComponentCollectionPreviewLayer
             colWidth={currentColWidth}
-            dataInput={dataInput}
             componentCollection={componentCollection}
             onPreviewNodesChange={this.onComponentPreviewNodesChange}
           />

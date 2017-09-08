@@ -57,7 +57,6 @@ class Design extends PureComponent {
     }
 
     this.getCanvasRef = this.getCanvasRef.bind(this)
-    this.getDataInput = this.getDataInput.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
     this.handleDropOnCanvas = this.handleDropOnCanvas.bind(this)
     this.handleComponentPropsChange = this.handleComponentPropsChange.bind(this)
@@ -107,10 +106,6 @@ class Design extends PureComponent {
 
   getCanvasRef (el) {
     this.canvasRef = el
-  }
-
-  getDataInput () {
-    return this.props.dataInput
   }
 
   calculateHighlightedAreaWhenDragging ({
@@ -422,7 +417,7 @@ class Design extends PureComponent {
     this.selectComponent(componentId)
   }
 
-  onDesignComponentDragStart (componentInfo, componentNode) {
+  onDesignComponentDragStart (componentInfo, componentRef) {
     const designGroups = this.state.designGroups
     const { baseWidth, defaultNumberOfCols } = this.props
     let originDesignGroup
@@ -445,7 +440,7 @@ class Design extends PureComponent {
 
     this.clearDesignSelection()
 
-    componentDimensions = componentNode.getBoundingClientRect()
+    componentDimensions = componentRef.node.getBoundingClientRect()
 
     componentConsumedCols = getConsumedColsFromWidth({
       baseColWidth: baseWidth / defaultNumberOfCols,
@@ -464,6 +459,7 @@ class Design extends PureComponent {
       id: componentInfo.id,
       name: componentInfo.type,
       props: componentInfo.props,
+      rawContent: componentRef.instance.getRawContent(),
       size: {
         width: componentDimensions.width,
         height: componentDimensions.height
@@ -786,7 +782,7 @@ class Design extends PureComponent {
             highlightedArea={highlightedArea}
             designGroups={designGroups}
             designSelection={designSelection}
-            getDataInput={this.getDataInput}
+            dataInput={dataInput}
             onClick={this.onCanvasClick}
             onComponentClick={this.onDesignComponentClick}
             onComponentDragStart={this.onDesignComponentDragStart}

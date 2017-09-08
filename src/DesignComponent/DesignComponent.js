@@ -12,7 +12,10 @@ const componentSource = {
       return props.onDragStart({
         component: component.getIndex(),
         ...component.getComponentInfo()
-      }, component.node)
+      }, {
+        node: component.node,
+        instance: component
+      })
     }
 
     return {}
@@ -38,10 +41,12 @@ class DesignComponent extends PureComponent {
     super(props)
 
     this.cacheProps = {}
+    this.dataInputChanged = false
 
     this.getIndex = this.getIndex.bind(this)
     this.getComponentRef = this.getComponentRef.bind(this)
     this.getComponentInfo = this.getComponentInfo.bind(this)
+    this.getRawContent = this.getRawContent.bind(this)
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
     this.handleClick = this.handleClick.bind(this)
     this.renderComponent = this.renderComponent.bind(this)
@@ -55,6 +60,16 @@ class DesignComponent extends PureComponent {
     this.props.connectDragPreview(this.node, {
       captureDraggingState: true
     })
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (this.props.type !== nextProps.type) {
+      this.cacheProps = {}
+    }
+
+    if (this.props.dataInput !== nextProps.dataInput) {
+      this.dataInputChanged = true
+    }
   }
 
   getIndex () {
@@ -73,10 +88,10 @@ class DesignComponent extends PureComponent {
     }
 
     if (!el) {
-      return this.props.componentRef(this.props.type, el)
+      return this.props.componentRef(this.props.type, el, this)
     }
 
-    this.props.componentRef(this.props.type, findDOMNode(el))
+    this.props.componentRef(this.props.type, findDOMNode(el), this)
   }
 
   getTemporalNode () {
@@ -94,6 +109,14 @@ class DesignComponent extends PureComponent {
       type: this.props.type,
       props: this.props.componentProps
     }
+  }
+
+  getRawContent () {
+    if (this.cacheProps && this.cacheProps[this.props.type]) {
+      return this.cacheProps[this.props.type].content
+    }
+
+    return null
   }
 
   connectToDragSourceConditionally (...args) {
@@ -124,17 +147,20 @@ class DesignComponent extends PureComponent {
 
   renderComponent (type, componentProps) {
     const renderComponentFromTemplate = componentRegistry.getComponentFromType(type).render
+    let dataInput = this.props.dataInput
     let shouldRenderAgain = true
     let content
 
     if (this.cacheProps[type] == null) {
       this.cacheProps = {}
-    } else if (this.cacheProps[type].props === componentProps) {
+    } else if (this.cacheProps[type].props === componentProps && !this.dataInputChanged) {
       shouldRenderAgain = false
     }
 
     if (shouldRenderAgain) {
-      let dataInput = this.props.getDataInput()
+      console.log('rendering component from template', type)
+
+      this.dataInputChanged = false
 
       content = renderComponentFromTemplate(componentProps, dataInput != null ? dataInput.data : null)
 
@@ -155,6 +181,7 @@ class DesignComponent extends PureComponent {
     const {
       type,
       componentProps,
+      rawContent,
       selected,
       selectedPreview,
       isDragging
@@ -181,7 +208,9 @@ class DesignComponent extends PureComponent {
         {...extraProps}
         data-jsreport-component-type={type}
         onClick={this.handleClick}
-        dangerouslySetInnerHTML={{ __html: this.renderComponent(type, componentProps) }}
+        dangerouslySetInnerHTML={{
+          __html: rawContent == null ? this.renderComponent(type, componentProps) : rawContent
+        }}
       />
     )
   }
@@ -193,12 +222,13 @@ DesignComponent.propTypes = {
   selectedPreview: PropTypes.bool,
   type: PropTypes.string.isRequired,
   componentProps: PropTypes.object.isRequired,
+  rawContent: PropTypes.string,
   componentRef: PropTypes.func,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onClick: PropTypes.func,
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
   getIndex: PropTypes.func,
-  getDataInput: PropTypes.func.isRequired,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool

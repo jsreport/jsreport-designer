@@ -361,14 +361,14 @@ class DesignItem extends PureComponent {
     }
   }
 
-  handleComponentDragStart (componentInfo, componentNode) {
-    this.cloneComponent(componentNode)
+  handleComponentDragStart (componentInfo, componentRef) {
+    this.cloneComponent(componentRef.node)
 
     if (this.props.onComponentDragStart) {
       return this.props.onComponentDragStart({
         item: this.getIndex(),
         ...componentInfo
-      }, componentNode)
+      }, componentRef)
     }
 
     return {}
@@ -388,7 +388,7 @@ class DesignItem extends PureComponent {
       components,
       connectDropTarget,
       isDraggingOver,
-      getDataInput
+      dataInput
     } = this.props
 
     const {
@@ -468,7 +468,7 @@ class DesignItem extends PureComponent {
               onDragStart={this.handleComponentDragStart}
               onDragEnd={this.handleComponentDragEnd}
               getIndex={this.getIndexOfComponent}
-              getDataInput={getDataInput}
+              dataInput={dataInput}
             />
           )
         })}
@@ -496,7 +496,7 @@ DesignItem.propTypes = {
   space: PropTypes.number.isRequired,
   selection: PropTypes.object,
   components: PropTypes.array.isRequired,
-  getDataInput: PropTypes.func,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onComponentClick: PropTypes.func,
   onComponentDragStart: PropTypes.func,
   onComponentRemove: PropTypes.func,
