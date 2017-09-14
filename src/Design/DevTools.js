@@ -33,9 +33,9 @@ class DevTools extends Component {
 
       // calculating topSpace between designGroups
       if (lastGroupWithContent != null) {
-        topSpace = ((idx - lastGroupWithContent) - 1) * emptyGroupHeight
+        topSpace = (idx - lastGroupWithContent) - 1
       } else {
-        topSpace = idx * emptyGroupHeight
+        topSpace = idx
       }
 
       if (topSpace != null && topSpace > 0) {
@@ -85,7 +85,8 @@ class DevTools extends Component {
     return {
       grid: {
         width: baseWidth,
-        numberOfCols: numberOfCols
+        numberOfCols: numberOfCols,
+        defaultRowHeight: emptyGroupHeight
       },
       groups: designGroupsPayload
     }
