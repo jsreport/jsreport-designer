@@ -53,10 +53,16 @@ class DevTools extends Component {
           var item = {
             space: designItem.space,
             components: designItem.components.map((designComponent) => {
-              return {
+              let data = {
                 type: designComponent.type,
                 props: designComponent.props
               }
+
+              if (designComponent.template != null) {
+                data.template = designComponent.template
+              }
+
+              return data
             })
           }
 

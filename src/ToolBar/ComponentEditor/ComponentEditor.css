@@ -1,5 +1,5 @@
 
-.PropertiesEditor {
+.ComponentEditor {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -9,13 +9,13 @@
   overflow: auto;
 }
 
-.PropertiesEditor-content {
+.ComponentEditor-content {
   color: #eee;
   padding-left: 0.9rem;
   padding-right: 0.9rem;
 }
 
-.PropertiesEditor-title {
+.ComponentEditor-title {
   font-size: 1.2rem;
   font-weight: 400;
   line-height: 1.5;
@@ -23,23 +23,29 @@
   margin-bottom: 0;
 }
 
-.PropertiesEditor-separator {
+.ComponentEditor-separator {
   border: 1px solid #444;
   margin-bottom: 15px;
 }
 
-.PropertiesEditor-prop {
+.ComponentEditor-options {
+  margin-bottom: 15px;
+}
+
+.ComponentEditor-prop {
   display: block;
-  margin: 0.5rem 1rem;
+  margin-left: 0.3rem;
+  margin-right: 0.3rem;
+  margin-bottom: 0.5rem;
   min-width: 8rem;
 }
 
-.PropertiesEditor-prop > * {
+.ComponentEditor-prop > * {
   display: block;
   width: 100%;
   margin-top: 0.3rem;
 }
 
-.PropertiesEditor-prop input {
+.ComponentEditor-prop input {
   width: 100%;
 }

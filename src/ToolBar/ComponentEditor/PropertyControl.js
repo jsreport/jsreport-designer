@@ -37,7 +37,7 @@ class PropertyControl extends PureComponent {
     let isBindedValue = typeof value === 'object' && value.bindedToData
 
     return (
-      <div className="PropertiesEditor-prop">
+      <div className="ComponentEditor-prop">
         <label>
           {name}
           {' '}

@@ -10,6 +10,12 @@ global.designComponents.Image = require('../shared/designComponents/Image')
 var componentsDefinition = {}
 var components = {}
 
+function compileTemplate (template) {
+  return Handlebars.compile(template, {
+    explicitPartialContext: true
+  })
+}
+
 function getComponentsDefinition () {
   return Object.keys(componentsDefinition).map(function (componentType) {
     return componentsDefinition[componentType]
@@ -41,12 +47,10 @@ function loadComponents (_componentsToLoad) {
 
     componentTemplate = exportValue.template()
 
-    compiledTemplate = Handlebars.compile(componentTemplate, {
-      explicitPartialContext: true
-    })
+    compiledTemplate = compileTemplate(componentTemplate)
 
     exportValue = assign({}, exportValue, {
-      render: function (props, data) {
+      render: function (props, data, customCompiledTemplate) {
         let newProps = assign({}, props)
 
         // checking for binded props
@@ -56,6 +60,10 @@ function loadComponents (_componentsToLoad) {
             newProps[propName] = get(data, newProps[propName].expression, undefined)
           }
         })
+
+        if (customCompiledTemplate) {
+          return customCompiledTemplate(newProps)
+        }
 
         return compiledTemplate(newProps)
       }
@@ -88,3 +96,4 @@ module.exports.loadComponents = loadComponents
 module.exports.registerComponent = registerComponent
 module.exports.getComponentsDefinition = getComponentsDefinition
 module.exports.getComponentFromType = getComponentFromType
+module.exports.compileTemplate = compileTemplate

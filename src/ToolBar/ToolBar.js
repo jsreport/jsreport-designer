@@ -1,16 +1,17 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import ComponentBar from './ComponentBar'
-import PropertiesEditor from './PropertiesEditor'
+import ComponentEditor from './ComponentEditor'
 import CommandBar from './CommandBar'
 import './ToolBar.css'
 
 class ToolBar extends PureComponent {
   render () {
     const {
-      propertiesEdition,
+      componentEdition,
       componentCollection,
       dataInput,
+      onComponentEditionChange,
       onCommandSave,
       onItemDragStart,
       onItemDragEnd
@@ -18,7 +19,7 @@ class ToolBar extends PureComponent {
 
     let extraProps = {}
 
-    if (propertiesEdition != null) {
+    if (componentEdition != null) {
       extraProps['data-keep-selection'] = true
     }
 
@@ -27,7 +28,7 @@ class ToolBar extends PureComponent {
         <div
           className="ToolBar-content"
           style={{
-            transform: propertiesEdition ? 'translateX(-100%)' : null
+            transform: componentEdition ? 'translateX(-100%)' : null
           }}
         >
           <ComponentBar
@@ -35,14 +36,15 @@ class ToolBar extends PureComponent {
             onItemDragStart={onItemDragStart}
             onItemDragEnd={onItemDragEnd}
           />
-          <div className="ToolBar-offset" style={{ transform: propertiesEdition ? 'translateX(0)' : 'translateX(-200%)', opacity: propertiesEdition ? 1 : 0 }}>
-            {propertiesEdition && (
-              <PropertiesEditor
-                key={propertiesEdition.id}
-                type={propertiesEdition.type}
+          <div className="ToolBar-offset" style={{ transform: componentEdition ? 'translateX(0)' : 'translateX(-200%)', opacity: componentEdition ? 1 : 0 }}>
+            {componentEdition && (
+              <ComponentEditor
+                key={componentEdition.id}
+                type={componentEdition.type}
                 dataInput={dataInput}
-                properties={propertiesEdition.properties}
-                onChange={propertiesEdition.onChange}
+                template={componentEdition.template}
+                properties={componentEdition.properties}
+                onChange={onComponentEditionChange}
               />
             )}
           </div>
@@ -56,9 +58,10 @@ class ToolBar extends PureComponent {
 }
 
 ToolBar.propTypes = {
-  propertiesEdition: PropTypes.object,
+  componentEdition: PropTypes.object,
   componentCollection: PropTypes.array.isRequired,
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  onComponentEditionChange: PropTypes.func,
   onCommandSave: PropTypes.func,
   onItemDragStart: PropTypes.func,
   onItemDragEnd: PropTypes.func

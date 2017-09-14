@@ -391,7 +391,8 @@ function updateComponentInDesign ({
   referenceGroup,
   referenceItem,
   referenceComponent,
-  props
+  props,
+  template
 }) {
   let newDesignGroups
   let newDesignGroup
@@ -410,7 +411,17 @@ function updateComponentInDesign ({
     ...newDesignItem.components[referenceComponent]
   }
 
-  newDesignComponent.props = { ...props }
+  if (props !== undefined) {
+    newDesignComponent.props = { ...props }
+  }
+
+  if (template !== undefined) {
+    if (template === null) {
+      delete newDesignComponent.template
+    } else {
+      newDesignComponent.template = template
+    }
+  }
 
   newDesignItem.components = [
     ...newDesignItem.components.slice(0, referenceComponent),

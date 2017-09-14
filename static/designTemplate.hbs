@@ -35,7 +35,7 @@
         {{#__renderDesignGroup__ this}}
           {{#__renderDesignItem__ this}}
             {{#each components}}
-              {{#renderComponent (lookup . 'type') (__getDefaultPropsForComponent__ type props) }}
+              {{#renderComponent (lookup . 'type') (__getDefaultPropsForComponent__ type props) (lookup . 'template') }}
               {{/renderComponent}}
             {{/each}}
           {{/__renderDesignItem__}}

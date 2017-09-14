@@ -42,6 +42,7 @@ class DesignComponent extends PureComponent {
 
     this.cacheProps = {}
     this.dataInputChanged = false
+    this.customCompiledTemplate = null
 
     this.getIndex = this.getIndex.bind(this)
     this.getComponentRef = this.getComponentRef.bind(this)
@@ -69,6 +70,14 @@ class DesignComponent extends PureComponent {
 
     if (this.props.dataInput !== nextProps.dataInput) {
       this.dataInputChanged = true
+    }
+
+    if (this.props.template == null && nextProps.template != null) {
+      this.customCompiledTemplate = componentRegistry.compileTemplate(nextProps.template)
+      this.cacheProps = {}
+    } else if (this.props.template != null && nextProps.template == null) {
+      this.customCompiledTemplate = null
+      this.cacheProps = {}
     }
   }
 
@@ -158,11 +167,14 @@ class DesignComponent extends PureComponent {
     }
 
     if (shouldRenderAgain) {
-      console.log('rendering component from template', type)
 
       this.dataInputChanged = false
 
-      content = renderComponentFromTemplate(componentProps, dataInput != null ? dataInput.data : null)
+      content = renderComponentFromTemplate(
+        componentProps,
+        dataInput != null ? dataInput.data : null,
+        this.customCompiledTemplate
+      )
 
       this.cacheProps[type] = {
         props: componentProps,

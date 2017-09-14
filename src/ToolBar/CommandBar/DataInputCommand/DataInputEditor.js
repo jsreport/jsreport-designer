@@ -190,7 +190,9 @@ class DataInputEditor extends PureComponent {
       isDirty: false
     })
 
-    onSave(this.currentDataInput)
+    if (onSave) {
+      onSave(this.currentDataInput)
+    }
   }
 
   render () {
@@ -210,7 +212,9 @@ class DataInputEditor extends PureComponent {
           width: '350px'
         }}
       >
-        <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>Data Input{isDirty ? '*' : ''}</h3>
+        <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>
+          Data Input{isDirty ? '*' : ''}
+        </h3>
         <br />
         <div style={{ fontSize: '0.7rem' }}>
           Paste here the json data which is the input of your jsreport requests

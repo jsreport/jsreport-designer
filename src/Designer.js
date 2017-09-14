@@ -26,7 +26,7 @@ class Designer extends Component {
       defaultNumberOfCols: 12,
       defaultRowHeight: 78,
       componentCollection: componentRegistry.getComponentsDefinition(),
-      propertiesEdition: null,
+      componentEdition: null,
       dataInput: null
     }
 
@@ -36,6 +36,7 @@ class Designer extends Component {
     this.handleGlobalClick = this.handleGlobalClick.bind(this)
     this.handleDesignSelectionChange = this.handleDesignSelectionChange.bind(this)
     this.handleCommandSave = this.handleCommandSave.bind(this)
+    this.handleComponentEditionChange = this.handleComponentEditionChange.bind(this)
     this.onComponentPreviewNodesChange = this.onComponentPreviewNodesChange.bind(this)
     this.onComponentBarItemDragStart = this.onComponentBarItemDragStart.bind(this)
     this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
@@ -46,7 +47,7 @@ class Designer extends Component {
   }
 
   handleGlobalClick (clickOutsideCanvas, target) {
-    if (this.toolBar.contains(target) && this.state.propertiesEdition != null) {
+    if (this.toolBar.contains(target) && this.state.componentEdition != null) {
       // prevents de-selecting when a click is emitted on toolbar
       return false
     }
@@ -54,7 +55,7 @@ class Designer extends Component {
     return clickOutsideCanvas
   }
 
-  handleDesignSelectionChange ({ designGroups, designSelection, onComponentPropsChange }) {
+  handleDesignSelectionChange ({ designGroups, designSelection, onComponentChange }) {
     let currentComponent
     let groupIndex
     let itemIndex
@@ -62,7 +63,7 @@ class Designer extends Component {
 
     if (!designSelection) {
       return this.setState({
-        propertiesEdition: null
+        componentEdition: null
       })
     }
 
@@ -81,17 +82,17 @@ class Designer extends Component {
     currentComponent = currentComponent.components[componentIndex]
 
     this.setState({
-      propertiesEdition: {
+      componentEdition: {
         id: currentComponent.id,
         type: currentComponent.type,
+        template: currentComponent.template,
         properties: currentComponent.props,
-        onChange: (newProps) => {
-          onComponentPropsChange({
-            group: groupIndex,
-            item: itemIndex,
-            component: componentIndex
-          }, newProps)
-        }
+        canvas: {
+          group: groupIndex,
+          item: itemIndex,
+          component: componentIndex
+        },
+        onComponentChange
       }
     })
   }
@@ -100,6 +101,28 @@ class Designer extends Component {
     this.setState({
       dataInput
     })
+  }
+
+  handleComponentEditionChange (componentChanges) {
+    const componentEdition = this.state.componentEdition
+    let newComponentEdition = { ...componentEdition }
+
+    if (componentChanges.props) {
+      newComponentEdition.properties = componentChanges.props
+    }
+
+    if (componentChanges.template !== undefined) {
+      newComponentEdition.template = componentChanges.template
+    }
+
+    this.setState({
+      componentEdition: newComponentEdition
+    })
+
+    componentEdition.onComponentChange(
+      newComponentEdition.canvas,
+      componentChanges
+    )
   }
 
   onComponentPreviewNodesChange (previewNodes) {
@@ -174,7 +197,7 @@ class Designer extends Component {
       defaultNumberOfRows,
       defaultNumberOfCols,
       componentCollection,
-      propertiesEdition,
+      componentEdition,
       dataInput
     } = this.state
 
@@ -194,9 +217,10 @@ class Designer extends Component {
           >
             <ToolBar
               ref={this.setToolBarNode}
-              propertiesEdition={propertiesEdition}
+              componentEdition={componentEdition}
               componentCollection={componentCollection}
               dataInput={dataInput}
+              onComponentEditionChange={this.handleComponentEditionChange}
               onCommandSave={this.handleCommandSave}
               onItemDragStart={this.onComponentBarItemDragStart}
               onItemDragEnd={this.onComponentBarItemDragEnd}

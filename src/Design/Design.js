@@ -59,7 +59,7 @@ class Design extends PureComponent {
     this.getCanvasRef = this.getCanvasRef.bind(this)
     this.handleGeneralClickOrDragStart = this.handleGeneralClickOrDragStart.bind(this)
     this.handleDropOnCanvas = this.handleDropOnCanvas.bind(this)
-    this.handleComponentPropsChange = this.handleComponentPropsChange.bind(this)
+    this.handleComponentChange = this.handleComponentChange.bind(this)
     this.onCanvasDragEnter = this.onCanvasDragEnter.bind(this)
     this.onCanvasDragLeave = this.onCanvasDragLeave.bind(this)
     this.onCanvasDragEnd = this.onCanvasDragEnd.bind(this)
@@ -94,7 +94,7 @@ class Design extends PureComponent {
       nextProps.onDesignSelectionChange && nextProps.onDesignSelectionChange({
         designGroups: nextState.designGroups,
         designSelection: nextState.designSelection,
-        onComponentPropsChange: this.handleComponentPropsChange
+        onComponentChange: this.handleComponentChange
       })
     }
   }
@@ -264,7 +264,7 @@ class Design extends PureComponent {
     }
   }
 
-  handleComponentPropsChange (canvasInfo, newProps) {
+  handleComponentChange (canvasInfo, { props, template }) {
     let originalDesignGroups = this.state.designGroups
 
     const { designGroups } = updateComponentInDesign({
@@ -272,7 +272,8 @@ class Design extends PureComponent {
       referenceGroup: canvasInfo.group,
       referenceItem: canvasInfo.item,
       referenceComponent: canvasInfo.component,
-      props: newProps
+      props,
+      template
     })
 
     this.setState({

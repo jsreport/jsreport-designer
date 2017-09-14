@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import Button from '../Button'
 import DataInputCommand from './DataInputCommand'
 import './CommandBar.css'
 
@@ -9,10 +10,9 @@ class CommandBar extends PureComponent {
 
     return (
       <div className="CommandBar">
-        <div className="CommandBar-item">
+        <Button title="Data Input">
           <DataInputCommand dataInput={dataInput} onSave={onCommandSave} />
-          <span className="CommandBar-item-tooltip">Data Input</span>
-        </div>
+        </Button>
       </div>
     )
   }

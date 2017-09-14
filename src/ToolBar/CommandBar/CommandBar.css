@@ -8,41 +8,6 @@
   padding-right: 0.6rem;
 }
 
-.CommandBar-item {
-  position: relative;
-  display: inline-block;
-}
-
-.CommandBar-item-tooltip {
-  position: absolute;
-  left: 50%;
-  margin-left: -50%;
-  margin-bottom: 0.7rem;
-  bottom: 100%;
-  z-index: 5;
-  background-color: #000;
-  color: #fff;
-  text-align: center;
-  padding: 0.4rem 0.4rem;
-  border-radius: 0.4rem;
-  display: none;
-}
-
-.CommandBar-item-tooltip:after {
-  content: " ";
-  position: absolute;
-  top: 100%;
-  left: 1rem;
-  margin-left: -0.4rem;
-  border-width: 0.4rem;
-  border-style: solid;
-  border-color: black transparent transparent transparent;
-}
-
-.CommandBar-item:hover .CommandBar-item-tooltip {
-  display: inline-block;
-}
-
 .CommandBar-command {
   display: inline-block;
   margin-left: 0.2rem;

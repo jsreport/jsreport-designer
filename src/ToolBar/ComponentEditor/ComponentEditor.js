@@ -1,40 +1,54 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import Button from '../Button'
 import PropertyControl from './PropertyControl'
+import TemplateEditor from './TemplateEditor'
 import BindToDataEditor from './BindToDataEditor'
-import './PropertiesEditor.css'
+import './ComponentEditor.css'
 
-class PropertiesEditor extends PureComponent {
+class ComponentEditor extends PureComponent {
   constructor (props) {
     super(props)
 
     this.state = {
-      editedProperties: {
-        ...props.properties
-      },
+      editComponentTemplate: null,
       bindToDataEditor: null
     }
 
+    this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
+    this.handleTemplateEditorSave = this.handleTemplateEditorSave.bind(this)
     this.handleBindToDataEditorSave = this.handleBindToDataEditorSave.bind(this)
+    this.handleTemplateEditorClose = this.handleTemplateEditorClose.bind(this)
     this.handleBindToDataEditorClose = this.handleBindToDataEditorClose.bind(this)
     this.handlePropertyChange = this.handlePropertyChange.bind(this)
   }
 
+  handleEditComponentTemplateClick () {
+    if (!this.state.editComponentTemplate) {
+      this.setState({
+        editComponentTemplate: true
+      })
+    } else {
+      this.setState({
+        editComponentTemplate: null
+      })
+    }
+  }
+
   handleBindToDataClick ({ componentType, propName }) {
-    const editedProperties = this.state.editedProperties
+    const properties = this.props.properties
 
     if (!this.state.bindToDataEditor) {
       let stateToUpdate = {
         bindToDataEditor: {
-          componentType,
           propName
         }
       }
 
-      if (typeof editedProperties[propName] === 'object' && editedProperties[propName].bindedToData) {
+      if (typeof properties[propName] === 'object' && properties[propName].bindedToData) {
         stateToUpdate.bindToDataEditor.selectedField = {
-          expression: editedProperties[propName].expression
+          expression: properties[propName].expression
         }
       }
 
@@ -46,20 +60,25 @@ class PropertiesEditor extends PureComponent {
     }
   }
 
-  handleBindToDataEditorSave (fieldSelection) {
+  handleTemplateEditorSave (template) {
     const { onChange } = this.props
-    let currentFieldValue = this.state.editedProperties[fieldSelection.propName]
+
+    onChange({ template })
+
+    this.setState({
+      editComponentTemplate: null
+    })
+  }
+
+  handleBindToDataEditorSave (fieldSelection) {
+    const { onChange, properties } = this.props
+    let currentFieldValue = properties[fieldSelection.propName]
     let currentFieldHasBindedValue = typeof currentFieldValue === 'object' && currentFieldValue.bindedToData
     let newEditedProperties
-    let stateToUpdate
-
-    stateToUpdate = {
-      bindToDataEditor: null
-    }
 
     if (fieldSelection.selectedField != null) {
       newEditedProperties = {
-        ...this.state.editedProperties,
+        ...properties,
         [fieldSelection.propName]: {
           bindedToData: true,
           expression: fieldSelection.selectedField.expression
@@ -67,17 +86,18 @@ class PropertiesEditor extends PureComponent {
       }
     } else if (fieldSelection.selectedField == null && currentFieldHasBindedValue) {
       newEditedProperties = {
-        ...this.state.editedProperties,
+        ...properties,
         [fieldSelection.propName]: ''
       }
     }
 
     if (newEditedProperties) {
-      stateToUpdate.editedProperties = newEditedProperties
-      onChange(stateToUpdate.editedProperties)
+      onChange({ props: newEditedProperties })
     }
 
-    this.setState(stateToUpdate)
+    this.setState({
+      bindToDataEditor: null
+    })
   }
 
   handleBindToDataEditorClose () {
@@ -86,57 +106,66 @@ class PropertiesEditor extends PureComponent {
     })
   }
 
-  handlePropertyChange ({ propName, value }) {
-    const { type, onChange } = this.props
-    let valid = true
-
-    this.setState((prevState) => {
-      let newProps = {
-        ...prevState.editedProperties,
-        [propName]: value
-      }
-
-      if (type === 'Image' && (propName === 'width' || propName === 'height')) {
-        valid = value != null && !isNaN(value)
-
-        if (valid) {
-          newProps[propName] = value !== '' ? Number(value) : 0
-        }
-      }
-
-      if (!valid) {
-        return
-      }
-
-      onChange(newProps)
-
-      return {
-        editedProperties: newProps
-      }
+  handleTemplateEditorClose () {
+    this.setState({
+      editComponentTemplate: null
     })
   }
 
+  handlePropertyChange ({ propName, value }) {
+    const { type, onChange, properties } = this.props
+    let valid = true
+
+    let newProps = {
+      ...properties,
+      [propName]: value
+    }
+
+    if (type === 'Image' && (propName === 'width' || propName === 'height')) {
+      valid = value != null && !isNaN(value)
+
+      if (valid) {
+        newProps[propName] = value !== '' ? Number(value) : 0
+      }
+    }
+
+    if (!valid) {
+      return
+    }
+
+    onChange({ props: newProps })
+  }
+
   render () {
-    const { bindToDataEditor } = this.state
+    const { bindToDataEditor, editComponentTemplate } = this.state
 
     const {
       type,
       dataInput,
+      template,
       properties
     } = this.props
 
     return (
-      <div className="PropertiesEditor">
-        <div className="PropertiesEditor-content">
-          <h3 className="PropertiesEditor-title">{type}</h3>
-          <hr className="PropertiesEditor-separator" />
+      <div className="ComponentEditor">
+        <div className="ComponentEditor-content">
+          <h3 className="ComponentEditor-title">{type}</h3>
+          <hr className="ComponentEditor-separator" />
+          <div className="ComponentEditor-options">
+            <Button
+              title="Edit component template"
+              titlePosition="bottom"
+              icon="code"
+              onClick={this.handleEditComponentTemplateClick}
+            />
+          </div>
           {Object.keys(properties).map((propName) => {
             return (
               <PropertyControl
                 key={propName}
                 componentType={type}
                 name={propName}
-                value={this.state.editedProperties[propName]}
+                value={properties[propName]}
                 bindToData={dataInput == null ? 'disabled' : null}
                 onBindToDataClick={this.handleBindToDataClick}
                 onChange={this.handlePropertyChange}
@@ -147,11 +176,19 @@ class PropertiesEditor extends PureComponent {
         {bindToDataEditor && (
           <BindToDataEditor
             dataInput={dataInput}
-            componentType={bindToDataEditor.componentType}
+            componentType={type}
             propName={bindToDataEditor.propName}
             defaultSelectedField={bindToDataEditor.selectedField}
             onSave={this.handleBindToDataEditorSave}
             onClose={this.handleBindToDataEditorClose}
+          />
+        )}
+        {editComponentTemplate && (
+          <TemplateEditor
+            componentType={type}
+            template={template}
+            onSave={this.handleTemplateEditorSave}
+            onClose={this.handleTemplateEditorClose}
           />
         )}
       </div>
@@ -159,11 +196,12 @@ class PropertiesEditor extends PureComponent {
   }
 }
 
-PropertiesEditor.propTypes = {
+ComponentEditor.propTypes = {
   type: PropTypes.string.isRequired,
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  template: PropTypes.string,
   properties: PropTypes.object.isRequired,
   onChange: PropTypes.func.isRequired
 }
 
-export default PropertiesEditor
+export default ComponentEditor

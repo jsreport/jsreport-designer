@@ -7,20 +7,22 @@ class BindToDataEditor extends PureComponent {
   constructor (props) {
     super(props)
 
-    this.state = {
+    let initialState = {
       isDirty: false,
       selectedField: props.defaultSelectedField != null ? props.defaultSelectedField : null,
       fieldCollapse: {}
     }
 
     if (
-      this.state.selectedField != null &&
+      initialState.selectedField != null &&
       (props.dataInput == null ||
-      get(props.dataInput.data, this.state.selectedField.expression, undefined) === undefined)
+      get(props.dataInput.data, initialState.selectedField.expression, undefined) === undefined)
     ) {
-      this.state.isDirty = true
-      this.state.selectedField = null
+      initialState.isDirty = true
+      initialState.selectedField = null
     }
+
+    this.state = initialState
 
     this.select = this.select.bind(this)
     this.collapse = this.collapse.bind(this)
@@ -153,7 +155,9 @@ class BindToDataEditor extends PureComponent {
           width: '350px'
         }}
       >
-        <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>Bind To Data Editor - {`${componentType} (property: ${propName}${isDirty ? '*' : ''})`}</h3>
+        <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>
+          Bind To Data Editor - {`${componentType} (property: ${propName}${isDirty ? '*' : ''})`}
+        </h3>
         <br />
         <div style={{ fontSize: '0.7rem' }}>
           Select the data field to bind
