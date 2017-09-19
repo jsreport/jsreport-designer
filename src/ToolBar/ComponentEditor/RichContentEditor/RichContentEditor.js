@@ -62,7 +62,6 @@ class RichContentEditor extends Component {
 
   handleRemove () {
     const { propName, onRemove } = this.props
-    const { getContentRepresentation, lastContentState } = this
 
     if (onRemove) {
       onRemove({ propName, rawContent: null, html: null })

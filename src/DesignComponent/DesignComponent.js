@@ -44,6 +44,10 @@ class DesignComponent extends PureComponent {
     this.dataInputChanged = false
     this.customCompiledTemplate = null
 
+    if (props.template != null && props.rawContent == null) {
+      this.customCompiledTemplate = componentRegistry.compileTemplate(props.template)
+    }
+
     this.getIndex = this.getIndex.bind(this)
     this.getComponentRef = this.getComponentRef.bind(this)
     this.getComponentInfo = this.getComponentInfo.bind(this)
@@ -233,6 +237,7 @@ DesignComponent.propTypes = {
   selected: PropTypes.bool,
   selectedPreview: PropTypes.bool,
   type: PropTypes.string.isRequired,
+  template: PropTypes.string,
   componentProps: PropTypes.object.isRequired,
   rawContent: PropTypes.string,
   componentRef: PropTypes.func,
