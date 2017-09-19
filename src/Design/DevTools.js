@@ -54,9 +54,35 @@ class DevTools extends Component {
             space: designItem.space,
             components: designItem.components.map((designComponent) => {
               let data = {
-                type: designComponent.type,
-                props: designComponent.props
+                type: designComponent.type
               }
+
+              let newProps
+
+              newProps = Object.keys(designComponent.props).reduce((newValues, propKey) => {
+                let currentValue = designComponent.props[propKey]
+                let newValue
+
+                if (typeof currentValue === 'object' && currentValue.richContent) {
+                  newValue = {
+                    ...currentValue,
+                    // not including content in the payload
+                    richContent: {
+                      html: currentValue.richContent.html
+                    }
+                  }
+                }
+
+                if (newValue) {
+                  newValues[propKey] = newValue
+                } else {
+                  newValues[propKey] = currentValue
+                }
+
+                return newValues
+              }, {})
+
+              data.props = newProps
 
               if (designComponent.template != null) {
                 data.template = designComponent.template
