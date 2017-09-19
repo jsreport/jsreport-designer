@@ -108,7 +108,7 @@ class ContentEditor extends Component {
 
   handleTab (ev) {
     const maxDepth = 4
-    this.onChange(RichUtils.onTab(ev, this.state.editorState, maxDepth))
+    this.handleEditorChange(RichUtils.onTab(ev, this.state.editorState, maxDepth))
   }
 
   handleEditorChange (editorState) {

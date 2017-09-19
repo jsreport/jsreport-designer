@@ -109,9 +109,14 @@ class ComponentEditor extends PureComponent {
       currentValue = {}
     }
 
-    currentValue.richContent = {
-      content: rawContent,
-      html: html
+    if (rawContent == null) {
+      // editor has removed rich content
+      currentValue = ''
+    } else {
+      currentValue.richContent = {
+        content: rawContent,
+        html: html
+      }
     }
 
     newEditedProperties = {
@@ -253,6 +258,7 @@ class ComponentEditor extends PureComponent {
             propName={richContentEditor.propName}
             initialContent={richContentEditor.content}
             onSave={this.handleEditRichContentSave}
+            onRemove={this.handleEditRichContentSave}
             onClose={this.handleEditRichContentClose}
           />
         )}

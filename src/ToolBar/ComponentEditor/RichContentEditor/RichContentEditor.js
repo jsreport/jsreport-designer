@@ -21,8 +21,30 @@ class RichContentEditor extends Component {
 
     this.lastContentState = null
 
+    this.getContentRepresentation = this.getContentRepresentation.bind(this)
     this.handleEditorContentChange = this.handleEditorContentChange.bind(this)
     this.handleSave = this.handleSave.bind(this)
+    this.handleRemove = this.handleRemove.bind(this)
+  }
+
+  getContentRepresentation (contentState) {
+    const { propName } = this.props
+    let rawContent = convertToRaw(contentState)
+
+    return {
+      propName,
+      rawContent,
+      html: stateToHTML(contentState, {
+        defaultBlockTag: 'div',
+        inlineStyles: Object.keys(editorStyleMap).reduce((styles, styleKey) => {
+          styles[styleKey] = {
+            style: editorStyleMap[styleKey]
+          }
+
+          return styles
+        }, {})
+      })
+    }
   }
 
   handleEditorContentChange (contentState) {
@@ -30,23 +52,20 @@ class RichContentEditor extends Component {
   }
 
   handleSave () {
-    let rawContent = convertToRaw(this.lastContentState)
+    const { onSave } = this.props
+    const { getContentRepresentation, lastContentState } = this
 
-    if (this.props.onSave) {
-      this.props.onSave({
-        propName: this.props.propName ,
-        rawContent,
-        html: stateToHTML(this.lastContentState, {
-          defaultBlockTag: 'div',
-          inlineStyles: Object.keys(editorStyleMap).reduce((styles, styleKey) => {
-            styles[styleKey] = {
-              style: editorStyleMap[styleKey]
-            }
+    if (onSave) {
+      onSave(getContentRepresentation(lastContentState))
+    }
+  }
 
-            return styles
-          }, {})
-        })
-      })
+  handleRemove () {
+    const { propName, onRemove } = this.props
+    const { getContentRepresentation, lastContentState } = this
+
+    if (onRemove) {
+      onRemove({ propName, rawContent: null, html: null })
     }
   }
 
@@ -88,6 +107,7 @@ class RichContentEditor extends Component {
         </div>
         <br />
         <button onClick={this.handleSave}>Save</button>
+        <button onClick={this.handleRemove}>Remove rich content</button>
         {' '}
         <button onClick={onClose}>Close</button>
       </div>
@@ -100,6 +120,7 @@ RichContentEditor.propTypes = {
   propName: PropTypes.string.isRequired,
   initialContent: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
   onSave: PropTypes.func,
+  onRemove: PropTypes.func,
   onClose: PropTypes.func
 }
 
