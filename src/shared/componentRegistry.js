@@ -22,6 +22,10 @@ function getComponentsDefinition () {
   })
 }
 
+function getComponentDefinitionFromType (type) {
+  return componentsDefinition[type]
+}
+
 function loadComponents (_componentsToLoad) {
   var componentsToLoad = Array.isArray(_componentsToLoad) ? _componentsToLoad : getComponentsDefinition()
 
@@ -55,9 +59,12 @@ function loadComponents (_componentsToLoad) {
 
         // checking for binded props
         Object.keys(props).forEach(function (propName) {
-          if (typeof props[propName] === 'object' && props[propName].bindedToData) {
+          if (typeof props[propName] === 'object' && props[propName].richContent) {
+            // resolving rich content
+            newProps[propName] = new Handlebars.SafeString(props[propName].richContent.html)
+          } else if (typeof props[propName] === 'object' && props[propName].bindedToData) {
             // resolving data binding
-            newProps[propName] = get(data, newProps[propName].expression, undefined)
+            newProps[propName] = get(data, newProps[propName].bindedToData.expression, undefined)
           }
         })
 
@@ -95,5 +102,6 @@ function getComponentFromType (type) {
 module.exports.loadComponents = loadComponents
 module.exports.registerComponent = registerComponent
 module.exports.getComponentsDefinition = getComponentsDefinition
+module.exports.getComponentDefinitionFromType = getComponentDefinitionFromType
 module.exports.getComponentFromType = getComponentFromType
 module.exports.compileTemplate = compileTemplate

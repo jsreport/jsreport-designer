@@ -6,6 +6,8 @@
   "dependencies": {
     "array.from": "1.0.3",
     "bluebird": "3.5.0",
+    "draft-js": "0.10.1",
+    "draft-js-export-html": "1.2.0",
     "handlebars": "4.0.10",
     "lodash": "4.17.4",
     "prop-types": "^15.5.10",

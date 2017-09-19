@@ -1,24 +1,41 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import './PropertyControl.css'
+const componentRegistry = require('../../shared/componentRegistry')
 
 class PropertyControl extends PureComponent {
   constructor (props) {
     super(props)
+
+    this.meta = componentRegistry.getComponentDefinitionFromType(props.componentType) || {}
+    this.meta = this.meta.propsMeta || {}
+    this.meta = this.meta[props.name] || {}
 
     this.state = {
       showBindToDataEditor: false
     }
 
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
+    this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
     this.handleChange = this.handleChange.bind(this)
   }
 
-  handleBindToDataClick () {
+  handleBindToDataClick (ev) {
+    ev.preventDefault()
+
     if (this.props.onBindToDataClick) {
       this.props.onBindToDataClick({
-        propName: this.props.name,
-        componentType: this.props.componentType
+        propName: this.props.name
+      })
+    }
+  }
+
+  handleEditRichContentClick (ev) {
+    ev.preventDefault()
+
+    if (this.props.onEditRichContentClick) {
+      this.props.onEditRichContentClick({
+        propName: this.props.name
       })
     }
   }
@@ -32,31 +49,64 @@ class PropertyControl extends PureComponent {
   }
 
   render () {
+    const meta = this.meta
     const { name, value, bindToData } = this.props
 
-    let isBindedValue = typeof value === 'object' && value.bindedToData
+    let isSpecialValue = typeof value === 'object' && (value.bindedToData != null || value.richContent != null)
+    let isBindedValue = false
+    let isRichContentValue = false
+    let currentValue
+
+    if (isSpecialValue) {
+      isBindedValue = value.bindedToData != null
+      isRichContentValue = value.richContent != null
+    }
+
+    if (isBindedValue) {
+      currentValue = `[${value.bindedToData.expression}]`
+    }
+
+    if (isRichContentValue) {
+      currentValue = '[rich content]'
+    }
+
+    if (!isSpecialValue) {
+      currentValue = value
+    }
 
     return (
       <div className="ComponentEditor-prop">
-        <label>
-          {name}
-          {' '}
-          {bindToData !== 'none' && (
-            <button
-              disabled={bindToData === 'disabled'}
-              title="Bind to data"
-              onClick={this.handleBindToDataClick}
-            >
-              <span className="fa fa-chain"></span>
-            </button>
-          )}
-        </label>
+        <div>
+          <label>
+            {name}
+            {' '}
+          </label>
+          <div className="ComponentEditor-prop-controls">
+            {bindToData !== 'none' && (
+              <button
+                disabled={bindToData === 'disabled'}
+                title="Bind to data"
+                onClick={this.handleBindToDataClick}
+              >
+                <span className="fa fa-bolt"></span>
+              </button>
+            )}
+            {meta.allowsRichContent && (
+              <button
+                title="Edit rich content"
+                onClick={this.handleEditRichContentClick}
+              >
+                <span className="fa fa-book"></span>
+              </button>
+            )}
+          </div>
+        </div>
         <input
-          className={isBindedValue ? 'Property-Control-binded-value' : ''}
+          className={isSpecialValue ? 'Property-Control-special-value' : ''}
           type="text"
           name={name}
-          readOnly={isBindedValue}
-          value={isBindedValue ? `[${value.expression}]` : value}
+          readOnly={isSpecialValue}
+          value={currentValue}
           onChange={this.handleChange}
         />
       </div>
@@ -70,6 +120,7 @@ PropertyControl.propTypes = {
   value: PropTypes.any,
   bindToData: PropTypes.oneOf(['disabled', 'none']),
   onBindToDataClick: PropTypes.func,
+  onEditRichContentClick: PropTypes.func,
   onChange: PropTypes.func
 }
 

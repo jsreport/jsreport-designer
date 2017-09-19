@@ -6,11 +6,18 @@ const componentRegistry = require('./shared/componentRegistry')
 
 function getRegisteredComponents () {
   // ajax request here...
+  // (for now the objets here should match the properties passed
+  // to .registerComponent in lib/designer)
   return [
     {
       id: 1,
       name: 'Text',
-      icon: 'font'
+      icon: 'font',
+      propsMeta: {
+        text: {
+          allowsRichContent: true
+        }
+      }
     },
     {
       id: 2,
