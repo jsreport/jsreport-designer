@@ -8,12 +8,13 @@
   display: flex;
   position: relative;
   margin: 0 -5px;
+  z-index: 1000;
 }
 
 .resizer-line {
   background: #000;
   opacity: .2;
-  /*z-index: 1000;*/
+  z-index: 1000;
   box-sizing: border-box;
   background-clip: padding-box;
   width: 11px;
@@ -25,7 +26,7 @@
 .resizer-horizontal {
   background: #000;
   opacity: .2;
-  /*z-index: 1000;*/
+  z-index: 1000;
   box-sizing: border-box;
   background-clip: padding-box;
   height: 15px;
