@@ -45,7 +45,7 @@ function getDragLayerStyles (dragItemType, props) {
   movementX = currentSourceOffset.x + previewItemDistanceXRelativeToSource
   movementY = currentSourceOffset.y + previewItemDistanceYRelativeToSource
 
-  const transform = `translate(${movementX}px, ${movementY}px)`
+  const transform = `translate(${movementX}px, ${movementY}px) translateZ(0)`
 
   return {
     transform,
