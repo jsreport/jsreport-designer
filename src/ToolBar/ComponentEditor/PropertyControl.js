@@ -50,23 +50,23 @@ class PropertyControl extends PureComponent {
 
   render () {
     const meta = this.meta
-    const { name, value, bindToData } = this.props
+    const { name, value, binding, bindToData } = this.props
 
-    let isSpecialValue = typeof value === 'object' && (value.bindedToData != null || value.richContent != null)
-    let isBindedValue = false
-    let isRichContentValue = false
+    let isSpecialValue = binding != null
+    let isValueBindToData = false
+    let isValueRich = false
     let currentValue
 
     if (isSpecialValue) {
-      isBindedValue = value.bindedToData != null
-      isRichContentValue = value.richContent != null
+      isValueBindToData = binding.defaultExpression != null
+      isValueRich = binding.richContent != null
     }
 
-    if (isBindedValue) {
-      currentValue = `[${value.bindedToData.expression}]`
+    if (isValueBindToData) {
+      currentValue = `[${binding.defaultExpression}]`
     }
 
-    if (isRichContentValue) {
+    if (isValueRich) {
       currentValue = '[rich content]'
     }
 
@@ -118,6 +118,7 @@ PropertyControl.propTypes = {
   componentType: PropTypes.string.isRequired,
   name: PropTypes.string.isRequired,
   value: PropTypes.any,
+  binding: PropTypes.object,
   bindToData: PropTypes.oneOf(['disabled', 'none']),
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,

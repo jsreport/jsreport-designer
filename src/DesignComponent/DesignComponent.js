@@ -82,6 +82,8 @@ class DesignComponent extends PureComponent {
     } else if (this.props.template != null && nextProps.template == null) {
       this.customCompiledTemplate = null
       this.cacheProps = {}
+    } else if (this.props.bindings !== nextProps.bindings) {
+      this.cacheProps = {}
     }
   }
 
@@ -117,11 +119,21 @@ class DesignComponent extends PureComponent {
   }
 
   getComponentInfo () {
-    return {
+    let info = {
       id: this.props.id,
       type: this.props.type,
       props: this.props.componentProps
     }
+
+    if (this.props.bindings != null) {
+      info.bindings = this.props.bindings
+    }
+
+    if (this.props.template != null) {
+      info.template = this.props.template
+    }
+
+    return info
   }
 
   getRawContent () {
@@ -159,9 +171,11 @@ class DesignComponent extends PureComponent {
   }
 
   renderComponent (type, componentProps) {
+    const { bindings, dataInput } = this.props
+    const customCompiledTemplate = this.customCompiledTemplate
     const renderComponentFromTemplate = componentRegistry.getComponentFromType(type).render
-    let dataInput = this.props.dataInput
     let shouldRenderAgain = true
+    let result
     let content
 
     if (this.cacheProps[type] == null) {
@@ -171,19 +185,27 @@ class DesignComponent extends PureComponent {
     }
 
     if (shouldRenderAgain) {
+      if (customCompiledTemplate) {
+        console.log('rendering component from custom template', type)
+      } else {
+        console.log('rendering component from template', type)
+      }
 
       this.dataInputChanged = false
 
-      content = renderComponentFromTemplate(
-        componentProps,
-        dataInput != null ? dataInput.data : null,
-        this.customCompiledTemplate
-      )
+      result = renderComponentFromTemplate({
+        props: componentProps,
+        bindings,
+        customCompiledTemplate,
+        data: dataInput != null ? dataInput.data : null,
+      })
 
       this.cacheProps[type] = {
         props: componentProps,
-        content: content
+        content: result.content
       }
+
+      content = result.content
     } else {
       content = this.cacheProps[type].content
     }
@@ -239,6 +261,7 @@ DesignComponent.propTypes = {
   type: PropTypes.string.isRequired,
   template: PropTypes.string,
   componentProps: PropTypes.object.isRequired,
+  bindings: PropTypes.object,
   rawContent: PropTypes.string,
   componentRef: PropTypes.func,
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),

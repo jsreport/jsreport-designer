@@ -43,7 +43,8 @@ class ToolBar extends PureComponent {
                 type={componentEdition.type}
                 dataInput={dataInput}
                 template={componentEdition.template}
-                properties={componentEdition.properties}
+                properties={componentEdition.props}
+                bindings={componentEdition.bindings}
                 onChange={onComponentEditionChange}
               />
             )}

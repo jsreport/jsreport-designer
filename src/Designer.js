@@ -86,7 +86,8 @@ class Designer extends Component {
         id: currentComponent.id,
         type: currentComponent.type,
         template: currentComponent.template,
-        properties: currentComponent.props,
+        props: currentComponent.props,
+        bindings: currentComponent.bindings,
         canvas: {
           group: groupIndex,
           item: itemIndex,
@@ -105,15 +106,7 @@ class Designer extends Component {
 
   handleComponentEditionChange (componentChanges) {
     const componentEdition = this.state.componentEdition
-    let newComponentEdition = { ...componentEdition }
-
-    if (componentChanges.props) {
-      newComponentEdition.properties = componentChanges.props
-    }
-
-    if (componentChanges.template !== undefined) {
-      newComponentEdition.template = componentChanges.template
-    }
+    let newComponentEdition = { ...componentEdition, ...componentChanges }
 
     this.setState({
       componentEdition: newComponentEdition

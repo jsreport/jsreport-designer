@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import omit from 'lodash/omit'
 import Button from '../Button'
 import PropertyControl from './PropertyControl'
 import TemplateEditor from './TemplateEditor'
@@ -42,7 +43,7 @@ class ComponentEditor extends PureComponent {
   }
 
   handleBindToDataClick ({ propName }) {
-    const properties = this.props.properties
+    let bindings = this.props.bindings || {}
 
     if (!this.state.bindToDataEditor) {
       let stateToUpdate = {
@@ -51,9 +52,9 @@ class ComponentEditor extends PureComponent {
         }
       }
 
-      if (typeof properties[propName] === 'object' && properties[propName].bindedToData) {
+      if (bindings[propName] && bindings[propName].defaultExpression != null) {
         stateToUpdate.bindToDataEditor.selectedField = {
-          expression: properties[propName].bindedToData.expression
+          expression: bindings[propName].defaultExpression
         }
       }
 
@@ -66,11 +67,17 @@ class ComponentEditor extends PureComponent {
   }
 
   handleEditRichContentClick ({ componentType, propName }) {
-    if (!this.state.richContentEditor) {
-      let currentContent = this.props.properties[propName]
+    let properties = this.props.properties
+    let bindings = this.props.bindings || {}
 
-      if (typeof currentContent === 'object' && currentContent.richContent != null) {
-        currentContent = currentContent.richContent.content
+    if (!this.state.richContentEditor) {
+      let currentBinding = bindings[propName]
+      let currentContent
+
+      if (currentBinding && currentBinding.richContent != null) {
+        currentContent = currentBinding.richContent.content
+      } else if (typeof properties[propName] === 'string') {
+        currentContent = properties[propName]
       }
 
       this.setState({
@@ -97,34 +104,49 @@ class ComponentEditor extends PureComponent {
   }
 
   handleEditRichContentSave ({ propName, rawContent, html }) {
-    const { onChange, properties } = this.props
-    let currentValue = properties[propName]
-    let newEditedProperties
+    const { onChange } = this.props
+    let bindings = this.props.bindings || {}
+    let currentBinding = bindings[propName]
+    let newBinding
+    let newBindings
 
-    if (typeof currentValue === 'object') {
-      currentValue = {
-        ...currentValue
+    if (currentBinding) {
+      newBinding = {
+        ...currentBinding
       }
     } else {
-      currentValue = {}
+      newBinding = {}
     }
 
     if (rawContent == null) {
       // editor has removed rich content
-      currentValue = ''
+      delete newBinding.richContent
+
+      if (Object.keys(newBinding).length === 0) {
+        newBinding = null
+      }
     } else {
-      currentValue.richContent = {
+      newBinding.richContent = {
         content: rawContent,
         html: html
       }
     }
 
-    newEditedProperties = {
-      ...properties,
-      [propName]: currentValue
+    if (newBinding) {
+      newBindings = {
+        ...bindings,
+        [propName]: newBinding
+      }
+    } else {
+      newBindings = omit(bindings, [propName])
+
+      if (Object.keys(newBindings).length === 0) {
+        newBindings = null
+      }
     }
 
-    onChange({ props: newEditedProperties })
+
+    onChange({ bindings: newBindings })
 
     this.setState({
       richContentEditor: null
@@ -132,29 +154,60 @@ class ComponentEditor extends PureComponent {
   }
 
   handleBindToDataEditorSave (fieldSelection) {
-    const { onChange, properties } = this.props
-    let currentFieldValue = properties[fieldSelection.propName]
-    let currentFieldHasBindedValue = typeof currentFieldValue === 'object' && currentFieldValue.bindedToData
-    let newEditedProperties
+    const { onChange } = this.props
+    let bindings = this.props.bindings || {}
+    let currentBinding = bindings[fieldSelection.propName]
+    let currentFieldHasBindedValue = false
+    let newBinding
+    let newBindings
+
+    if (currentBinding) {
+      newBinding = {
+        ...currentBinding
+      }
+    } else {
+      newBinding = {}
+    }
+
+    if (
+      bindings &&
+      bindings[fieldSelection.propName] &&
+      bindings[fieldSelection.propName].defaultExpression != null &&
+      bindings[fieldSelection.propName].defaultExpression !== ''
+    ) {
+      currentFieldHasBindedValue = true
+    }
 
     if (fieldSelection.selectedField != null) {
-      newEditedProperties = {
-        ...properties,
-        [fieldSelection.propName]: {
-          bindedToData: {
-            expression: fieldSelection.selectedField.expression
-          }
-        }
+      newBinding.defaultExpression = fieldSelection.selectedField.expression
+
+      newBindings = {
+        ...bindings,
+        [fieldSelection.propName]: newBinding
       }
     } else if (fieldSelection.selectedField == null && currentFieldHasBindedValue) {
-      newEditedProperties = {
-        ...properties,
-        [fieldSelection.propName]: ''
+      delete newBinding.defaultExpression
+
+      if (Object.keys(newBinding).length === 0) {
+        newBinding = null
+      }
+
+      if (newBinding) {
+        newBindings = {
+          ...bindings,
+          [fieldSelection.propName]: newBinding
+        }
+      } else {
+        newBindings = omit(bindings, [fieldSelection.propName])
+
+        if (Object.keys(newBindings).length === 0) {
+          newBindings = null
+        }
       }
     }
 
-    if (newEditedProperties) {
-      onChange({ props: newEditedProperties })
+    if (newBindings !== undefined) {
+      onChange({ bindings: newBindings })
     }
 
     this.setState({
@@ -211,7 +264,8 @@ class ComponentEditor extends PureComponent {
       type,
       dataInput,
       template,
-      properties
+      properties,
+      bindings
     } = this.props
 
     return (
@@ -233,6 +287,7 @@ class ComponentEditor extends PureComponent {
                 key={propName}
                 componentType={type}
                 name={propName}
+                binding={bindings ? bindings[propName] : null}
                 value={properties[propName]}
                 bindToData={dataInput == null ? 'disabled' : null}
                 onBindToDataClick={this.handleBindToDataClick}
@@ -280,6 +335,7 @@ ComponentEditor.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   template: PropTypes.string,
   properties: PropTypes.object.isRequired,
+  bindings: PropTypes.object,
   onChange: PropTypes.func.isRequired
 }
 

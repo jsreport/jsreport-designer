@@ -464,6 +464,7 @@ class DesignItem extends PureComponent {
               type={component.type}
               selected={selection && selection.component === component.id ? true : undefined}
               componentProps={component.props}
+              bindings={component.bindings}
               template={component.template}
               onClick={this.handleComponentClick}
               onDragStart={this.handleComponentDragStart}

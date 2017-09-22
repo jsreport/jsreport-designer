@@ -54,35 +54,40 @@ class DevTools extends Component {
             space: designItem.space,
             components: designItem.components.map((designComponent) => {
               let data = {
-                type: designComponent.type
+                type: designComponent.type,
+                props: designComponent.props
               }
 
-              let newProps
+              let newBindings
 
-              newProps = Object.keys(designComponent.props).reduce((newValues, propKey) => {
-                let currentValue = designComponent.props[propKey]
-                let newValue
+              if (designComponent.bindings != null) {
+                newBindings = Object.keys(designComponent.bindings).reduce((newBindings, propKey) => {
+                  let currentBinding = designComponent.bindings[propKey]
+                  let newBinding
 
-                if (typeof currentValue === 'object' && currentValue.richContent) {
-                  newValue = {
-                    ...currentValue,
-                    // not including content in the payload
-                    richContent: {
-                      html: currentValue.richContent.html
+                  if (typeof currentBinding === 'object' && currentBinding.richContent) {
+                    newBinding = {
+                      ...currentBinding,
+                      // not including content in the payload
+                      richContent: {
+                        html: currentBinding.richContent.html
+                      }
                     }
                   }
-                }
 
-                if (newValue) {
-                  newValues[propKey] = newValue
-                } else {
-                  newValues[propKey] = currentValue
-                }
+                  if (newBinding) {
+                    newBindings[propKey] = newBinding
+                  } else {
+                    newBindings[propKey] = currentBinding
+                  }
 
-                return newValues
-              }, {})
+                  return newBindings
+                }, {})
+              }
 
-              data.props = newProps
+              if (newBindings != null) {
+                data.bindings = newBindings
+              }
 
               if (designComponent.template != null) {
                 data.template = designComponent.template

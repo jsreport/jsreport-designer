@@ -392,6 +392,7 @@ function updateComponentInDesign ({
   referenceItem,
   referenceComponent,
   props,
+  bindings,
   template
 }) {
   let newDesignGroups
@@ -413,6 +414,14 @@ function updateComponentInDesign ({
 
   if (props !== undefined) {
     newDesignComponent.props = { ...props }
+  }
+
+  if (bindings !== undefined) {
+    if (bindings === null) {
+      delete newDesignComponent.bindings
+    } else {
+      newDesignComponent.bindings = { ...bindings }
+    }
   }
 
   if (template !== undefined) {

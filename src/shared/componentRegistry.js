@@ -10,6 +10,10 @@ global.designComponents.Image = require('../shared/designComponents/Image')
 var componentsDefinition = {}
 var components = {}
 
+function isObject (value) {
+  return typeof value === 'object' && !Array.isArray(value)
+}
+
 function compileTemplate (template) {
   return Handlebars.compile(template, {
     explicitPartialContext: true
@@ -54,25 +58,38 @@ function loadComponents (_componentsToLoad) {
     compiledTemplate = compileTemplate(componentTemplate)
 
     exportValue = assign({}, exportValue, {
-      render: function (props, data, customCompiledTemplate) {
+      render: function ({ props, bindings, customCompiledTemplate, data }) {
         let newProps = assign({}, props)
+        let result = {}
 
         // checking for binded props
-        Object.keys(props).forEach(function (propName) {
-          if (typeof props[propName] === 'object' && props[propName].richContent) {
-            // resolving rich content
-            newProps[propName] = new Handlebars.SafeString(props[propName].richContent.html)
-          } else if (typeof props[propName] === 'object' && props[propName].bindedToData) {
-            // resolving data binding
-            newProps[propName] = get(data, newProps[propName].bindedToData.expression, undefined)
-          }
-        })
+        if (isObject(bindings)) {
+          Object.keys(bindings).forEach(function (propName) {
+            let currentBinding = bindings[propName]
 
-        if (customCompiledTemplate) {
-          return customCompiledTemplate(newProps)
+            if (!isObject(currentBinding)) {
+              return
+            }
+
+            if (isObject(currentBinding.richContent)) {
+              // resolving rich content
+              newProps[propName] = new Handlebars.SafeString(currentBinding.richContent.html)
+            } else if (typeof currentBinding.defaultExpression === 'string' && currentBinding.defaultExpression !== '') {
+              // resolving direct data binding
+              newProps[propName] = get(data, currentBinding.defaultExpression, undefined)
+            }
+          })
         }
 
-        return compiledTemplate(newProps)
+        result.props = newProps
+
+        if (customCompiledTemplate) {
+          result.content = customCompiledTemplate(newProps)
+        } else {
+          result.content = compiledTemplate(newProps)
+        }
+
+        return result
       }
     })
 

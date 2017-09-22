@@ -264,7 +264,7 @@ class Design extends PureComponent {
     }
   }
 
-  handleComponentChange (canvasInfo, { props, template }) {
+  handleComponentChange (canvasInfo, { props, bindings, template }) {
     let originalDesignGroups = this.state.designGroups
 
     const { designGroups } = updateComponentInDesign({
@@ -273,6 +273,7 @@ class Design extends PureComponent {
       referenceItem: canvasInfo.item,
       referenceComponent: canvasInfo.component,
       props,
+      bindings,
       template
     })
 
@@ -460,6 +461,7 @@ class Design extends PureComponent {
       id: componentInfo.id,
       name: componentInfo.type,
       props: componentInfo.props,
+      bindings: componentInfo.bindings,
       rawContent: componentRef.instance.getRawContent(),
       size: {
         width: componentDimensions.width,

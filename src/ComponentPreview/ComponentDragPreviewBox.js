@@ -19,6 +19,7 @@ class ComponentDragPreviewBox extends PureComponent {
           type={componentMeta.name}
           dataInput={dataInput}
           componentProps={componentMeta.props}
+          bindings={componentMeta.bindings}
           rawContent={componentMeta.rawContent}
           selectedPreview={true}
         />
