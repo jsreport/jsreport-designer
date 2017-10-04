@@ -31,25 +31,3 @@
 .ComponentEditor-options {
   margin-bottom: 15px;
 }
-
-.ComponentEditor-prop {
-  display: block;
-  margin-left: 0.3rem;
-  margin-right: 0.3rem;
-  margin-bottom: 0.5rem;
-  min-width: 8rem;
-}
-
-.ComponentEditor-prop-controls {
-  display: inline-block;
-}
-
-.ComponentEditor-prop > * {
-  display: block;
-  width: 100%;
-  margin-top: 0.3rem;
-}
-
-.ComponentEditor-prop input {
-  width: 100%;
-}

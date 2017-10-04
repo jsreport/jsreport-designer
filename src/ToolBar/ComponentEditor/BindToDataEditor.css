@@ -6,11 +6,13 @@
   user-select: none;
 }
 
-.BindToDataEditor-field-properties {
+.BindToDataEditor-field-properties,
+.BindToDataEditor-field-indexes {
   font-style: italic;
 }
 
-.BindToDataEditor-field-properties.collapsed {
+.BindToDataEditor-field-properties.collapsed,
+.BindToDataEditor-field-indexes.collapsed {
   max-height: 0;
   overflow: hidden;
   transition: .15s;
@@ -30,4 +32,9 @@
 .BindToDataEditor-field-item.selected:hover {
   background: #1c97ea;
   color: #fff;
+}
+
+.BindToDataEditor-field-item-label.disabled,
+.BindToDataEditor-field-item-label.disabled:hover {
+  color: #9297a5;
 }

@@ -2,11 +2,13 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import omit from 'lodash/omit'
 import Button from '../Button'
-import PropertyControl from './PropertyControl'
+import PropertiesEditor from './PropertiesEditor'
+import TablePropertiesEditor from './TablePropertiesEditor'
 import TemplateEditor from './TemplateEditor'
 import RichContentEditor from './RichContentEditor'
 import BindToDataEditor from './BindToDataEditor'
 import './ComponentEditor.css'
+const componentRegistry = require('../../shared/componentRegistry')
 
 class ComponentEditor extends PureComponent {
   constructor (props) {
@@ -18,6 +20,19 @@ class ComponentEditor extends PureComponent {
       richContentEditor: null
     }
 
+    this.SelectedPropertiesEditor = PropertiesEditor
+
+    // TODO: replace this part with logic that gets the corresponding editor
+    // from our Designer API and registry
+    if (props.type === 'Table') {
+      this.SelectedPropertiesEditor = TablePropertiesEditor
+    }
+
+    this.meta = componentRegistry.getComponentDefinitionFromType(props.type) || {}
+
+    this.getMeta = this.getMeta.bind(this)
+    this.getValue = this.getValue.bind(this)
+    this.handleEditorChange = this.handleEditorChange.bind(this)
     this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
     this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
@@ -27,7 +42,94 @@ class ComponentEditor extends PureComponent {
     this.handleTemplateEditorClose = this.handleTemplateEditorClose.bind(this)
     this.handleBindToDataEditorClose = this.handleBindToDataEditorClose.bind(this)
     this.handleEditRichContentClose = this.handleEditRichContentClose.bind(this)
-    this.handlePropertyChange = this.handlePropertyChange.bind(this)
+    this.handleValueChange = this.handleValueChange.bind(this)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    if (
+      this.props.dataInput !== nextProps.dataInput &&
+      this.state.bindToDataEditor &&
+      this.props.dataInput &&
+      this.state.bindToDataEditor.dataProperties === this.props.dataInput.parsedProperties
+    ) {
+      this.setState({
+        bindToDataEditor: {
+          ...this.state.bindToDataEditor,
+          dataProperties: nextProps.dataInput ? nextProps.dataInput.parsedProperties : null
+        }
+      })
+    }
+  }
+
+  getMeta (propName) {
+    let propsMeta = this.meta.propsMeta != null ? this.meta.propsMeta : {}
+    let keys = propName == null ? '' : propName.split('.')
+    let context = propsMeta
+    let result
+
+    for (let i = 0; i < keys.length; i++) {
+      let key = keys[i]
+
+      context = this.getValue(context, key)
+
+      if (i === keys.length - 1) {
+        result = context
+        break
+      }
+
+      if (
+        context == null ||
+        typeof context !== 'object' ||
+        typeof context.properties !== 'object'
+      ) {
+        result = context
+        break
+      }
+
+      context = context.properties
+      result = context
+    }
+
+    return result
+  }
+
+  getValue (collection, name) {
+    if (collection == null) {
+      return {}
+    }
+
+    if (name != null) {
+      return collection[name]
+    }
+
+    return collection
+  }
+
+  handleEditorChange ({ origin, propName, context, changes }) {
+    const { type, template, properties, bindings, onChange } = this.props
+    let newChanges
+    let params
+
+    params = {
+      origin,
+      propName,
+      context,
+      current: {
+        componentType: type,
+        template,
+        props: properties,
+        bindings
+      },
+      changes
+    }
+
+    if (typeof this.SelectedPropertiesEditor.onComponentEditorChange === 'function') {
+      newChanges = this.SelectedPropertiesEditor.onComponentEditorChange(params)
+    } else {
+      newChanges = changes
+    }
+
+    onChange(newChanges)
   }
 
   handleEditComponentTemplateClick () {
@@ -42,20 +144,42 @@ class ComponentEditor extends PureComponent {
     }
   }
 
-  handleBindToDataClick ({ propName }) {
+  handleBindToDataClick ({ propName, bindingName, context, dataProperties }) {
     let bindings = this.props.bindings || {}
+    let propMeta = this.getMeta(propName) || {}
+    let targetBindingName = bindingName != null ? bindingName : propName
 
     if (!this.state.bindToDataEditor) {
       let stateToUpdate = {
         bindToDataEditor: {
-          propName
+          propName,
+          context
         }
       }
 
-      if (bindings[propName] && bindings[propName].defaultExpression != null) {
+      if (bindingName != null) {
+        stateToUpdate.bindToDataEditor.bindingName = bindingName
+      }
+
+      if (dataProperties != null) {
+        stateToUpdate.bindToDataEditor.dataProperties = dataProperties
+      } else {
+        stateToUpdate.bindToDataEditor.dataProperties = this.props.dataInput.parsedProperties
+      }
+
+      if (bindings[targetBindingName] && bindings[targetBindingName].defaultExpression != null) {
         stateToUpdate.bindToDataEditor.selectedField = {
-          expression: bindings[propName].defaultExpression
+          expression: bindings[targetBindingName].defaultExpression.value,
+          meta: bindings[targetBindingName].defaultExpression.meta,
         }
+      }
+
+      if (propMeta == null) {
+        stateToUpdate.bindToDataEditor.allowedTypes = ['scalar']
+      } else if (Array.isArray(propMeta.allowedBindingValueTypes) || typeof propMeta.allowedBindingValueTypes === 'string') {
+        stateToUpdate.bindToDataEditor.allowedTypes = !Array.isArray(propMeta.allowedBindingValueTypes) ? [propMeta.allowedBindingValueTypes] : propMeta.allowedBindingValueTypes
+      } else {
+        stateToUpdate.bindToDataEditor.allowedTypes = []
       }
 
       this.setState(stateToUpdate)
@@ -66,12 +190,13 @@ class ComponentEditor extends PureComponent {
     }
   }
 
-  handleEditRichContentClick ({ componentType, propName }) {
+  handleEditRichContentClick ({ propName, bindingName, context }) {
     let properties = this.props.properties
     let bindings = this.props.bindings || {}
+    let targetBindingName = bindingName != null ? bindingName : propName
 
     if (!this.state.richContentEditor) {
-      let currentBinding = bindings[propName]
+      let currentBinding = bindings[targetBindingName]
       let currentContent
 
       if (currentBinding && currentBinding.richContent != null) {
@@ -83,6 +208,7 @@ class ComponentEditor extends PureComponent {
       this.setState({
         richContentEditor: {
           propName,
+          context,
           content: currentContent
         }
       })
@@ -94,19 +220,25 @@ class ComponentEditor extends PureComponent {
   }
 
   handleTemplateEditorSave (template) {
-    const { onChange } = this.props
+    const handleEditorChange = this.handleEditorChange
 
-    onChange({ template })
+    handleEditorChange({
+      origin: 'template',
+      propName: undefined,
+      changes: { template }
+    })
 
     this.setState({
       editComponentTemplate: null
     })
   }
 
-  handleEditRichContentSave ({ propName, rawContent, html }) {
-    const { onChange } = this.props
+  handleEditRichContentSave ({ propName, bindingName, rawContent, html }) {
+    const { richContentEditor } = this.state
+    const handleEditorChange = this.handleEditorChange
     let bindings = this.props.bindings || {}
-    let currentBinding = bindings[propName]
+    let targetBindingName = bindingName != null ? bindingName : propName
+    let currentBinding = bindings[targetBindingName]
     let newBinding
     let newBindings
 
@@ -135,28 +267,34 @@ class ComponentEditor extends PureComponent {
     if (newBinding) {
       newBindings = {
         ...bindings,
-        [propName]: newBinding
+        [targetBindingName]: newBinding
       }
     } else {
-      newBindings = omit(bindings, [propName])
+      newBindings = omit(bindings, [propName, targetBindingName])
 
       if (Object.keys(newBindings).length === 0) {
         newBindings = null
       }
     }
 
-
-    onChange({ bindings: newBindings })
+    handleEditorChange({
+      origin: 'bindings',
+      propName,
+      context: richContentEditor.context,
+      changes: { bindings: newBindings }
+    })
 
     this.setState({
       richContentEditor: null
     })
   }
 
-  handleBindToDataEditorSave (fieldSelection) {
-    const { onChange } = this.props
+  handleBindToDataEditorSave ({ propName, bindingName, selectedField }) {
+    const { bindToDataEditor } = this.state
+    const handleEditorChange = this.handleEditorChange
     let bindings = this.props.bindings || {}
-    let currentBinding = bindings[fieldSelection.propName]
+    let targetBindingName = bindingName != null ? bindingName : propName
+    let currentBinding = bindings[targetBindingName]
     let currentFieldHasBindedValue = false
     let newBinding
     let newBindings
@@ -171,21 +309,23 @@ class ComponentEditor extends PureComponent {
 
     if (
       bindings &&
-      bindings[fieldSelection.propName] &&
-      bindings[fieldSelection.propName].defaultExpression != null &&
-      bindings[fieldSelection.propName].defaultExpression !== ''
+      currentBinding &&
+      currentBinding.defaultExpression != null
     ) {
       currentFieldHasBindedValue = true
     }
 
-    if (fieldSelection.selectedField != null) {
-      newBinding.defaultExpression = fieldSelection.selectedField.expression
+    if (selectedField != null) {
+      newBinding.defaultExpression = {
+        value: selectedField.expression,
+        meta: selectedField.meta
+      }
 
       newBindings = {
         ...bindings,
-        [fieldSelection.propName]: newBinding
+        [targetBindingName]: newBinding
       }
-    } else if (fieldSelection.selectedField == null && currentFieldHasBindedValue) {
+    } else if (selectedField == null && currentFieldHasBindedValue) {
       delete newBinding.defaultExpression
 
       if (Object.keys(newBinding).length === 0) {
@@ -195,10 +335,10 @@ class ComponentEditor extends PureComponent {
       if (newBinding) {
         newBindings = {
           ...bindings,
-          [fieldSelection.propName]: newBinding
+          [targetBindingName]: newBinding
         }
       } else {
-        newBindings = omit(bindings, [fieldSelection.propName])
+        newBindings = omit(bindings, [propName, targetBindingName])
 
         if (Object.keys(newBindings).length === 0) {
           newBindings = null
@@ -207,7 +347,12 @@ class ComponentEditor extends PureComponent {
     }
 
     if (newBindings !== undefined) {
-      onChange({ bindings: newBindings })
+      handleEditorChange({
+        origin: 'bindings',
+        propName,
+        context: bindToDataEditor.context,
+        changes: { bindings: newBindings }
+      })
     }
 
     this.setState({
@@ -233,8 +378,9 @@ class ComponentEditor extends PureComponent {
     })
   }
 
-  handlePropertyChange ({ propName, value }) {
-    const { type, onChange, properties } = this.props
+  handleValueChange ({ propName, context, value }) {
+    const handleEditorChange = this.handleEditorChange
+    const { type, properties } = this.props
     let valid = true
 
     let newProps = {
@@ -254,10 +400,16 @@ class ComponentEditor extends PureComponent {
       return
     }
 
-    onChange({ props: newProps })
+    handleEditorChange({
+      origin: 'values',
+      propName,
+      context,
+      changes: { props: newProps }
+    })
   }
 
   render () {
+    const SelectedPropertiesEditor = this.SelectedPropertiesEditor
     const { bindToDataEditor, richContentEditor, editComponentTemplate } = this.state
 
     const {
@@ -268,10 +420,26 @@ class ComponentEditor extends PureComponent {
       bindings
     } = this.props
 
+    let propsForPropertiesEditor = {
+      componentType: type,
+      dataInput,
+      meta: this.meta,
+      properties,
+      bindings,
+      getMeta: this.getMeta,
+      onBindToDataClick: this.handleBindToDataClick,
+      onEditRichContentClick: this.handleEditRichContentClick,
+      onValueChange: this.handleValueChange
+    }
+
     return (
       <div className="ComponentEditor">
         <div className="ComponentEditor-content">
-          <h3 className="ComponentEditor-title">{type}</h3>
+          <h3 className="ComponentEditor-title">
+            <span className={'fa fa-' + (this.meta.icon || '')} />
+            &nbsp;
+            {type}
+          </h3>
           <hr className="ComponentEditor-separator" />
           <div className="ComponentEditor-options">
             <Button
@@ -281,28 +449,16 @@ class ComponentEditor extends PureComponent {
               onClick={this.handleEditComponentTemplateClick}
             />
           </div>
-          {Object.keys(properties).map((propName) => {
-            return (
-              <PropertyControl
-                key={propName}
-                componentType={type}
-                name={propName}
-                binding={bindings ? bindings[propName] : null}
-                value={properties[propName]}
-                bindToData={dataInput == null ? 'disabled' : null}
-                onBindToDataClick={this.handleBindToDataClick}
-                onEditRichContentClick={this.handleEditRichContentClick}
-                onChange={this.handlePropertyChange}
-              />
-            )
-          })}
+          <SelectedPropertiesEditor {...propsForPropertiesEditor} />
         </div>
         {bindToDataEditor && (
           <BindToDataEditor
-            dataInput={dataInput}
+            dataProperties={bindToDataEditor.dataProperties}
             componentType={type}
             propName={bindToDataEditor.propName}
+            bindingName={bindToDataEditor.bindingName}
             defaultSelectedField={bindToDataEditor.selectedField}
+            allowedTypes={bindToDataEditor.allowedTypes}
             onSave={this.handleBindToDataEditorSave}
             onClose={this.handleBindToDataEditorClose}
           />

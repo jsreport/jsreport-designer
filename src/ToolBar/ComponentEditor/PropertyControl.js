@@ -1,23 +1,13 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import './PropertyControl.css'
-const componentRegistry = require('../../shared/componentRegistry')
 
 class PropertyControl extends PureComponent {
   constructor (props) {
     super(props)
 
-    this.meta = componentRegistry.getComponentDefinitionFromType(props.componentType) || {}
-    this.meta = this.meta.propsMeta || {}
-    this.meta = this.meta[props.name] || {}
-
-    this.state = {
-      showBindToDataEditor: false
-    }
-
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
     this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
-    this.handleChange = this.handleChange.bind(this)
+    this.handleValueChange = this.handleValueChange.bind(this)
   }
 
   handleBindToDataClick (ev) {
@@ -25,7 +15,8 @@ class PropertyControl extends PureComponent {
 
     if (this.props.onBindToDataClick) {
       this.props.onBindToDataClick({
-        propName: this.props.name
+        propName: this.props.name,
+        context: this.props.context
       })
     }
   }
@@ -35,22 +26,23 @@ class PropertyControl extends PureComponent {
 
     if (this.props.onEditRichContentClick) {
       this.props.onEditRichContentClick({
-        propName: this.props.name
+        propName: this.props.name,
+        context: this.props.context
       })
     }
   }
 
-  handleChange (ev) {
-    const { name } = this.props
+  handleValueChange (value) {
+    const { name, context } = this.props
 
-    if (this.props.onChange) {
-      this.props.onChange({ propName: name, value: ev.target.value })
+    if (this.props.onValueChange) {
+      this.props.onValueChange({ propName: name, value, context })
     }
   }
 
   render () {
-    const meta = this.meta
-    const { name, value, binding, bindToData } = this.props
+    const { label, name, value, binding, context, bindToData, renderValue } = this.props
+    const meta = this.props.getMeta(name)
 
     let isSpecialValue = binding != null
     let isValueBindToData = false
@@ -63,7 +55,7 @@ class PropertyControl extends PureComponent {
     }
 
     if (isValueBindToData) {
-      currentValue = `[${binding.defaultExpression}]`
+      currentValue = `[${binding.defaultExpression.meta.fullId}]`
     }
 
     if (isValueRich) {
@@ -75,23 +67,23 @@ class PropertyControl extends PureComponent {
     }
 
     return (
-      <div className="ComponentEditor-prop">
+      <div className="PropertiesEditor-prop">
         <div>
           <label>
-            {name}
+            {label || name}
             {' '}
           </label>
-          <div className="ComponentEditor-prop-controls">
-            {bindToData !== 'none' && (
+          <div className="PropertiesEditor-prop-controls">
+            {meta && meta.allowsBinding !== false && (
               <button
-                disabled={bindToData === 'disabled'}
+                disabled={bindToData === false}
                 title="Bind to data"
                 onClick={this.handleBindToDataClick}
               >
                 <span className="fa fa-bolt"></span>
               </button>
             )}
-            {meta.allowsRichContent && (
+            {meta && meta.allowsRichContent && (
               <button
                 title="Edit rich content"
                 onClick={this.handleEditRichContentClick}
@@ -101,14 +93,25 @@ class PropertyControl extends PureComponent {
             )}
           </div>
         </div>
-        <input
-          className={isSpecialValue ? 'Property-Control-special-value' : ''}
-          type="text"
-          name={name}
-          readOnly={isSpecialValue}
-          value={currentValue}
-          onChange={this.handleChange}
-        />
+        {renderValue ? (
+          renderValue({
+            propName: name,
+            value,
+            binding,
+            context,
+            isSpecialValue,
+            onValueChange: this.handleValueChange
+          })
+        ) : (
+          <input
+            className={isSpecialValue ? 'PropertiesEditor-prop-special-value' : ''}
+            type="text"
+            name={name}
+            readOnly={isSpecialValue}
+            value={currentValue}
+            onChange={(ev) => this.handleValueChange(ev.target.value)}
+          />
+        )}
       </div>
     )
   }
@@ -116,13 +119,17 @@ class PropertyControl extends PureComponent {
 
 PropertyControl.propTypes = {
   componentType: PropTypes.string.isRequired,
+  label: PropTypes.string,
   name: PropTypes.string.isRequired,
   value: PropTypes.any,
   binding: PropTypes.object,
-  bindToData: PropTypes.oneOf(['disabled', 'none']),
+  bindToData: PropTypes.bool.isRequired,
+  context: PropTypes.any,
+  getMeta: PropTypes.func.isRequired,
+  renderValue: PropTypes.func,
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,
-  onChange: PropTypes.func
+  onValueChange: PropTypes.func
 }
 
 export default PropertyControl

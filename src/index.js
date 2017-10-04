@@ -10,40 +10,72 @@ function getRegisteredComponents () {
   // to .registerComponent in lib/designer)
   return [
     {
-      id: 1,
+      id: '1',
       name: 'Text',
       icon: 'font',
       propsMeta: {
         text: {
-          allowsRichContent: true
+          allowsRichContent: true,
+          allowedBindingValueTypes: ['scalar']
         }
       }
     },
     {
-      id: 2,
+      id: '2',
       name: 'Image',
-      icon: 'image'
+      icon: 'image',
+      propsMeta: {
+        url: {
+          allowedBindingValueTypes: ['scalar']
+        },
+        width: {
+          allowedBindingValueTypes: ['scalar']
+        },
+        height: {
+          allowedBindingValueTypes: ['scalar']
+        }
+      }
     },
     {
-      id: 3,
+      id: '3',
+      name: 'Table',
+      icon: 'table',
+      propsMeta: {
+        data: {
+          allowedBindingValueTypes: ['array']
+        },
+        columns: {
+          properties: {
+            name: {
+              allowedBindingValueTypes: ['scalar']
+            },
+            value: {
+              allowedBindingValueTypes: ['scalar']
+            }
+          }
+        }
+      }
+    },
+    {
+      id: '4',
       name: 'Products-Map',
       icon: 'map',
       collection: 'Group1'
     },
     {
-      id: 4,
+      id: '5',
       name: 'Pie-Chart',
       icon: 'pie-chart',
       collection: 'Group2'
     },
     {
-      id: 5,
+      id: '6',
       name: 'QR',
       icon: 'qrcode',
       collection: 'Group2'
     },
     {
-      id: 6,
+      id: '7',
       name: 'User-Info',
       icon: 'address-card',
       collection: 'Group2'

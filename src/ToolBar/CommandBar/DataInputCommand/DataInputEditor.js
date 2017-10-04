@@ -69,14 +69,21 @@ class DataInputEditor extends PureComponent {
         }
 
         if (type === 'array') {
-          indexes.push(key)
+          indexes.push([key, Array.isArray(json[key]) ? 'array' : 'object'])
 
           if (!keyIsArray && innerProperties.properties && innerProperties.properties.length > 0) {
-            blackList = blackList.concat(innerProperties.properties.filter((propKey) => {
-              return typeof propKey === 'string'
-            }))
+            let nonRepeatedProperties = []
 
-            properties = properties.concat(innerProperties.properties)
+            for (let idx = 0; idx < innerProperties.properties.length; idx++) {
+              let propKey = innerProperties.properties[idx]
+
+              if (blackList.indexOf(propKey[0]) === -1) {
+                blackList.push(propKey[0])
+                nonRepeatedProperties.push(innerProperties.properties[idx])
+              }
+            }
+
+            properties = properties.concat(nonRepeatedProperties)
           }
         } else {
           item.key = key
@@ -90,10 +97,16 @@ class DataInputEditor extends PureComponent {
           properties.push(item)
         }
       } else {
+        let keyType = typeof json[key]
+
+        if (keyType === 'object') {
+          keyType = Array.isArray(json[key]) ? 'array' : 'object'
+        }
+
         if (type === 'array') {
-          indexes.push(key)
+          indexes.push([key, keyType])
         } else {
-          properties.push(key)
+          properties.push([key, keyType])
         }
       }
     }

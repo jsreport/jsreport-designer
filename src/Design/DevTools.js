@@ -65,12 +65,24 @@ class DevTools extends Component {
                   let currentBinding = designComponent.bindings[propKey]
                   let newBinding
 
-                  if (typeof currentBinding === 'object' && currentBinding.richContent) {
+                  if (
+                    typeof currentBinding === 'object' &&
+                    (currentBinding.richContent || currentBinding.defaultExpression)
+                  ) {
                     newBinding = {
                       ...currentBinding,
+                    }
+
+                    if (currentBinding.richContent) {
                       // not including content in the payload
-                      richContent: {
+                      newBinding.richContent = {
                         html: currentBinding.richContent.html
+                      }
+                    }
+
+                    if (currentBinding.defaultExpression) {
+                      newBinding.defaultExpression = {
+                        value: currentBinding.defaultExpression.value
                       }
                     }
                   }
