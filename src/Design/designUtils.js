@@ -332,7 +332,19 @@ function addComponentToDesign (component, {
         } else {
           newComponentInfo.itemIndex = itemAfterNewIndex
 
-          // updating items order with the new item
+          // first updating item indexes that are next of the item of the added component
+          for (let i = itemAfterNewIndex, last = currentGroup.items.length - 1; i <= last; i++) {
+            let itemEvaluated = currentGroup.items[i]
+
+            itemEvaluated.components.forEach((comp) => {
+              newComponentsInfo[comp.id] = {
+                ...newComponentsInfo[comp.id],
+                itemIndex: newComponentsInfo[comp.id].itemIndex + 1
+              }
+            })
+          }
+
+          // then updating items order with the new item
           currentGroup.items = [
             ...currentGroup.items.slice(0, itemAfterNewIndex),
             currentItem,
@@ -468,6 +480,21 @@ function removeComponentInDesign ({
   let newDesignGroup
   let newDesignItem
   let nextDesignItem
+  let removedComponentInfo
+  let currentItemsInGroupOfRemoved
+  let currentComponentsInGroupOfRemoved
+
+  removedComponentInfo = componentsInfo[componentId]
+
+  currentItemsInGroupOfRemoved = (
+    designGroups[removedComponentInfo.groupIndex].items
+  )
+
+  currentComponentsInGroupOfRemoved = (
+    designGroups[removedComponentInfo.groupIndex]
+    .items[removedComponentInfo.itemIndex]
+    .components
+  )
 
   newComponentsInfo = {
     ...componentsInfo
@@ -482,6 +509,29 @@ function removeComponentInDesign ({
   }
 
   nextDesignItem = newDesignGroup.items[referenceItem + 1]
+
+  // first updating component indexes that are next of the removed component
+  for (let i = removedComponentInfo.index + 1, last = currentComponentsInGroupOfRemoved.length - 1; i <= last; i++) {
+    let componentToUpdate = currentComponentsInGroupOfRemoved[i]
+    componentToUpdate = newComponentsInfo[componentToUpdate.id]
+
+    newComponentsInfo[componentToUpdate.id] = {
+      ...newComponentsInfo[componentToUpdate.id],
+      index: newComponentsInfo[componentToUpdate.id] - 1
+    }
+  }
+
+  // then updating item indexes that are next of the item of the removed component
+  for (let i = removedComponentInfo.itemIndex + 1, last = currentItemsInGroupOfRemoved.length - 1; i <= last; i++) {
+    let itemEvaluated = currentItemsInGroupOfRemoved[i]
+
+    itemEvaluated.components.forEach((comp) => {
+      newComponentsInfo[comp.id] = {
+        ...newComponentsInfo[comp.id],
+        itemIndex: newComponentsInfo[comp.id].itemIndex - 1
+      }
+    })
+  }
 
   // removing the component
   newDesignItem.components = newDesignItem.components.filter((comp) => {

@@ -101,7 +101,7 @@ function loadComponents (_componentsToLoad) {
             if (isObject(currentBinding.richContent)) {
               // resolving rich content
               newProps[propName] = new Handlebars.SafeString(currentBinding.richContent.html)
-            } else if (typeof currentBinding.defaultExpression === 'object' && !Array.isArray(currentBinding.defaultExpression)) {
+            } else if (isObject(currentBinding.defaultExpression)) {
               if (Array.isArray(currentBinding.defaultExpression.value)) {
                 // resolving direct data binding
                 newProps[propName] = resolveBindingExpression(currentBinding.defaultExpression.value, data)

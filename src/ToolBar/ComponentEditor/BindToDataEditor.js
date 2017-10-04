@@ -331,7 +331,6 @@ class BindToDataEditor extends PureComponent {
                 let isSimpleField = Array.isArray(innerField)
                 let innerFieldKey = key + '--' + (isSimpleField ? innerField[0] : innerField.key) + '--field'
                 let innerFieldType = isSimpleField ? innerField[1] : innerField.type
-                let typeIsScalar = false
                 let innerFieldId = isSimpleField ? innerField[0] : innerField.key
                 let fieldType = 'property'
 
