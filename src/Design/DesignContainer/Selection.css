@@ -1,6 +1,5 @@
 
 .Selection {
-  border: 2px dashed;
   display: block;
   position: absolute;
   top: -4px;
@@ -10,6 +9,26 @@
   -ms-user-select: none;
   user-select: none;
   z-index: 1;
+}
+
+.Selection-top {
+  border-top: 2px dashed;
+}
+
+.Selection-bottom {
+  border-bottom: 2px dashed;
+}
+
+.Selection-left {
+  border-left: 2px dashed;
+  width: 2px;
+  z-index: 2;
+}
+
+.Selection-right {
+  border-right: 2px dashed;
+  width: 2px;
+  z-index: 2;
 }
 
 .Selection:focus {

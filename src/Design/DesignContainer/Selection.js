@@ -74,15 +74,26 @@ class Selection extends PureComponent {
       extraProps['data-resizing'] = true
     }
 
-    return (
+    return [
       <div
-        className="Selection"
-        onKeyDown={onKeyDown}
+        key="selection"
+        className="Selection Selection-top Selection-bottom"
         style={styles}
         // tab index necessary to make key events to work
         tabIndex="0"
         draggable={false}
         {...extraProps}
+        onKeyDown={onKeyDown}
+      />,
+      <div
+        key="selection-left"
+        className="Selection Selection-left"
+        style={{ left: styles.left, borderColor: styles.borderColor }}
+        // tab index necessary to make key events to work
+        tabIndex="1"
+        draggable={false}
+        {...extraProps}
+        onKeyDown={onKeyDown}
       >
         <Resizer
           key="resize-left-picker"
@@ -91,6 +102,17 @@ class Selection extends PureComponent {
           onResize={onResize}
           onResizeEnd={this.handleResizeEnd}
         />
+      </div>,
+      <div
+        key="selection-right"
+        className="Selection Selection-right"
+        style={{ right: styles.right, borderColor: styles.borderColor }}
+        // tab index necessary to make key events to work
+        tabIndex="2"
+        draggable={false}
+        {...extraProps}
+        onKeyDown={onKeyDown}
+      >
         <Resizer
           key="resize-right-picker"
           direction="right"
@@ -99,7 +121,7 @@ class Selection extends PureComponent {
           onResizeEnd={this.handleResizeEnd}
         />
       </div>
-    )
+    ]
   }
 }
 
