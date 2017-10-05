@@ -121,10 +121,10 @@ function onComponentEditorChange ({ origin, propName, context, current, changes 
 
 function getBindingNameForColumn (colIndex, property) {
   if (colIndex == null || property == null) {
-    return `@columns.`
+    return `@columns`
   }
 
-  return `@columns.${colIndex}.${property}`
+  return `@columns${colIndex}.${property}`
 }
 
 class TablePropertiesEditor extends PureComponent {
