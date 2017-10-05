@@ -231,7 +231,8 @@ class BindToDataEditor extends PureComponent {
             </span>
           </div>
         </li>
-        {Array.isArray(field.indexes) && (
+        {/* for now, selecting indexes is disabled, until we figure out a simple way (less technical) for users to select these fields */}
+        {false && Array.isArray(field.indexes) && (
           <div
             key="field-indexes"
             className={`BindToDataEditor-field-indexes ${collapsed ? 'collapsed' : ''}`}
