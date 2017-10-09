@@ -11,13 +11,16 @@ class HighlightedArea extends PureComponent {
       color
     } = this.props
 
+    let position = `translate(${left}px, ${top}px)`
+
     return (
       <div style={{
         display: 'inline-block',
         position: 'absolute',
         backgroundColor: color,
-        top,
-        left,
+        WebkitTransform: position,
+        MsTransform: position,
+        transform: position,
         width,
         height,
         zIndex: 1

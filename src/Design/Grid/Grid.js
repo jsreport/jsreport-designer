@@ -15,14 +15,14 @@ class GridContent extends PureComponent {
 
     return (
       <div className="Grid-content">
-        {arrayFrom({ length: numberOfCols - 1 }, (v, i) => i).map((val) => {
+        {arrayFrom({ length: numberOfCols - 1 }, (v, i) => i).map((val, colidx) => {
           let left = colWidth * (val + 1)
 
           return (
             <GridCol
               key={val}
               // left - 1 because the col has 1px of border width
-              left={left - 1}
+              left={left - colidx}
             />
           )
         })}

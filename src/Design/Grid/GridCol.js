@@ -7,8 +7,12 @@ class GridCol extends PureComponent {
       left,
     } = this.props
 
+    let position = `translateX(${left}px)`
+
     let colStyles = {
-      left: `${left}px`
+      WebkitTransform: position,
+      MsTransform: position,
+      transform: position
     }
 
     return (

@@ -2,6 +2,8 @@
 .DesignItem {
   position: relative;
   min-height: 1px;
+  /* prevents safari to highlight when resizing/dragging */
+  user-select: none;
 }
 
 .DesignItem {

@@ -623,10 +623,6 @@ class Design extends PureComponent {
 
     this.isResizing = true
 
-    // TODO: Safari has a bug, when resizing if you move the mouse bellow the resized item
-    // while resizing you will see that all grid cols bellow the item gets selected (text selection)
-    // this must be some way to disable the selection or some way to hide it with CSS
-
     const newHighlightedArea = findProjectedFilledAreaWhenResizing({
       baseWidth,
       totalCols: defaultNumberOfCols,

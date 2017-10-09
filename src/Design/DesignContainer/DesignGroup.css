@@ -1,6 +1,8 @@
 
 .DesignGroup {
   position: relative;
+  /*prevents safari to highlight when resizing/dragging*/
+  user-select: none;
 }
 
 .DesignGroup:before,

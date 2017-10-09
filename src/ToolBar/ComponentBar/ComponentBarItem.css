@@ -8,6 +8,8 @@
   padding: 1.3rem 0.7rem;
   text-align: center;
   width: 100%;
+  /*prevents safari to highlight when resizing/dragging*/
+  user-select: none;
 }
 
 .ComponentBarItem[data-over],

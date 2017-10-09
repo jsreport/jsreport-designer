@@ -28,7 +28,7 @@ class ToolBar extends PureComponent {
         <div
           className="ToolBar-content"
           style={{
-            transform: componentEdition ? 'translateX(-100%) translateZ(0)' : 'translateZ(0)'
+            transform: componentEdition ? 'translateX(-100%)' : undefined
           }}
         >
           <ComponentBar
@@ -36,7 +36,7 @@ class ToolBar extends PureComponent {
             onItemDragStart={onItemDragStart}
             onItemDragEnd={onItemDragEnd}
           />
-          <div className="ToolBar-offset" style={{ transform: componentEdition ? 'translateX(0) translateZ(0)' : 'translateX(-200%) translateZ(0)', opacity: componentEdition ? 1 : 0 }}>
+          <div className="ToolBar-offset" style={{ transform: componentEdition ? 'translateX(0)' : 'translateX(-200%)', opacity: componentEdition ? 1 : 0 }}>
             {componentEdition && (
               <ComponentEditor
                 key={componentEdition.id}
