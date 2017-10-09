@@ -83,9 +83,9 @@ function getRegisteredComponents () {
   ]
 }
 
-componentRegistry.loadComponents(getRegisteredComponents()).then(() => {
-  ReactDOM.render(
-    <Designer />,
-    document.getElementById('root')
-  )
-})
+componentRegistry.loadComponents(getRegisteredComponents())
+
+ReactDOM.render(
+  <Designer />,
+  document.getElementById('root')
+)

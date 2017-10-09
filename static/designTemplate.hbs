@@ -23,23 +23,23 @@
         width: 100%;
       }
     </style>
-    {{#each styles}}
+    {{#each (getDesignInformation 'styles')}}
       <style>
       {{{this}}}
       </style>
     {{/each}}
   </head>
   <body>
-    <div class="DesignContainer" style="width: {{baseWidth}}; margin-left: auto; margin-right: auto;">
-      {{#each groups}}
-        {{#__renderDesignGroup__ this (lookup @root 'defaultRowHeight')}}
-          {{#__renderDesignItem__ this}}
+    <div class="DesignContainer" style="width: {{getDesignInformation 'grid.width'}}; margin-left: auto; margin-right: auto;">
+      {{#each (getDesignInformation 'groups')}}
+        {{#renderDesignGroup this (getDesignInformation 'grid.defaultRowHeight')}}
+          {{#renderDesignItem this}}
             {{#each components}}
-              {{#renderComponent (lookup . 'type') (__getDefaultPropsForComponent__ type props) (lookup . 'bindings') (lookup . 'template') }}
+              {{#renderComponent type props bindings template }}
               {{/renderComponent}}
             {{/each}}
-          {{/__renderDesignItem__}}
-        {{/__renderDesignGroup__}}
+          {{/renderDesignItem}}
+        {{/renderDesignGroup}}
       {{/each}}
     </div>
   </body>
