@@ -185,12 +185,6 @@ class DesignComponent extends PureComponent {
     }
 
     if (shouldRenderAgain) {
-      if (customCompiledTemplate) {
-        console.log('rendering component from custom template', type)
-      } else {
-        console.log('rendering component from template', type)
-      }
-
       this.dataInputChanged = false
 
       result = renderComponentFromTemplate({

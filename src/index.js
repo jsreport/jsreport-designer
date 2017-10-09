@@ -1,6 +1,6 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
-import Designer from './Designer'
+import App from './App'
 import './index.css'
 const componentRegistry = require('./shared/componentRegistry')
 
@@ -86,6 +86,6 @@ function getRegisteredComponents () {
 componentRegistry.loadComponents(getRegisteredComponents())
 
 ReactDOM.render(
-  <Designer />,
+  <App />,
   document.getElementById('root')
 )
