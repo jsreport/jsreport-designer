@@ -1,10 +1,10 @@
 
-.Button {
+.CommandButton {
   display: inline-block;
   position: relative;
 }
 
-.Button-tooltip {
+.CommandButton-tooltip {
   position: absolute;
   left: 50%;
   z-index: 5;
@@ -17,7 +17,7 @@
   margin-left: -50%;
 }
 
-.Button-tooltip:after {
+.CommandButton-tooltip:after {
   content: " ";
   position: absolute;
   left: 4px;
@@ -25,28 +25,28 @@
   border-style: solid;
 }
 
-.Button-tooltip-top {
+.CommandButton-tooltip-top {
   margin-bottom: 0.7rem;
   bottom: 100%;
 }
 
-.Button-tooltip-top:after {
+.CommandButton-tooltip-top:after {
   top: 100%;
   margin-top: -1px;
   border-color: black transparent transparent transparent;
 }
 
-.Button-tooltip-bottom {
+.CommandButton-tooltip-bottom {
   margin-top: 0.7rem;
   top: 100%;
 }
 
-.Button-tooltip-bottom:after {
+.CommandButton-tooltip-bottom:after {
   bottom: 100%;
   margin-top: -1px;
   border-color: transparent transparent black transparent;
 }
 
-.Button:hover .Button-tooltip {
+.CommandButton:hover .CommandButton-tooltip {
   display: inline-block;
 }

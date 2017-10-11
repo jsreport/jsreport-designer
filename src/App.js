@@ -2,11 +2,11 @@ import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
-import { getConsumedColsFromWidth } from './Design/designUtils'
-import SplitPane from './SplitPane'
-import ToolBar from './ToolBar'
-import Design from './Design'
-import { ComponentDragLayer, ComponentCollectionPreviewLayer } from './ComponentPreview'
+import { getConsumedColsFromWidth } from '../src/helpers/canvas'
+import SplitPane from './components/SplitPane'
+import SideBar from './components/SideBar'
+import Design from './components/Design'
+import { ComponentDragLayer, ComponentCollectionPreviewLayer } from './components/ComponentPreview'
 import './App.css'
 
 const componentRegistry = require('./shared/componentRegistry')
@@ -32,7 +32,7 @@ class App extends Component {
 
     this.componentPreviewNodes = null
 
-    this.setToolBarNode = this.setToolBarNode.bind(this)
+    this.setSideBarNode = this.setSideBarNode.bind(this)
     this.handleGlobalClick = this.handleGlobalClick.bind(this)
     this.handleDesignSelectionChange = this.handleDesignSelectionChange.bind(this)
     this.handleCommandSave = this.handleCommandSave.bind(this)
@@ -42,13 +42,13 @@ class App extends Component {
     this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
   }
 
-  setToolBarNode (el) {
-    this.toolBar = findDOMNode(el)
+  setSideBarNode (el) {
+    this.sideBar = findDOMNode(el)
   }
 
   handleGlobalClick (clickOutsideCanvas, target) {
-    if (this.toolBar.contains(target) && this.state.componentEdition != null) {
-      // prevents de-selecting when a click is emitted on toolbar
+    if (this.sideBar.contains(target) && this.state.componentEdition != null) {
+      // prevents de-selecting when a click is emitted on sidebar
       return false
     }
 
@@ -204,12 +204,12 @@ class App extends Component {
             minSize={150}
             primary="first"
             collapsable="first"
-            collapsedText="Toolbar"
+            collapsedText="Sidebar"
             split="vertical"
             resizerClassName="resizer"
           >
-            <ToolBar
-              ref={this.setToolBarNode}
+            <SideBar
+              ref={this.setSideBarNode}
               componentEdition={componentEdition}
               componentCollection={componentCollection}
               dataInput={dataInput}

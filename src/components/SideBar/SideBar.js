@@ -1,11 +1,11 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import ComponentBar from './ComponentBar'
-import ComponentEditor from './ComponentEditor'
-import CommandBar from './CommandBar'
-import './ToolBar.css'
+import ComponentBar from '../ComponentBar'
+import { ComponentEditor } from '../Editor'
+import CommandBar from '../CommandBar'
+import './SideBar.css'
 
-class ToolBar extends PureComponent {
+class SideBar extends PureComponent {
   render () {
     const {
       componentEdition,
@@ -24,9 +24,9 @@ class ToolBar extends PureComponent {
     }
 
     return (
-      <div className="ToolBar" {...extraProps}>
+      <div className="SideBar" {...extraProps}>
         <div
-          className="ToolBar-content"
+          className="SideBar-content"
           style={{
             transform: componentEdition ? 'translateX(-100%)' : undefined
           }}
@@ -36,7 +36,7 @@ class ToolBar extends PureComponent {
             onItemDragStart={onItemDragStart}
             onItemDragEnd={onItemDragEnd}
           />
-          <div className="ToolBar-offset" style={{ transform: componentEdition ? 'translateX(0)' : 'translateX(-200%)', opacity: componentEdition ? 1 : 0 }}>
+          <div className="SideBar-offset" style={{ transform: componentEdition ? 'translateX(0)' : 'translateX(-200%)', opacity: componentEdition ? 1 : 0 }}>
             {componentEdition && (
               <ComponentEditor
                 key={componentEdition.id}
@@ -50,7 +50,7 @@ class ToolBar extends PureComponent {
             )}
           </div>
         </div>
-        <div className="ToolBar-footer">
+        <div className="SideBar-footer">
           <CommandBar dataInput={dataInput} onCommandSave={onCommandSave} />
         </div>
       </div>
@@ -58,7 +58,7 @@ class ToolBar extends PureComponent {
   }
 }
 
-ToolBar.propTypes = {
+SideBar.propTypes = {
   componentEdition: PropTypes.object,
   componentCollection: PropTypes.array.isRequired,
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
@@ -68,4 +68,4 @@ ToolBar.propTypes = {
   onItemDragEnd: PropTypes.func
 }
 
-export default ToolBar
+export default SideBar

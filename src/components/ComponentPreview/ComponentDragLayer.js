@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { DragLayer } from 'react-dnd'
-import { ComponentDragTypes } from '../Constants'
+import { ComponentDragTypes } from '../../Constants'
 import ComponentDragPreviewBox from './ComponentDragPreviewBox'
 import './ComponentDragLayer.css'
 

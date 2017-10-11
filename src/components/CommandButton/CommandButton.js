@@ -1,13 +1,13 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import './Button.css'
+import './CommandButton.css'
 
-class Button extends Component {
+class CommandButton extends Component {
   render () {
     const { title, titlePosition, text, icon, children, ...restProps } = this.props
 
     return (
-      <div className="Button">
+      <div className="CommandButton">
         {!children ? (
           <button {...restProps}>
             <span className={`fa fa-${icon != null ? icon : 'circle'}`}></span>
@@ -17,18 +17,18 @@ class Button extends Component {
           children
         )}
         {title != null && (
-          <span className={`Button-tooltip Button-tooltip-${titlePosition || 'top'}`}>{title}</span>
+          <span className={`CommandButton-tooltip CommandButton-tooltip-${titlePosition || 'top'}`}>{title}</span>
         )}
       </div>
     )
   }
 }
 
-Button.propTypes = {
+CommandButton.propTypes = {
   title: PropTypes.string,
   titlePosition: PropTypes.string,
   icon: PropTypes.string,
   text: PropTypes.string
 }
 
-export default Button
+export default CommandButton

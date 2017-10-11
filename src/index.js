@@ -1,8 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import defaults from './configurationDefaults.js'
+import { createDesigner } from './Designer'
 import App from './App'
 import './index.css'
 const componentRegistry = require('./shared/componentRegistry')
+
+let Designer
 
 function getRegisteredComponents () {
   // ajax request here...
@@ -83,9 +87,17 @@ function getRegisteredComponents () {
   ]
 }
 
-componentRegistry.loadComponents(getRegisteredComponents())
+defaults()
 
-ReactDOM.render(
-  <App />,
-  document.getElementById('root')
-)
+Designer = window.Designer = createDesigner()
+
+const start = async () => {
+  componentRegistry.loadComponents(getRegisteredComponents())
+
+  ReactDOM.render(
+    <App />,
+    document.getElementById('root')
+  )
+}
+
+start()

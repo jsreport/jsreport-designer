@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import Button from '../Button'
+import CommandButton from '../CommandButton'
 import DataInputCommand from './DataInputCommand'
 import './CommandBar.css'
 
@@ -10,9 +10,9 @@ class CommandBar extends PureComponent {
 
     return (
       <div className="CommandBar">
-        <Button title="Data Input">
+        <CommandButton title="Data Input">
           <DataInputCommand dataInput={dataInput} onSave={onCommandSave} />
-        </Button>
+        </CommandButton>
       </div>
     )
   }

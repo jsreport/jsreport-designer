@@ -1,9 +1,8 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import omit from 'lodash/omit'
-import Button from '../Button'
-import PropertiesEditor from './PropertiesEditor'
-import TablePropertiesEditor from './TablePropertiesEditor'
+import CommandButton from '../CommandButton'
+import { propertiesEditorComponents, defaultComponents } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import RichContentEditor from './RichContentEditor'
 import BindToDataEditor from './BindToDataEditor'
@@ -18,14 +17,6 @@ class ComponentEditor extends PureComponent {
       editComponentTemplate: null,
       bindToDataEditor: null,
       richContentEditor: null
-    }
-
-    this.SelectedPropertiesEditor = PropertiesEditor
-
-    // TODO: replace this part with logic that gets the corresponding editor
-    // from our Designer API and registry
-    if (props.type === 'Table') {
-      this.SelectedPropertiesEditor = TablePropertiesEditor
     }
 
     this.meta = componentRegistry.getComponentDefinitionFromType(props.type) || {}
@@ -43,6 +34,7 @@ class ComponentEditor extends PureComponent {
     this.handleBindToDataEditorClose = this.handleBindToDataEditorClose.bind(this)
     this.handleEditRichContentClose = this.handleEditRichContentClose.bind(this)
     this.handleValueChange = this.handleValueChange.bind(this)
+    this.renderPropertiesEditor = this.renderPropertiesEditor.bind(this)
   }
 
   componentWillReceiveProps (nextProps) {
@@ -59,6 +51,10 @@ class ComponentEditor extends PureComponent {
         }
       })
     }
+  }
+
+  getPropertiesEditor (type) {
+    return propertiesEditorComponents[type] || defaultComponents.propertiesEditor
   }
 
   getMeta (propName) {
@@ -107,6 +103,7 @@ class ComponentEditor extends PureComponent {
 
   handleEditorChange ({ origin, propName, context, changes }) {
     const { type, template, properties, bindings, onChange } = this.props
+    let currentPropertiesEditor = this.getPropertiesEditor(type)
     let newChanges
     let params
 
@@ -123,8 +120,8 @@ class ComponentEditor extends PureComponent {
       changes
     }
 
-    if (typeof this.SelectedPropertiesEditor.onComponentEditorChange === 'function') {
-      newChanges = this.SelectedPropertiesEditor.onComponentEditorChange(params)
+    if (typeof currentPropertiesEditor.onComponentEditorChange === 'function') {
+      newChanges = currentPropertiesEditor.onComponentEditorChange(params)
     } else {
       newChanges = changes
     }
@@ -408,19 +405,10 @@ class ComponentEditor extends PureComponent {
     })
   }
 
-  render () {
-    const SelectedPropertiesEditor = this.SelectedPropertiesEditor
-    const { bindToDataEditor, richContentEditor, editComponentTemplate } = this.state
+  renderPropertiesEditor () {
+    const { type, dataInput, properties, bindings } = this.props
 
-    const {
-      type,
-      dataInput,
-      template,
-      properties,
-      bindings
-    } = this.props
-
-    let propsForPropertiesEditor = {
+    let props = {
       componentType: type,
       dataInput,
       meta: this.meta,
@@ -432,6 +420,19 @@ class ComponentEditor extends PureComponent {
       onValueChange: this.handleValueChange
     }
 
+    let propertiesEditor = this.getPropertiesEditor(type)
+
+    return React.createElement(propertiesEditor, props)
+  }
+
+  render () {
+    const { bindToDataEditor, richContentEditor, editComponentTemplate } = this.state
+
+    const {
+      type,
+      template
+    } = this.props
+
     return (
       <div className="ComponentEditor">
         <div className="ComponentEditor-content">
@@ -442,14 +443,14 @@ class ComponentEditor extends PureComponent {
           </h3>
           <hr className="ComponentEditor-separator" />
           <div className="ComponentEditor-options">
-            <Button
+            <CommandButton
               title="Edit component template"
               titlePosition="bottom"
               icon="code"
               onClick={this.handleEditComponentTemplateClick}
             />
           </div>
-          <SelectedPropertiesEditor {...propsForPropertiesEditor} />
+          {this.renderPropertiesEditor()}
         </div>
         {bindToDataEditor && (
           <BindToDataEditor

@@ -1,7 +1,7 @@
 
 /*$tertiaryBackgroundColor:rgb(85, 85, 85);*/
 
-.ToolBar {
+.SideBar {
   background-color: rgb(85, 85, 85);
   color: #FFFFFF;
   display: flex;
@@ -12,7 +12,7 @@
   min-width: 0;
 }
 
-.ToolBar-content {
+.SideBar-content {
   position: relative;
   display: flex;
   flex: 1;
@@ -24,7 +24,7 @@
   z-index: 10;
 }
 
-.ToolBar-footer {
+.SideBar-footer {
   position: relative;
   display: block;
   min-height: 0;
@@ -32,7 +32,7 @@
   z-index: 10;
 }
 
-.ToolBar-offset {
+.SideBar-offset {
   position: absolute;
   top: 0;
   width: 100%;

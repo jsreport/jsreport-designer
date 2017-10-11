@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import throttle from 'lodash/throttle'
 import { DropTarget } from 'react-dnd'
-import { ComponentDragTypes } from '../Constants'
+import { ComponentDragTypes } from '../../Constants'
 import DesignContainer from './DesignContainer'
 import './Canvas.css'
 

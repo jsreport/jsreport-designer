@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import { Component as DesignComponent } from '../DesignComponent'
 import './ComponentCollectionPreviewLayer.css'
 
-const componentRegistry = require('../shared/componentRegistry')
+const componentRegistry = require('../../shared/componentRegistry')
 
 class ComponentCollectionPreviewLayer extends PureComponent {
   constructor (props) {

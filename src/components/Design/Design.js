@@ -12,8 +12,8 @@ import {
   findProjectedFilledAreaWhenResizing,
   updateDesignItem,
   selectComponentInDesign
-} from './designUtils'
-import { ComponentDragTypes } from '../Constants'
+} from '../../helpers/canvas'
+import { ComponentDragTypes } from '../../Constants'
 import Canvas from './Canvas'
 import './Design.css'
 

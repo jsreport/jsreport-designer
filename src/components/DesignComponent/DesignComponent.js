@@ -2,9 +2,9 @@ import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
-import { ComponentDragTypes } from '../Constants'
+import { ComponentDragTypes } from '../../Constants'
 import './DesignComponent.css'
-const componentRegistry = require('../shared/componentRegistry')
+const componentRegistry = require('../../shared/componentRegistry')
 
 const componentSource = {
   beginDrag(props, monitor, component) {

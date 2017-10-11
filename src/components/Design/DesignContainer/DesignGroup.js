@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { DropTarget } from 'react-dnd'
-import { ComponentDragTypes } from '../../Constants'
+import { ComponentDragTypes } from '../../../Constants'
 import Grid from '../Grid'
 import DesignItem from './DesignItem'
 import './DesignGroup.css'

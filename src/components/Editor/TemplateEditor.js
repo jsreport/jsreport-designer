@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import Button from '../Button'
+import CommandButton from '../CommandButton'
 const componentRegistry = require('../../shared/componentRegistry')
 
 class TemplateEditor extends PureComponent {
@@ -88,7 +88,7 @@ class TemplateEditor extends PureComponent {
         </div>
         <br />
         <div>
-          <Button
+          <CommandButton
             title="Get original template"
             icon="refresh"
             onClick={this.handleGetOriginalTemplateClick}

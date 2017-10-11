@@ -1,5 +1,5 @@
 import React, { PureComponent } from 'react'
-import PropertyControl from './PropertyControl'
+import { PropertyControl } from './PropertiesEditor'
 
 function onComponentEditorChange ({ origin, propName, context, current, changes }) {
   let newChanges = changes
