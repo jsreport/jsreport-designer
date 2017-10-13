@@ -1,4 +1,5 @@
 import * as configuration from './lib/configuration.js'
+import api, { methods } from './helpers/api.js'
 import PropertiesEditor, { PropertyControl } from './components/Editor/PropertiesEditor'
 
 /**
@@ -32,6 +33,20 @@ class Designer {
   /** configuration **/
 
   /**
+   * Add new design component type, which will be available in ComponentBar
+   * @example Studio.addComponentType({ name: 'Text', icon: 'fa-text', module: TextImport, propertiesEditor: CustomPropertiesEditorComponent })
+   * @param {Object} componentTypeConfig - configuration for the component (meta-data)
+   */
+  addComponentType (componentTypeConfig) {
+    configuration.componentTypes[componentTypeConfig.name] = { ...componentTypeConfig }
+
+    // default propertiesEditor
+    if (componentTypeConfig.propertiesEditor == null) {
+      configuration.componentTypes[componentTypeConfig.name].propertiesEditor = PropertiesEditor
+    }
+  }
+
+  /**
    * Add React component which will be displayed in toolbar
    *
    * @param {ReactComponent|Function} toolbarComponent
@@ -41,17 +56,47 @@ class Designer {
     configuration.toolbarComponents[position].push(toolbarComponent)
   }
 
+  /** /configuration **/
+
+  /** runtime helpers **/
+
   /**
-   * Add React component used in ComponentEditor as the properties editor of selected design component
+   * Provides methods get,patch,post,del for accessing jsreport server
    *
-   * @param {String} key - id of the registered component
-   * @param {ReactComponent|Function} component
+   * @example
+   * await Studio.api.patch('/odata/tasks', { data: { foo: '1' } })
+   *
+   * @returns {*}
    */
-  addPropertiesEditorComponent (key, component) {
-    configuration.propertiesEditorComponents[key] = component
+  get api () {
+    return this.API
   }
 
-  /** /configuration **/
+  /**
+   * Get registered component types definitions, each one is object { name: 'Text', propsMeta: {} }
+   * @returns {Object}
+   */
+  get componentTypesDefinition () {
+    return configuration.componentTypesDefinition
+  }
+
+  /**
+   * Get registered component types, each one is object { name: 'Text', icon: 'fa-text', module: TextImport, propertiesEditor: CustomPropertiesEditorComponent }
+   * @returns {Object}
+   */
+  get componentTypes () {
+    return configuration.componentTypes
+  }
+
+  /**
+   * Object[name] with registered extensions and its options
+   * @returns {Object}
+   */
+  get extensions () {
+    return configuration.extensions
+  }
+
+  /** /runtime helpers **/
 
   /** react components **/
 
@@ -76,7 +121,17 @@ class Designer {
   /** /react components **/
 
   constructor () {
+    this.API = {}
 
+    methods.forEach((m) => {
+      this.API[m] = (...args) => {
+        return api[m](...args).catch((e) => {
+          // TODO: dispatch when store is declared
+          // this.store.dispatch(this.entities.actions.apiFailed(e))
+          throw e
+        })
+      }
+    })
   }
 }
 

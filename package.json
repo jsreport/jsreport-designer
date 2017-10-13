@@ -4,6 +4,7 @@
   "private": true,
   "main": "index.js",
   "dependencies": {
+    "@local/shared": "file:shared",
     "array.from": "1.0.3",
     "bluebird": "3.5.1",
     "draft-js": "0.10.3",
@@ -15,7 +16,8 @@
     "react-dnd": "2.5.3",
     "react-dnd-html5-backend": "2.5.3",
     "react-dom": "16.0.0",
-    "shortid": "2.2.8"
+    "shortid": "2.2.8",
+    "superagent": "3.6.3"
   },
   "devDependencies": {
     "jsreport-browser-client-dist": "1.0.4",

@@ -2,14 +2,13 @@ import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
+import componentRegistry from '@local/shared/componentRegistry'
 import { getConsumedColsFromWidth } from '../src/helpers/canvas'
 import SplitPane from './components/SplitPane'
 import SideBar from './components/SideBar'
 import Design from './components/Design'
 import { ComponentDragLayer, ComponentCollectionPreviewLayer } from './components/ComponentPreview'
 import './App.css'
-
-const componentRegistry = require('./shared/componentRegistry')
 
 class App extends Component {
   constructor (props) {
@@ -25,7 +24,6 @@ class App extends Component {
       defaultNumberOfRows: 7,
       defaultNumberOfCols: 12,
       defaultRowHeight: 78,
-      componentCollection: componentRegistry.getComponentsDefinition(),
       componentEdition: null,
       dataInput: null
     }
@@ -139,7 +137,7 @@ class App extends Component {
       return {}
     }
 
-    component = componentRegistry.getComponentFromType(item.name)
+    component = componentRegistry.getComponent(item.name)
     componentPreviewNode = this.componentPreviewNodes[item.name]
 
     // showing preview node when dragging is starting,
@@ -189,7 +187,6 @@ class App extends Component {
       defaultRowHeight,
       defaultNumberOfRows,
       defaultNumberOfCols,
-      componentCollection,
       componentEdition,
       dataInput
     } = this.state
@@ -211,7 +208,6 @@ class App extends Component {
             <SideBar
               ref={this.setSideBarNode}
               componentEdition={componentEdition}
-              componentCollection={componentCollection}
               dataInput={dataInput}
               onComponentEditionChange={this.handleComponentEditionChange}
               onCommandSave={this.handleCommandSave}
@@ -231,7 +227,6 @@ class App extends Component {
           <ComponentDragLayer dataInput={dataInput} colWidth={currentColWidth} />
           <ComponentCollectionPreviewLayer
             colWidth={currentColWidth}
-            componentCollection={componentCollection}
             onPreviewNodesChange={this.onComponentPreviewNodesChange}
           />
         </div>

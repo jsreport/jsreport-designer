@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
+import { rootPath } from '../../lib/configuration'
 import jsreportClient from 'jsreport-browser-client-dist'
 
-jsreportClient.serverUrl = 'http://localhost:5488'
+jsreportClient.serverUrl = rootPath
 
 class DevTools extends Component {
   constructor (props) {

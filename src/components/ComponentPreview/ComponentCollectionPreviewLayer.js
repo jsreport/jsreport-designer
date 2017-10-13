@@ -1,15 +1,17 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import componentRegistry from '@local/shared/componentRegistry'
 import { Component as DesignComponent } from '../DesignComponent'
 import './ComponentCollectionPreviewLayer.css'
 
-const componentRegistry = require('../../shared/componentRegistry')
 
 class ComponentCollectionPreviewLayer extends PureComponent {
   constructor (props) {
     super(props)
 
     this.previewNodes = {}
+
+    this.registeredComponents = Object.keys(componentRegistry.getComponents())
 
     this.renderComponentPreview = this.renderComponentPreview.bind(this)
     this.getRefPreviewNode = this.getRefPreviewNode.bind(this)
@@ -32,7 +34,7 @@ class ComponentCollectionPreviewLayer extends PureComponent {
   }
 
   getDefaultPropsForComponent (componentTypeName) {
-    const component = componentRegistry.getComponentFromType(componentTypeName)
+    const component = componentRegistry.getComponent(componentTypeName)
 
     if (typeof component.getDefaultProps !== 'function') {
       return {}
@@ -47,25 +49,21 @@ class ComponentCollectionPreviewLayer extends PureComponent {
     } = this.props
 
     return (
-      <div key={componentType.id} style={{ width: `${colWidth}px`, display: 'none' }}>
+      <div key={componentType} style={{ width: `${colWidth}px`, display: 'none' }}>
         <DesignComponent
           componentRef={this.getRefPreviewNode}
-          type={componentType.name}
-          componentProps={this.getDefaultPropsForComponent(componentType.name)}
+          type={componentType}
+          componentProps={this.getDefaultPropsForComponent(componentType)}
         />
       </div>
     )
   }
 
   render () {
-    const {
-      componentCollection
-    } = this.props
-
     return (
       <div className="ComponentCollectionPreviewLayer">
         <div className="ComponentCollectionPreviewLayer-list">
-          {componentCollection.map(this.renderComponentPreview)}
+          {this.registeredComponents.map(this.renderComponentPreview)}
         </div>
       </div>
     )
@@ -74,7 +72,6 @@ class ComponentCollectionPreviewLayer extends PureComponent {
 
 ComponentCollectionPreviewLayer.propTypes = {
   colWidth: PropTypes.number.isRequired,
-  componentCollection: PropTypes.array.isRequired,
   onPreviewNodesChange: PropTypes.func
 }
 

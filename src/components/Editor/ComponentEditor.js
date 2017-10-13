@@ -1,13 +1,13 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import omit from 'lodash/omit'
+import componentRegistry from '@local/shared/componentRegistry'
 import CommandButton from '../CommandButton'
-import { propertiesEditorComponents, defaultComponents } from '../../lib/configuration'
+import { componentTypes } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import RichContentEditor from './RichContentEditor'
 import BindToDataEditor from './BindToDataEditor'
 import './ComponentEditor.css'
-const componentRegistry = require('../../shared/componentRegistry')
 
 class ComponentEditor extends PureComponent {
   constructor (props) {
@@ -19,7 +19,7 @@ class ComponentEditor extends PureComponent {
       richContentEditor: null
     }
 
-    this.meta = componentRegistry.getComponentDefinitionFromType(props.type) || {}
+    this.meta = componentRegistry.getComponentDefinition(props.type) || {}
 
     this.getMeta = this.getMeta.bind(this)
     this.getValue = this.getValue.bind(this)
@@ -54,7 +54,7 @@ class ComponentEditor extends PureComponent {
   }
 
   getPropertiesEditor (type) {
-    return propertiesEditorComponents[type] || defaultComponents.propertiesEditor
+    return componentTypes[type].propertiesEditor
   }
 
   getMeta (propName) {
@@ -437,7 +437,7 @@ class ComponentEditor extends PureComponent {
       <div className="ComponentEditor">
         <div className="ComponentEditor-content">
           <h3 className="ComponentEditor-title">
-            <span className={'fa fa-' + (this.meta.icon || '')} />
+            <span className={`fa ${(this.meta.icon || '')}`} />
             &nbsp;
             {type}
           </h3>

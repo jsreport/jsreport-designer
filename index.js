@@ -1,10 +1,9 @@
 
-var assign = require('lodash/assign')
-var main = require('./lib/designer')
-var config = require('./jsreport.config')
+const main = require('./lib/designer')
+const config = require('./jsreport.config')
 
 module.exports = function (options) {
-  let newConfig = assign({}, config)
+  let newConfig = Object.assign({}, config)
 
   newConfig.options = options
   newConfig.main = main

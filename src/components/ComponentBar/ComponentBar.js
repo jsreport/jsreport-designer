@@ -106,7 +106,7 @@ class ComponentBar extends PureComponent {
   }
 
   groupAndSortComponents (components) {
-    let componentsByGroup = groupBy(components, 'collection')
+    let componentsByGroup = groupBy(components, 'group')
     let standardComponents = componentsByGroup['undefined'] || []
     let groupsOrdered = Object.keys(omit(componentsByGroup, ['undefined'])).sort()
 
@@ -185,7 +185,7 @@ class ComponentBar extends PureComponent {
     return (
       <ul className={'ComponentBar-component-list' + (collapsed ? ' collapsed' : '')}>
         {components.map(componentType => (
-          <li key={componentType.id} className="ComponentBar-component-container">
+          <li key={componentType.name} className="ComponentBar-component-container">
             <div>
               <ComponentBarItem
                 onMouseOver={this.ensureInitialPositionOfComponentBarItem}

@@ -1,15 +1,30 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import componentRegistry from '@local/shared/componentRegistry'
+import * as configuration from '../../lib/configuration'
 import ComponentBar from '../ComponentBar'
 import { ComponentEditor } from '../Editor'
 import CommandBar from '../CommandBar'
 import './SideBar.css'
 
 class SideBar extends PureComponent {
+  constructor (props) {
+    super(props)
+
+    this.registeredComponents = componentRegistry.getComponents()
+
+    this.registeredComponents = Object.keys(this.registeredComponents).map((compName) => {
+      return {
+        name: compName,
+        icon: configuration.componentTypes[compName].icon,
+        group: configuration.componentTypesDefinition[compName].group,
+      }
+    })
+  }
+
   render () {
     const {
       componentEdition,
-      componentCollection,
       dataInput,
       onComponentEditionChange,
       onCommandSave,
@@ -32,7 +47,7 @@ class SideBar extends PureComponent {
           }}
         >
           <ComponentBar
-            componentCollection={componentCollection}
+            componentCollection={this.registeredComponents}
             onItemDragStart={onItemDragStart}
             onItemDragEnd={onItemDragEnd}
           />
@@ -60,7 +75,6 @@ class SideBar extends PureComponent {
 
 SideBar.propTypes = {
   componentEdition: PropTypes.object,
-  componentCollection: PropTypes.array.isRequired,
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onComponentEditionChange: PropTypes.func,
   onCommandSave: PropTypes.func,

@@ -2,9 +2,9 @@ import React, { PureComponent } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
+import componentRegistry from '@local/shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
 import './DesignComponent.css'
-const componentRegistry = require('../../shared/componentRegistry')
 
 const componentSource = {
   beginDrag(props, monitor, component) {
@@ -173,7 +173,7 @@ class DesignComponent extends PureComponent {
   renderComponent (type, componentProps) {
     const { bindings, dataInput } = this.props
     const customCompiledTemplate = this.customCompiledTemplate
-    const renderComponentFromTemplate = componentRegistry.getComponentFromType(type).render
+    const renderComponentFromTemplate = componentRegistry.getComponent(type).render
     let shouldRenderAgain = true
     let result
     let content

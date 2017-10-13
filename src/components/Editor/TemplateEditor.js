@@ -1,7 +1,7 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import componentRegistry from '@local/shared/componentRegistry'
 import CommandButton from '../CommandButton'
-const componentRegistry = require('../../shared/componentRegistry')
 
 class TemplateEditor extends PureComponent {
   constructor (props) {
@@ -9,7 +9,7 @@ class TemplateEditor extends PureComponent {
 
     this.state = {
       editedTemplate: props.template != null ? props.template : (
-        componentRegistry.getComponentFromType(props.componentType).template()
+        componentRegistry.getComponent(props.componentType).template()
       ),
       isDirty: false
     }
@@ -28,7 +28,7 @@ class TemplateEditor extends PureComponent {
 
   isCustomTemplate (currentTemplate) {
     const { componentType } = this.props
-    let original = componentRegistry.getComponentFromType(componentType).template()
+    let original = componentRegistry.getComponent(componentType).template()
 
     return original !== currentTemplate
   }
@@ -45,7 +45,7 @@ class TemplateEditor extends PureComponent {
 
     this.setState({
       isDirty: true,
-      editedTemplate: componentRegistry.getComponentFromType(componentType).template()
+      editedTemplate: componentRegistry.getComponent(componentType).template()
     })
   }
 

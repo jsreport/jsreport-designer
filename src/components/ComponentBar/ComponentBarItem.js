@@ -226,7 +226,7 @@ class ComponentBarItem extends Component {
         }}
         {...extraProps}
       >
-        <span className={'ComponentBarItem-icon fa fa-' + componentType.icon} />
+        <span className={`ComponentBarItem-icon fa ${componentType.icon}`} />
         <span className="ComponentBarItem-name">{componentType.name}</span>
         {this.getEmptyPreview(true)}
       </div>

@@ -1,13 +1,6 @@
 
-const assign = require('lodash/assign')
 const get = require('lodash/get')
 const Handlebars = require('handlebars')
-
-// requiring inline just for now because we don't have any webpack setup yet
-global.designComponents = {}
-global.designComponents.Text = require('../shared/designComponents/Text')
-global.designComponents.Image = require('../shared/designComponents/Image')
-global.designComponents.Table = require('../shared/designComponents/Table')
 
 let componentsDefinition = {}
 let components = {}
@@ -16,43 +9,45 @@ function isObject (value) {
   return typeof value === 'object' && !Array.isArray(value)
 }
 
+function getComponentsDefinition () {
+  return componentsDefinition
+}
+
+function getComponentDefinition (type) {
+  return componentsDefinition[type]
+}
+
+function getComponents () {
+  return components
+}
+
+function getComponent (type) {
+  return components[type]
+}
+
 function compileTemplate (template) {
   return Handlebars.compile(template)
 }
 
-function getComponentsDefinition () {
-  return Object.keys(componentsDefinition).map((componentType) => {
-    return componentsDefinition[componentType]
-  })
-}
-
-function getComponentDefinitionFromType (type) {
-  return componentsDefinition[type]
-}
-
-function loadComponents (_componentsToLoad) {
-  let componentsToLoad = Array.isArray(_componentsToLoad) ? _componentsToLoad : getComponentsDefinition()
-
-  let componentRequires = componentsToLoad.map((component) => {
-    // little dumb condition for now
-    let isBrowser = typeof window !== 'undefined' && typeof window.localStorage !== 'undefined'
-    let originalExportValue
+function loadComponents (componentsToLoad) {
+  let componentRequires = componentsToLoad.map((componentDef) => {
+    let originalComponentModule
     let componentTemplate
     let compiledTemplate
     let helpersInTemplate
-    let exportValue
+    let componentModule
 
-    if (getComponentFromType(component.name) != null) {
+    if (getComponent(componentDef.name) != null) {
       // component type is already registered don't try to load it again
       return undefined
     }
 
-    originalExportValue = isBrowser ? global.designComponents[component.name] : (component.location ? require(component.location) : undefined)
+    originalComponentModule = componentDef.module
 
     // just for now if the component has no source set a default component,
     // this should probably just throw an error later
-    if (!originalExportValue) {
-      originalExportValue = {
+    if (!originalComponentModule) {
+      originalComponentModule = {
         getDefaultProps: () => {
           return {}
         },
@@ -65,26 +60,26 @@ function loadComponents (_componentsToLoad) {
       }
     }
 
-    componentTemplate = originalExportValue.template()
+    componentTemplate = originalComponentModule.template()
 
     compiledTemplate = compileTemplate(componentTemplate)
 
-    if (typeof originalExportValue.helpers === 'function') {
-      helpersInTemplate = originalExportValue.helpers()
+    if (typeof originalComponentModule.helpers === 'function') {
+      helpersInTemplate = originalComponentModule.helpers()
     } else {
       helpersInTemplate = {}
     }
 
-    exportValue = assign({}, originalExportValue, {
+    componentModule = Object.assign({}, originalComponentModule, {
       helpers: () => {
-        if (typeof originalExportValue.helpers === 'function') {
-          return originalExportValue.helpers()
+        if (typeof originalComponentModule.helpers === 'function') {
+          return originalComponentModule.helpers()
         }
 
         return {}
       },
       render: ({ props, bindings, customCompiledTemplate, data }) => {
-        let newProps = assign({}, props)
+        let newProps = Object.assign({}, props)
         let result = {}
         let componentHelpers
 
@@ -118,7 +113,7 @@ function loadComponents (_componentsToLoad) {
 
         result.props = newProps
 
-        componentHelpers = assign({
+        componentHelpers = Object.assign({
           resolveBinding: (bindingName, context, options) => {
             let expression
             let currentContext
@@ -159,10 +154,10 @@ function loadComponents (_componentsToLoad) {
       }
     })
 
-    componentsDefinition[component.name] = componentsDefinition[component.name] || component
-    components[component.name] = exportValue
+    componentsDefinition[componentDef.name] = componentsDefinition[componentDef.name] || componentDef
+    components[componentDef.name] = componentModule
 
-    return component.name
+    return componentDef.name
   })
 
   return componentRequires
@@ -225,23 +220,9 @@ function resolveBindingExpression (expression, context) {
   return result
 }
 
-function registerComponent (name, definition) {
-  componentsDefinition[name] = assign({ name: name }, definition)
-}
-
-function getComponentFromType (type) {
-  var comp = components[type]
-
-  if (comp) {
-    return comp
-  }
-
-  return
-}
-
 module.exports.loadComponents = loadComponents
-module.exports.registerComponent = registerComponent
 module.exports.getComponentsDefinition = getComponentsDefinition
-module.exports.getComponentDefinitionFromType = getComponentDefinitionFromType
-module.exports.getComponentFromType = getComponentFromType
+module.exports.getComponentDefinition = getComponentDefinition
+module.exports.getComponents = getComponents
+module.exports.getComponent = getComponent
 module.exports.compileTemplate = compileTemplate
