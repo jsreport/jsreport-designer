@@ -1,124 +1,6 @@
 import React, { PureComponent } from 'react'
 import { PropertyControl } from './PropertiesEditor'
 
-function onComponentEditorChange ({ origin, propName, context, current, changes }) {
-  let newChanges = changes
-
-  if (origin === 'values' && propName === 'columns') {
-    let isRemoving = changes.props.columns.length < current.props.columns.length
-    let columnBindingForName
-    let columnBindingForValue
-    let newBindings
-
-    if (!isRemoving) {
-      return newChanges
-    }
-
-    columnBindingForName = getBindingNameForColumn(context.colIndex, 'name')
-    columnBindingForValue = getBindingNameForColumn(context.colIndex, 'value')
-
-    // normalizing column bindings when columns are being removed
-    if (current.bindings) {
-      newBindings = { ...current.bindings }
-    } else {
-      newBindings = {}
-    }
-
-    if (newBindings[columnBindingForName]) {
-      delete newBindings[columnBindingForName]
-    }
-
-    if (newBindings[columnBindingForValue]) {
-      delete newBindings[columnBindingForValue]
-    }
-
-    if (Object.keys(newBindings).length === 0) {
-      newBindings = null
-    }
-
-    newChanges = {
-      ...newChanges,
-      bindings: newBindings
-    }
-
-    return newChanges
-  }
-
-  if (origin !== 'bindings') {
-    return newChanges
-  }
-
-  if (propName === 'data' && changes.bindings.data == null) {
-    let newBindings
-    let newProps
-
-    if (changes.bindings != null) {
-      newBindings = { ...changes.bindings }
-    } else {
-      newBindings = {}
-    }
-
-    // deleting all bindings based on data prop
-    Object.keys(newBindings).forEach((bindingKey) => {
-      if (bindingKey.indexOf(getBindingNameForColumn()) === 0) {
-        delete newBindings[bindingKey]
-      }
-    })
-
-    if (Object.keys(newBindings).length === 0) {
-      newBindings = null
-    }
-
-    newProps = {
-      ...current.props,
-      columns: current.props.columns.map((col, idx) => {
-        if (typeof col.name !== 'object' && typeof col.value !== 'object') {
-          return col
-        }
-
-        return {
-          name: typeof col.name === 'object' ? `column${idx + 1}` : col.name,
-          value: typeof col.value === 'object' ? `value${idx + 1}` : col.value,
-        }
-      })
-    }
-
-    newChanges = {
-      ...newChanges,
-      bindings: newBindings,
-      props: newProps
-    }
-  } else if (context != null && (propName === 'columns.name' || propName === 'columns.value')) {
-    let propValue
-    let newProps
-
-    if (!changes.bindings || !changes.bindings[context.targetBindingName]) {
-      propValue = `${context.name === 'name' ? 'column' : 'value'}${context.colIndex + 1}`
-    } else {
-      propValue = { binding: context.targetBindingName }
-    }
-
-    newProps = {
-      ...current.props,
-      columns: [
-        ...current.props.columns.slice(0, context.colIndex),
-        {
-          ...current.props.columns[context.colIndex],
-          [context.name]: propValue
-        },
-        ...current.props.columns.slice(context.colIndex + 1),
-      ]
-    }
-
-    newChanges = {
-      ...newChanges,
-      props: newProps
-    }
-  }
-
-  return newChanges
-}
-
 function getBindingNameForColumn (colIndex, property) {
   if (colIndex == null || property == null) {
     return `@columns`
@@ -131,18 +13,142 @@ class TablePropertiesEditor extends PureComponent {
   constructor (props) {
     super(props)
 
+    this.interceptChanges = this.interceptChanges.bind(this)
     this.handleColumnsChange = this.handleColumnsChange.bind(this)
     this.handleColumnBindToDataClick = this.handleColumnBindToDataClick.bind(this)
     this.handleColumnAdd = this.handleColumnAdd.bind(this)
     this.handleColumnRemove = this.handleColumnRemove.bind(this)
     this.renderDataPropValue = this.renderDataPropValue.bind(this)
     this.renderColumnPropValue = this.renderColumnPropValue.bind(this)
+
+    this.props.connectToChangesInterceptor(this.interceptChanges)
+  }
+
+  interceptChanges ({ origin, propName, context, current, changes }) {
+    let newChanges = changes
+
+    if (origin === 'values' && propName === 'columns') {
+      let isRemoving = changes.props.columns.length < current.props.columns.length
+      let columnBindingForName
+      let columnBindingForValue
+      let newBindings
+
+      if (!isRemoving) {
+        return newChanges
+      }
+
+      columnBindingForName = getBindingNameForColumn(context.colIndex, 'name')
+      columnBindingForValue = getBindingNameForColumn(context.colIndex, 'value')
+
+      // normalizing column bindings when columns are being removed
+      if (current.bindings) {
+        newBindings = { ...current.bindings }
+      } else {
+        newBindings = {}
+      }
+
+      if (newBindings[columnBindingForName]) {
+        delete newBindings[columnBindingForName]
+      }
+
+      if (newBindings[columnBindingForValue]) {
+        delete newBindings[columnBindingForValue]
+      }
+
+      if (Object.keys(newBindings).length === 0) {
+        newBindings = null
+      }
+
+      newChanges = {
+        ...newChanges,
+        bindings: newBindings
+      }
+
+      return newChanges
+    }
+
+    if (origin !== 'bindings') {
+      return newChanges
+    }
+
+    if (
+      propName === 'data' &&
+      (!changes.bindings || changes.bindings.data == null)
+    ) {
+      let newBindings
+      let newProps
+
+      if (changes.bindings != null) {
+        newBindings = { ...changes.bindings }
+      } else {
+        newBindings = {}
+      }
+
+      // deleting all bindings based on data prop
+      Object.keys(newBindings).forEach((bindingKey) => {
+        if (bindingKey.indexOf(getBindingNameForColumn()) === 0) {
+          delete newBindings[bindingKey]
+        }
+      })
+
+      if (Object.keys(newBindings).length === 0) {
+        newBindings = null
+      }
+
+      newProps = {
+        ...current.props,
+        columns: current.props.columns.map((col, idx) => {
+          if (typeof col.name !== 'object' && typeof col.value !== 'object') {
+            return col
+          }
+
+          return {
+            name: typeof col.name === 'object' ? `column${idx + 1}` : col.name,
+            value: typeof col.value === 'object' ? `value${idx + 1}` : col.value,
+          }
+        })
+      }
+
+      newChanges = {
+        ...newChanges,
+        bindings: newBindings,
+        props: newProps
+      }
+    } else if (context != null && (propName === 'columns.name' || propName === 'columns.value')) {
+      let propValue
+      let newProps
+
+      if (!changes.bindings || !changes.bindings[context.targetBindingName]) {
+        propValue = `${context.name === 'name' ? 'column' : 'value'}${context.colIndex + 1}`
+      } else {
+        propValue = { binding: context.targetBindingName }
+      }
+
+      newProps = {
+        ...current.props,
+        columns: [
+          ...current.props.columns.slice(0, context.colIndex),
+          {
+            ...current.props.columns[context.colIndex],
+            [context.name]: propValue
+          },
+          ...current.props.columns.slice(context.colIndex + 1),
+        ]
+      }
+
+      newChanges = {
+        ...newChanges,
+        props: newProps
+      }
+    }
+
+    return newChanges
   }
 
   handleColumnsChange ({ propName, value, context }) {
-    const { onValueChange, properties } = this.props
+    const { onChange, properties } = this.props
 
-    onValueChange({
+    onChange({
       propName: 'columns',
       context,
       value: [
@@ -168,9 +174,9 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   handleColumnAdd () {
-    const { onValueChange, properties } = this.props
+    const { onChange, properties } = this.props
 
-    onValueChange({
+    onChange({
       propName: 'columns',
       value: [
         ...properties.columns,
@@ -183,9 +189,9 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   handleColumnRemove (colIndex) {
-    const { onValueChange, properties } = this.props
+    const { onChange, properties } = this.props
 
-    onValueChange({
+    onChange({
       propName: 'columns',
       context: {
         colIndex
@@ -217,7 +223,7 @@ class TablePropertiesEditor extends PureComponent {
     )
   }
 
-  renderColumnPropValue ({ propName, value, context, onValueChange }) {
+  renderColumnPropValue ({ propName, value, context, onChange }) {
     const { bindings } = this.props
     let valueRefToBinding = typeof value === 'object' && value.binding != null
     let currentValue
@@ -239,7 +245,7 @@ class TablePropertiesEditor extends PureComponent {
         name={propName}
         readOnly={valueRefToBinding}
         value={currentValue}
-        onChange={(ev) => onValueChange(ev.target.value)}
+        onChange={(ev) => onChange(ev.target.value)}
       />
     )
   }
@@ -250,7 +256,7 @@ class TablePropertiesEditor extends PureComponent {
       properties,
       bindings,
       dataInput,
-      getMeta,
+      getPropMeta,
       onBindToDataClick
     } = this.props
 
@@ -263,7 +269,7 @@ class TablePropertiesEditor extends PureComponent {
           binding={bindings ? bindings.data : null}
           value={properties.data}
           bindToData={dataInput == null ? false : true}
-          getMeta={getMeta}
+          getPropMeta={getPropMeta}
           renderValue={this.renderDataPropValue}
           onBindToDataClick={onBindToDataClick}
         />
@@ -286,10 +292,10 @@ class TablePropertiesEditor extends PureComponent {
                   value={col.name}
                   bindToData={dataInput != null ? true : false}
                   context={{ name: 'name', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'name') }}
-                  getMeta={getMeta}
+                  getPropMeta={getPropMeta}
                   renderValue={this.renderColumnPropValue}
                   onBindToDataClick={this.handleColumnBindToDataClick}
-                  onValueChange={this.handleColumnsChange}
+                  onChange={this.handleColumnsChange}
                 />
                 <PropertyControl
                   key="columns.value"
@@ -299,10 +305,10 @@ class TablePropertiesEditor extends PureComponent {
                   value={col.value}
                   bindToData={dataInput != null && bindings && bindings.data ? true : false}
                   context={{ name: 'value', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'value') }}
-                  getMeta={getMeta}
+                  getPropMeta={getPropMeta}
                   renderValue={this.renderColumnPropValue}
                   onBindToDataClick={this.handleColumnBindToDataClick}
-                  onValueChange={this.handleColumnsChange}
+                  onChange={this.handleColumnsChange}
                 />
                 <div key="remove-columns">
                   <span
@@ -322,7 +328,5 @@ class TablePropertiesEditor extends PureComponent {
     )
   }
 }
-
-TablePropertiesEditor.onComponentEditorChange = onComponentEditorChange
 
 export default TablePropertiesEditor

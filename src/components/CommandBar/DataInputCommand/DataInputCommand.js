@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import DataInputEditor from './DataInputEditor'
+import { DataInputEditor } from '../../Editor'
 
 class DataInputCommand extends PureComponent {
   constructor (props) {
@@ -29,7 +29,6 @@ class DataInputCommand extends PureComponent {
   }
 
   render () {
-    const { dataInput, onSave } = this.props
     const { showEditor } = this.state
 
     return (
@@ -39,8 +38,6 @@ class DataInputCommand extends PureComponent {
         </button>
         {showEditor && (
           <DataInputEditor
-            dataInput={dataInput}
-            onSave={onSave}
             onClose={this.closeEditor}
           />
         )}
@@ -50,8 +47,6 @@ class DataInputCommand extends PureComponent {
 }
 
 DataInputCommand.propTypes = {
-  dataInput: PropTypes.object,
-  onSave: PropTypes.func,
   onClose: PropTypes.func
 }
 

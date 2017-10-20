@@ -1,8 +1,25 @@
-import React, { PureComponent } from 'react'
+import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { observer, inject } from 'mobx-react'
 import './BindToDataEditor.css'
 
-class BindToDataEditor extends PureComponent {
+@inject((injected, props) => {
+  let dataProperties
+
+  if (props.dataProperties != null) {
+    // if custom dataProperties are specified take it from it
+    dataProperties = props.dataProperties
+  } else {
+    // otherwise take it from the global store
+    dataProperties = injected.dataInputStore.value ? injected.dataInputStore.value.parsedProperties : null
+  }
+
+  return {
+    dataProperties
+  }
+})
+@observer
+class BindToDataEditor extends Component {
   constructor (props) {
     super(props)
 

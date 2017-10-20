@@ -1,0 +1,38 @@
+
+.DesignGroup {
+  position: relative;
+  /*prevents safari to highlight when resizing/dragging*/
+  user-select: none;
+}
+
+.DesignGroup:before,
+.DesignGroup:after {
+  content: " ";
+  display: table;
+}
+
+.DesignGroup:after {
+  clear: both;
+}
+
+.DesignGroup[data-items-remarked] > .DesignItem {
+  z-index: 1;
+}
+
+.DesignGroup[data-items-remarked] > .DesignItem {
+  opacity: 0.85;
+}
+
+.DesignGroup[data-items-remarked] > .DesignItem:before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  right: 0px;
+  bottom: -3px;
+  outline: 2px solid rgba(228, 228, 23, 0.7);
+}
+
+.DesignGroup[data-items-remarked] > .DesignItem[data-dragging-over]:before {
+  outline: 2px solid rgba(134, 206, 31, 0.7);
+}

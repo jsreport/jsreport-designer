@@ -1,18 +1,18 @@
-import React, { PureComponent } from 'react'
+import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
+import { observer, inject } from 'mobx-react'
 import { DragSource } from 'react-dnd'
 import componentRegistry from '@local/shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
 import './DesignComponent.css'
 
-const componentSource = {
-  beginDrag(props, monitor, component) {
+const componentDragSource = {
+  beginDrag(props, monitor, originComponent) {
+    let component = originComponent.getInstance()
+
     if (props.onDragStart) {
-      return props.onDragStart({
-        component: component.getIndex(),
-        ...component.getComponentInfo()
-      }, {
+      return props.onDragStart(props.component, {
         node: component.node,
         instance: component
       })
@@ -28,7 +28,7 @@ const componentSource = {
   }
 }
 
-function collect (connect, monitor) {
+function collectDragSourceProps (connect, monitor) {
   return {
     connectDragSource: connect.dragSource(),
     connectDragPreview: connect.dragPreview(),
@@ -36,7 +36,7 @@ function collect (connect, monitor) {
   }
 }
 
-class DesignComponent extends PureComponent {
+class DesignComponent extends Component {
   constructor (props) {
     super(props)
 
@@ -48,9 +48,7 @@ class DesignComponent extends PureComponent {
       this.customCompiledTemplate = componentRegistry.compileTemplate(props.template)
     }
 
-    this.getIndex = this.getIndex.bind(this)
     this.getComponentRef = this.getComponentRef.bind(this)
-    this.getComponentInfo = this.getComponentInfo.bind(this)
     this.getRawContent = this.getRawContent.bind(this)
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
     this.handleClick = this.handleClick.bind(this)
@@ -72,7 +70,8 @@ class DesignComponent extends PureComponent {
       this.cacheProps = {}
     }
 
-    if (this.props.dataInput !== nextProps.dataInput) {
+    if (nextProps.bindings != null && this.props.dataInput !== nextProps.dataInput) {
+      // the dataInput change is only relevant if the component has bindings
       this.dataInputChanged = true
     }
 
@@ -85,14 +84,6 @@ class DesignComponent extends PureComponent {
     } else if (this.props.bindings !== nextProps.bindings) {
       this.cacheProps = {}
     }
-  }
-
-  getIndex () {
-    if (!this.props.getIndex) {
-      return
-    }
-
-    return this.props.getIndex(this.props.id)
   }
 
   getComponentRef (el) {
@@ -116,24 +107,6 @@ class DesignComponent extends PureComponent {
 
     this.tmpNode = document.createElement('div')
     return this.tmpNode
-  }
-
-  getComponentInfo () {
-    let info = {
-      id: this.props.id,
-      type: this.props.type,
-      props: this.props.componentProps
-    }
-
-    if (this.props.bindings != null) {
-      info.bindings = this.props.bindings
-    }
-
-    if (this.props.template != null) {
-      info.template = this.props.template
-    }
-
-    return info
   }
 
   getRawContent () {
@@ -185,6 +158,12 @@ class DesignComponent extends PureComponent {
     }
 
     if (shouldRenderAgain) {
+      if (customCompiledTemplate) {
+        console.log('rendering component from custom template', type)
+      } else {
+        console.log('rendering component from template', type)
+      }
+
       this.dataInputChanged = false
 
       result = renderComponentFromTemplate({
@@ -250,23 +229,69 @@ class DesignComponent extends PureComponent {
 
 DesignComponent.propTypes = {
   id: PropTypes.string,
-  selected: PropTypes.bool,
-  selectedPreview: PropTypes.bool,
   type: PropTypes.string.isRequired,
+  dataInput: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array,
+  ]),
   template: PropTypes.string,
   componentProps: PropTypes.object.isRequired,
   bindings: PropTypes.object,
   rawContent: PropTypes.string,
+  selected: PropTypes.bool,
+  selectedPreview: PropTypes.bool,
   componentRef: PropTypes.func,
-  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   onClick: PropTypes.func,
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
-  getIndex: PropTypes.func,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool
 }
 
-export default DragSource(ComponentDragTypes.COMPONENT, componentSource, collect)(DesignComponent)
+@observer
+class ObservableDesignComponent extends Component {
+  constructor (props) {
+    super(props)
+
+    this.setInstance = this.setInstance.bind(this)
+    this.getInstance = this.getInstance.bind(this)
+  }
+
+  setInstance (el) {
+    return this.instance = el
+  }
+
+  getInstance () {
+    return this.instance
+  }
+
+  render () {
+    return (
+      <DesignComponent ref={this.setInstance} {...this.props} />
+    )
+  }
+}
+
+export default inject((injected, props) => {
+  let { component, ...restProps } = props
+
+  return {
+    id: component.id,
+    type: component.type,
+    dataInput: injected.dataInputStore.value,
+    template: component.template,
+    componentProps: component.props,
+    bindings: component.bindings,
+    selected: component.selected,
+    ...restProps
+  }
+})(
+  DragSource(
+    ComponentDragTypes.COMPONENT,
+    componentDragSource,
+    collectDragSourceProps
+  )(ObservableDesignComponent)
+)
+
 export { DesignComponent as Component }

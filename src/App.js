@@ -1,197 +1,80 @@
 import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
+import { observer, inject } from 'mobx-react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
-import componentRegistry from '@local/shared/componentRegistry'
-import { getConsumedColsFromWidth } from '../src/helpers/canvas'
 import SplitPane from './components/SplitPane'
 import SideBar from './components/SideBar'
-import Design from './components/Design'
-import { ComponentDragLayer, ComponentCollectionPreviewLayer } from './components/ComponentPreview'
+import EditingArea from './components/EditingArea'
+import { ComponentDragLayer } from './components/ComponentPreview'
 import './App.css'
 
+@inject((injected) => ({
+  currentDesign: injected.editorStore.currentDesign,
+  updateDesign: injected.designsActions.update,
+  clearSelectionInDesign: injected.designsActions.clearSelection
+}))
+@observer
 class App extends Component {
   constructor (props) {
     super(props)
 
-    /*
-      base width and base height depends on the target paper format
-      A4 -> 980px width, with a factor of 1.414 aprox for height
-    */
-    // values as constants for now
-    this.state = {
-      baseWidth: 980,
-      defaultNumberOfRows: 7,
-      defaultNumberOfCols: 12,
-      defaultRowHeight: 78,
-      componentEdition: null,
-      dataInput: null
-    }
-
     this.componentPreviewNodes = null
 
     this.setSideBarNode = this.setSideBarNode.bind(this)
-    this.handleGlobalClick = this.handleGlobalClick.bind(this)
-    this.handleDesignSelectionChange = this.handleDesignSelectionChange.bind(this)
-    this.handleCommandSave = this.handleCommandSave.bind(this)
-    this.handleComponentEditionChange = this.handleComponentEditionChange.bind(this)
-    this.onComponentPreviewNodesChange = this.onComponentPreviewNodesChange.bind(this)
-    this.onComponentBarItemDragStart = this.onComponentBarItemDragStart.bind(this)
-    this.onComponentBarItemDragEnd = this.onComponentBarItemDragEnd.bind(this)
+    this.setCanvasNode = this.setCanvasNode.bind(this)
+    this.handleGlobalClickOrDragStart = this.handleGlobalClickOrDragStart.bind(this)
+  }
+
+  componentDidMount () {
+    document.addEventListener('click', this.handleGlobalClickOrDragStart, true)
+    window.addEventListener('dragstart', this.handleGlobalClickOrDragStart, true)
+  }
+
+  componentWillUnmount () {
+    document.removeEventListener('click', this.handleGeneralClickOrDragStart, true)
+    window.removeEventListener('dragstart', this.handleGeneralClickOrDragStart, true)
   }
 
   setSideBarNode (el) {
-    this.sideBar = findDOMNode(el)
+    this.sideBarNode = findDOMNode(el)
   }
 
-  handleGlobalClick (clickOutsideCanvas, target) {
-    if (this.sideBar.contains(target) && this.state.componentEdition != null) {
-      // prevents de-selecting when a click is emitted on sidebar
-      return false
-    }
-
-    return clickOutsideCanvas
+  setCanvasNode (el) {
+    this.canvasNode = el
   }
 
-  handleDesignSelectionChange ({ designGroups, designSelection, onComponentChange }) {
-    let currentComponent
-    let groupIndex
-    let itemIndex
-    let componentIndex
+  handleGlobalClickOrDragStart (ev) {
+    let { currentDesign, updateDesign, clearSelectionInDesign } = this.props
+    let canvasNode = this.canvasNode
+    let clickOutsideCanvas
 
-    if (!designSelection) {
-      return this.setState({
-        componentEdition: null
-      })
-    }
+    if (currentDesign.isResizing) {
+      updateDesign(currentDesign.id, { isResizing: false })
 
-    groupIndex = designSelection.index
-
-    currentComponent = designGroups[groupIndex]
-
-    itemIndex = designSelection.data[designSelection.group].index
-
-    currentComponent = currentComponent.items[itemIndex]
-
-    componentIndex = designSelection.data[designSelection.group].data[
-      designSelection.data[designSelection.group].item
-    ].index
-
-    currentComponent = currentComponent.components[componentIndex]
-
-    this.setState({
-      componentEdition: {
-        id: currentComponent.id,
-        type: currentComponent.type,
-        template: currentComponent.template,
-        props: currentComponent.props,
-        bindings: currentComponent.bindings,
-        canvas: {
-          group: groupIndex,
-          item: itemIndex,
-          component: componentIndex
-        },
-        onComponentChange
+      if (ev.type === 'click') {
+        // sometimes after resizing a click event is produced (after releasing the mouse),
+        // so we stop this event, this allow us to mantain the component selection after the
+        // resizing has ended, no matter where it ended
+        ev.preventDefault()
+        ev.stopPropagation()
+        return
       }
-    })
-  }
-
-  handleCommandSave (dataInput) {
-    this.setState({
-      dataInput
-    })
-  }
-
-  handleComponentEditionChange (componentChanges) {
-    const componentEdition = this.state.componentEdition
-    let newComponentEdition = { ...componentEdition, ...componentChanges }
-
-    this.setState({
-      componentEdition: newComponentEdition
-    })
-
-    componentEdition.onComponentChange(
-      newComponentEdition.canvas,
-      componentChanges
-    )
-  }
-
-  onComponentPreviewNodesChange (previewNodes) {
-    // we are using a preview layer where we are rendering one instance per component type,
-    // these preview nodes will be used to take the dimensions consumed by a component
-    this.componentPreviewNodes = previewNodes
-  }
-
-  onComponentBarItemDragStart (componentType) {
-    let baseColWidth = this.state.baseWidth / this.state.defaultNumberOfCols
-
-    let item = {
-      ...componentType
     }
 
-    let component
-    let componentPreviewNode
-    let componentDimensions
+    clickOutsideCanvas = !canvasNode.contains(ev.target)
 
-    if (!this.componentPreviewNodes || !this.componentPreviewNodes[item.name]) {
-      return {}
+    if (this.sideBarNode.contains(ev.target) && currentDesign.selection != null) {
+      clickOutsideCanvas = false
     }
 
-    component = componentRegistry.getComponent(item.name)
-    componentPreviewNode = this.componentPreviewNodes[item.name]
-
-    // showing preview node when dragging is starting,
-    // this is needed in order to take the dimensions of the component from the DOM
-    componentPreviewNode.container.style.display = 'block'
-
-    // taking the consumed space of component from the DOM
-    componentDimensions = componentPreviewNode.component.getBoundingClientRect()
-
-    item.size = {
-      width: componentDimensions.width,
-      height: componentDimensions.height
+    if (clickOutsideCanvas && currentDesign.selection) {
+      clearSelectionInDesign(currentDesign.id)
     }
-
-    item.pointerPreviewPosition = {
-      x: componentDimensions.width / 2,
-      y: componentDimensions.height / 2
-    }
-
-    item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
-
-    item.rawContent = componentPreviewNode.instance.getRawContent()
-
-    item.consumedCols = getConsumedColsFromWidth({
-      baseColWidth,
-      width: item.size.width
-    })
-
-    return item;
-  }
-
-  onComponentBarItemDragEnd (componentType) {
-    let componentPreviewNode
-
-    if (!this.componentPreviewNodes || !this.componentPreviewNodes[componentType.name]) {
-      return
-    }
-
-    // hiding preview node when dragging has ended
-    componentPreviewNode = this.componentPreviewNodes[componentType.name]
-    componentPreviewNode.container.style.display = 'none'
   }
 
   render() {
-    const {
-      baseWidth,
-      defaultRowHeight,
-      defaultNumberOfRows,
-      defaultNumberOfCols,
-      componentEdition,
-      dataInput
-    } = this.state
-
-    const currentColWidth = baseWidth / defaultNumberOfCols
+    const { currentDesign } = this.props
 
     return (
       <div className="App container">
@@ -206,28 +89,16 @@ class App extends Component {
             resizerClassName="resizer"
           >
             <SideBar
-              ref={this.setSideBarNode}
-              componentEdition={componentEdition}
-              dataInput={dataInput}
-              onComponentEditionChange={this.handleComponentEditionChange}
-              onCommandSave={this.handleCommandSave}
-              onItemDragStart={this.onComponentBarItemDragStart}
-              onItemDragEnd={this.onComponentBarItemDragEnd}
+              nodeRef={this.setSideBarNode}
+              design={currentDesign}
             />
-            <Design
-              baseWidth={baseWidth}
-              defaultRowHeight={defaultRowHeight}
-              defaultNumberOfRows={defaultNumberOfRows}
-              defaultNumberOfCols={defaultNumberOfCols}
-              dataInput={dataInput}
-              onGlobalClick={this.handleGlobalClick}
-              onDesignSelectionChange={this.handleDesignSelectionChange}
+            <EditingArea
+              canvasRef={this.setCanvasNode}
+              design={currentDesign}
             />
           </SplitPane>
-          <ComponentDragLayer dataInput={dataInput} colWidth={currentColWidth} />
-          <ComponentCollectionPreviewLayer
-            colWidth={currentColWidth}
-            onPreviewNodesChange={this.onComponentPreviewNodesChange}
+          <ComponentDragLayer
+            design={currentDesign}
           />
         </div>
       </div>

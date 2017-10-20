@@ -1,11 +1,12 @@
-import React, { PureComponent } from 'react'
+import React, { Component } from 'react'
+import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
 import componentRegistry from '@local/shared/componentRegistry'
 import { Component as DesignComponent } from '../DesignComponent'
 import './ComponentCollectionPreviewLayer.css'
 
-
-class ComponentCollectionPreviewLayer extends PureComponent {
+@observer
+class ComponentCollectionPreviewLayer extends Component {
   constructor (props) {
     super(props)
 
@@ -46,7 +47,7 @@ class ComponentCollectionPreviewLayer extends PureComponent {
   renderComponentPreview (componentType) {
     const {
       colWidth
-    } = this.props
+    } = this.props.design
 
     return (
       <div key={componentType} style={{ width: `${colWidth}px`, display: 'none' }}>
@@ -71,7 +72,7 @@ class ComponentCollectionPreviewLayer extends PureComponent {
 }
 
 ComponentCollectionPreviewLayer.propTypes = {
-  colWidth: PropTypes.number.isRequired,
+  design: MobxPropTypes.observableObject.isRequired,
   onPreviewNodesChange: PropTypes.func
 }
 

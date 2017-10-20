@@ -1,11 +1,20 @@
 import * as configuration from './lib/configuration.js'
 import { PropertiesEditor } from './components/Editor'
 import TablePropertiesEditor from './components/Editor/TablePropertiesEditor'
+import CommandButton from './components/CommandButton'
+import DataInputCommand from './components/CommandBar/DataInputCommand'
 import Text from '@local/shared/components/Text'
 import Image from '@local/shared/components/Image'
 import Table from '@local/shared/components/Table'
 
 export default () => {
+  // TODO: complete this when i have Mobx store ready
+  // configuration.toolbarComponents.generalCommands.push(() => (
+  //   <CommandButton title="Data Input">
+  //     <DataInputCommand dataInput={dataInput} onSave={onCommandSave} />
+  //   </CommandButton>
+  // ))
+
   // default components
   configuration.componentTypes.Text = {
     name: 'Text',
@@ -48,7 +57,7 @@ export default () => {
 
   configuration.componentTypes['User-Info'] = {
     name: 'User-Info',
-    icon: 'address-card',
+    icon: 'fa-address-card',
     propertiesEditor: PropertiesEditor
   }
 }

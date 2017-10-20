@@ -1,12 +1,12 @@
 
-const get = require('lodash/get')
-const Handlebars = require('handlebars')
+var get = require('lodash/get')
+var Handlebars = require('handlebars')
 
-let componentsDefinition = {}
-let components = {}
+var componentsDefinition = {}
+var components = {}
 
 function isObject (value) {
-  return typeof value === 'object' && !Array.isArray(value)
+  return value != null && typeof value === 'object' && !Array.isArray(value)
 }
 
 function getComponentsDefinition () {
@@ -30,12 +30,12 @@ function compileTemplate (template) {
 }
 
 function loadComponents (componentsToLoad) {
-  let componentRequires = componentsToLoad.map((componentDef) => {
-    let originalComponentModule
-    let componentTemplate
-    let compiledTemplate
-    let helpersInTemplate
-    let componentModule
+  var componentRequires = componentsToLoad.map(function (componentDef) {
+    var originalComponentModule
+    var componentTemplate
+    var compiledTemplate
+    var helpersInTemplate
+    var componentModule
 
     if (getComponent(componentDef.name) != null) {
       // component type is already registered don't try to load it again
@@ -48,13 +48,13 @@ function loadComponents (componentsToLoad) {
     // this should probably just throw an error later
     if (!originalComponentModule) {
       originalComponentModule = {
-        getDefaultProps: () => {
+        getDefaultProps: function () {
           return {}
         },
-        template: () => {
+        template: function () {
           return '<div>Default empty component</div>'
         },
-        helpers: () => {
+        helpers: function () {
           return {}
         }
       }
@@ -71,23 +71,23 @@ function loadComponents (componentsToLoad) {
     }
 
     componentModule = Object.assign({}, originalComponentModule, {
-      helpers: () => {
+      helpers: function () {
         if (typeof originalComponentModule.helpers === 'function') {
           return originalComponentModule.helpers()
         }
 
         return {}
       },
-      render: ({ props, bindings, customCompiledTemplate, data }) => {
-        let newProps = Object.assign({}, props)
-        let result = {}
-        let componentHelpers
+      render: function ({ props, bindings, customCompiledTemplate, data }) {
+        var newProps = Object.assign({}, props)
+        var result = {}
+        var componentHelpers
 
         // checking for binded props
         if (isObject(bindings)) {
-          Object.keys(bindings).forEach((propName) => {
-            let isLazyBinding = propName[0] === '@'
-            let currentBinding
+          Object.keys(bindings).forEach(function (propName) {
+            var isLazyBinding = propName[0] === '@'
+            var currentBinding
 
             if (isLazyBinding) {
               return
@@ -114,9 +114,9 @@ function loadComponents (componentsToLoad) {
         result.props = newProps
 
         componentHelpers = Object.assign({
-          resolveBinding: (bindingName, context, options) => {
-            let expression
-            let currentContext
+          resolveBinding: function (bindingName, context, options) {
+            var expression
+            var currentContext
 
             if (context == null || options == null) {
               return null
@@ -164,23 +164,25 @@ function loadComponents (componentsToLoad) {
 }
 
 function resolveBindingExpression (expression, context) {
-  let FIELD_TYPE = {
+  var FIELD_TYPE = {
     property: 'p',
     index: 'i'
   }
 
-  let currentContext = context
-  let result
+  var i
+
+  var currentContext = context
+  var result
 
   if (context == null) {
     return undefined
   }
 
-  for (let i = 0; i < expression.length; i++) {
-    let currentExpression = expression[i]
-    let keySeparatorAt
-    let fieldType
-    let key
+  for (i = 0; i < expression.length; i++) {
+    var currentExpression = expression[i]
+    var keySeparatorAt
+    var fieldType
+    var key
 
     if (currentExpression === '') {
       result = context

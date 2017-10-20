@@ -7,7 +7,7 @@ class PropertyControl extends PureComponent {
 
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
     this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
-    this.handleValueChange = this.handleValueChange.bind(this)
+    this.handleChange = this.handleChange.bind(this)
   }
 
   handleBindToDataClick (ev) {
@@ -32,17 +32,17 @@ class PropertyControl extends PureComponent {
     }
   }
 
-  handleValueChange (value) {
+  handleChange (value) {
     const { name, context } = this.props
 
-    if (this.props.onValueChange) {
-      this.props.onValueChange({ propName: name, value, context })
+    if (this.props.onChange) {
+      this.props.onChange({ propName: name, value, context })
     }
   }
 
   render () {
     const { label, name, value, binding, context, bindToData, renderValue } = this.props
-    const meta = this.props.getMeta(name)
+    const meta = this.props.getPropMeta(name)
 
     let isSpecialValue = binding != null
     let isValueBindToData = false
@@ -100,7 +100,7 @@ class PropertyControl extends PureComponent {
             binding,
             context,
             isSpecialValue,
-            onValueChange: this.handleValueChange
+            onChange: this.handleChange
           })
         ) : (
           <input
@@ -109,7 +109,7 @@ class PropertyControl extends PureComponent {
             name={name}
             readOnly={isSpecialValue}
             value={currentValue}
-            onChange={(ev) => this.handleValueChange(ev.target.value)}
+            onChange={(ev) => this.handleChange(ev.target.value)}
           />
         )}
       </div>
@@ -125,11 +125,11 @@ PropertyControl.propTypes = {
   binding: PropTypes.object,
   bindToData: PropTypes.bool.isRequired,
   context: PropTypes.any,
-  getMeta: PropTypes.func.isRequired,
+  getPropMeta: PropTypes.func.isRequired,
   renderValue: PropTypes.func,
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,
-  onValueChange: PropTypes.func
+  onChange: PropTypes.func
 }
 
 export default PropertyControl

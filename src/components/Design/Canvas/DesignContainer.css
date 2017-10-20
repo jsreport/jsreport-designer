@@ -1,0 +1,16 @@
+
+.DesignContainer {
+  position: relative;
+  margin: 0;
+  user-select: none;
+}
+
+.DesignContainer:before,
+.DesignContainer:after {
+  content: " ";
+  display: table;
+}
+
+.DesignContainer:after {
+  clear: both;
+}

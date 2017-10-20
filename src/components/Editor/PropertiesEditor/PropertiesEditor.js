@@ -10,10 +10,10 @@ class PropertiesEditor extends PureComponent {
       properties,
       bindings,
       dataInput,
-      getMeta,
+      getPropMeta,
       onBindToDataClick,
       onEditRichContentClick,
-      onValueChange
+      onChange
     } = this.props
 
     return (
@@ -27,10 +27,10 @@ class PropertiesEditor extends PureComponent {
               binding={bindings ? bindings[propName] : null}
               value={properties[propName]}
               bindToData={dataInput == null ? false : true}
-              getMeta={getMeta}
+              getPropMeta={getPropMeta}
               onBindToDataClick={onBindToDataClick}
               onEditRichContentClick={onEditRichContentClick}
-              onValueChange={onValueChange}
+              onChange={onChange}
             />
           )
         })}
@@ -44,10 +44,11 @@ PropertiesEditor.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
-  getMeta: PropTypes.func.isRequired,
+  getPropMeta: PropTypes.func.isRequired,
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,
-  onValueChange: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired,
+  connectToChangesInterceptor: PropTypes.func.isRequired
 }
 
 export default PropertiesEditor

@@ -1,49 +1,20 @@
-import React, { PureComponent } from 'react'
+import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import Resizer from './Resizer'
 import './Selection.css'
 
-class Selection extends PureComponent {
-  constructor (props) {
-    super(props)
-
-    this.state = {
-      isResizing: false
-    }
-
-    this.handleResizeStart = this.handleResizeStart.bind(this)
-    this.handleResizeEnd = this.handleResizeEnd.bind(this)
-  }
-
-  handleResizeStart (...args) {
-    if (this.props.onResizeStart) {
-      this.props.onResizeStart.apply(undefined, args)
-    }
-
-    this.setState({
-      isResizing: true
-    })
-  }
-
-  handleResizeEnd (...args) {
-    if (this.props.onResizeEnd) {
-      this.props.onResizeEnd.apply(undefined, args)
-    }
-
-    this.setState({
-      isResizing: false
-    })
-  }
-
+class Selection extends Component {
   render () {
-    const { isResizing } = this.state
-
     const {
       state,
       left,
       right,
       onKeyDown,
-      onResize
+      onResizeStart,
+      onResize,
+      onResizeEnd,
+      isResizing
     } = this.props
 
     let styles = {}
@@ -98,9 +69,9 @@ class Selection extends PureComponent {
         <Resizer
           key="resize-left-picker"
           direction="left"
-          onResizeStart={this.handleResizeStart}
+          onResizeStart={onResizeStart}
           onResize={onResize}
-          onResizeEnd={this.handleResizeEnd}
+          onResizeEnd={onResizeEnd}
         />
       </div>,
       <div
@@ -116,9 +87,9 @@ class Selection extends PureComponent {
         <Resizer
           key="resize-right-picker"
           direction="right"
-          onResizeStart={this.handleResizeStart}
+          onResizeStart={onResizeStart}
           onResize={onResize}
-          onResizeEnd={this.handleResizeEnd}
+          onResizeEnd={onResizeEnd}
         />
       </div>
     ]
@@ -133,10 +104,34 @@ Selection.propTypes = {
   state: PropTypes.oneOf(['default', 'active', 'invalid']),
   left: PropTypes.number,
   right: PropTypes.number,
+  isResizing: PropTypes.bool,
   onKeyDown: PropTypes.func,
   onResizeStart: PropTypes.func,
   onResize: PropTypes.func,
   onResizeEnd: PropTypes.func
 }
 
-export default Selection
+@observer
+class ObservableSelection extends Component {
+  render () {
+    const { element, ...restProps } = this.props
+    const { resizing } = element
+
+    const selectionProps = {
+      state: resizing ? resizing.state : undefined,
+      left: resizing && resizing.direction === 'left' ? resizing.position : undefined,
+      right: resizing && resizing.direction === 'right' ? resizing.position : undefined,
+      isResizing: element.isResizing
+    }
+
+    return (
+      <Selection {...selectionProps} {...restProps} />
+    )
+  }
+}
+
+ObservableSelection.propTypes = {
+  element: MobxPropTypes.observableObject.isRequired
+}
+
+export default ObservableSelection

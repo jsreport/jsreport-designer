@@ -120,7 +120,9 @@ class Designer {
 
   /** /react components **/
 
-  constructor () {
+  constructor (stores) {
+    this.stores = stores
+
     this.API = {}
 
     methods.forEach((m) => {

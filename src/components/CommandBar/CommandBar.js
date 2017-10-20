@@ -1,26 +1,29 @@
 import React, { PureComponent } from 'react'
-import PropTypes from 'prop-types'
-import CommandButton from '../CommandButton'
+// import { toolbarComponents } from '../../lib/configuration'
 import DataInputCommand from './DataInputCommand'
+import CommandButton from '../CommandButton'
 import './CommandBar.css'
 
 class CommandBar extends PureComponent {
-  render () {
-    const { dataInput, onCommandSave } = this.props
+  // renderGeneralCommands () {
+  //   return toolbarComponents.generalCommands.map((comp, idx) => React.createElement(comp, {
+  //     key: idx
+  //   }))
+  // }
 
+  render () {
     return (
       <div className="CommandBar">
         <CommandButton title="Data Input">
-          <DataInputCommand dataInput={dataInput} onSave={onCommandSave} />
+          <DataInputCommand />
         </CommandButton>
+        {/* TODO: render with this when i have Mobx store ready */}
+        {/* {this.renderGeneralCommands()} */}
       </div>
     )
   }
 }
 
-CommandBar.propTypes = {
-  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  onCommandSave: PropTypes.func
-}
+CommandBar.propTypes = {}
 
 export default CommandBar

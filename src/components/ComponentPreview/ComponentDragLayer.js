@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragLayer } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
 import ComponentDragPreviewBox from './ComponentDragPreviewBox'
@@ -65,10 +66,11 @@ function collect (monitor) {
   }
 }
 
+@observer
 class ComponentDragLayer extends Component {
   renderPreview (dataInput, dragItemType, colWidth, componentMeta) {
     switch (dragItemType) {
-      case ComponentDragTypes.COMPONENT_TYPE:
+      case ComponentDragTypes.COMPONENT_BAR:
       case ComponentDragTypes.COMPONENT:
         return (
           <ComponentDragPreviewBox
@@ -85,7 +87,7 @@ class ComponentDragLayer extends Component {
   render () {
     const {
       dataInput,
-      colWidth,
+      design,
       componentMeta,
       dragItemType,
       isDragging
@@ -104,7 +106,7 @@ class ComponentDragLayer extends Component {
     return (
       <div className='ComponentDragLayer'>
         <div style={styles}>
-          {isDragging && this.renderPreview(dataInput, dragItemType, colWidth, componentMeta)}
+          {isDragging && this.renderPreview(dataInput, dragItemType, design.colWidth, componentMeta)}
         </div>
       </div>
     )
@@ -112,8 +114,7 @@ class ComponentDragLayer extends Component {
 }
 
 ComponentDragLayer.propTypes = {
-  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
-  colWidth: PropTypes.number.isRequired,
+  design: MobxPropTypes.observableObject.isRequired,
   componentMeta: PropTypes.object,
   dragItemType: PropTypes.string,
   initialSourceOffset: PropTypes.shape({
@@ -131,4 +132,8 @@ ComponentDragLayer.propTypes = {
   isDragging: PropTypes.bool.isRequired
 }
 
-export default DragLayer(collect)(ComponentDragLayer)
+export default inject((injected) => ({
+  dataInput: injected.dataInputStore.value
+}))(
+  DragLayer(collect)(ComponentDragLayer)
+)

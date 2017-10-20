@@ -1,4 +1,5 @@
-import React, { PureComponent } from 'react'
+import React, { Component, PureComponent } from 'react'
+import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
 import arrayFrom from 'array.from'
 import GridCol from './GridCol'
@@ -6,12 +7,7 @@ import './Grid.css'
 
 class GridContent extends PureComponent {
   render () {
-    const {
-      baseWidth,
-      numberOfCols
-    } = this.props
-
-    const colWidth = baseWidth / numberOfCols
+    const { colWidth, numberOfCols } = this.props
 
     return (
       <div className="Grid-content">
@@ -31,13 +27,14 @@ class GridContent extends PureComponent {
   }
 }
 
-class Grid extends PureComponent {
+@inject((injected) => ({
+  design: injected.design
+}))
+@observer
+class Grid extends Component {
   render () {
-    const {
-      baseWidth,
-      numberOfCols,
-      showTopBorder
-    } = this.props
+    const { design, showTopBorder } = this.props
+    const { colWidth, numberOfCols } = design
 
     return (
       <div className="Grid" data-design-grid="true">
@@ -45,7 +42,7 @@ class Grid extends PureComponent {
           <div className="Grid-top" data-design-grid-border />
         )}
         <GridContent
-          baseWidth={baseWidth}
+          colWidth={colWidth}
           numberOfCols={numberOfCols}
         />
       </div>
@@ -54,8 +51,6 @@ class Grid extends PureComponent {
 }
 
 Grid.propTypes = {
-  baseWidth: PropTypes.number.isRequired,
-  numberOfCols: PropTypes.number.isRequired,
   showTopBorder: PropTypes.bool.isRequired
 }
 

@@ -1,15 +1,5 @@
 
-.Design-container {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  /*firefox needs min-height and min-width explicitly declared to allow descendants flex items to be scrollable (overflow)*/
-  min-height: 0;
-  min-width: 0;
-  overflow: auto;
-}
-
-.Design-canvas {
+.Design {
   display: flex;
   flex: 1 0 auto;
   flex-direction: column;

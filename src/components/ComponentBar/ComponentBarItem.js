@@ -1,4 +1,4 @@
-import React, { Component } from 'react'
+import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
@@ -59,7 +59,7 @@ function collect (connect, monitor) {
   }
 }
 
-class ComponentBarItem extends Component {
+class ComponentBarItem extends PureComponent {
   constructor (props) {
     super(props)
 
@@ -245,4 +245,4 @@ ComponentBarItem.propTypes = {
   componentType: PropTypes.object.isRequired
 };
 
-export default DragSource(ComponentDragTypes.COMPONENT_TYPE, componentTypeSource, collect)(ComponentBarItem)
+export default DragSource(ComponentDragTypes.COMPONENT_BAR, componentTypeSource, collect)(ComponentBarItem)
