@@ -8,6 +8,7 @@ jsreportClient.serverUrl = rootPath
 
 configureDevtool({
   updatesEnabled: false,
+  logsEnabled: false,
   logFilter: change => {
     // hiding some logs when dragging
     return !(
@@ -18,7 +19,7 @@ configureDevtool({
 })
 
 @inject((injected) => ({
-  dataInput: injected.dataInputStore.value
+  data: injected.dataInputStore.value ? injected.dataInputStore.value.data : undefined
 }))
 @observer
 class DevTools extends Component {
@@ -82,7 +83,7 @@ class DevTools extends Component {
         design: this.getDesignPayload(),
         recipe: recipe
       },
-      data: this.props.dataInput
+      data: this.props.data
     })
   }
 

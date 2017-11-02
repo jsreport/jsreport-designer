@@ -480,7 +480,7 @@ class BindToDataEditor extends Component {
 }
 
 BindToDataEditor.propTypes = {
-  dataProperties: PropTypes.object.isRequired,
+  dataProperties: PropTypes.object,
   componentType: PropTypes.string.isRequired,
   propName: PropTypes.string.isRequired,
   bindingName: PropTypes.string,
