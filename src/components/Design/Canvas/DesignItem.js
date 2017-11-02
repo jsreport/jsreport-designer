@@ -19,7 +19,7 @@ const itemTarget = {
   },
 
   drop (props, monitor) {
-    const { item } = this.props
+    const { item } = props
 
     if (monitor.didDrop()) {
       return undefined

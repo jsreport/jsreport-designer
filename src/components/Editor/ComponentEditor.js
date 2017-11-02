@@ -127,9 +127,7 @@ class ComponentEditor extends Component {
         }
       }
 
-      if (bindingName != null) {
-        stateToUpdate.bindToDataEditor.bindingName = bindingName
-      }
+      stateToUpdate.bindToDataEditor.bindingName = targetBindingName
 
       if (dataProperties != null) {
         stateToUpdate.bindToDataEditor.dataProperties = dataProperties
