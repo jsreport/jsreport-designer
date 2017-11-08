@@ -4,7 +4,10 @@ import MobxDevTools, { configureDevtool } from 'mobx-react-devtools'
 import { rootPath } from '../../lib/configuration'
 import jsreportClient from 'jsreport-browser-client-dist'
 
-jsreportClient.serverUrl = rootPath
+// full url
+jsreportClient.serverUrl = window.location.href.indexOf('/designer') === -1 ? (
+  window.location.href
+) : window.location.href.substring(0, window.location.href.indexOf('/designer'))
 
 configureDevtool({
   updatesEnabled: false,

@@ -35,8 +35,6 @@ node_modules
 
 # production
 /build
-static/dist
-extensions_dev.js
 
 # misc
 .DS_Store
