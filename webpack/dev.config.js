@@ -57,7 +57,11 @@ module.exports = (appDir, extensions) => {
       // We placed these paths second because we want `node_modules` to "win"
       // if there are any conflicts. This matches Node resolution mechanism.
       modules: ['node_modules', path.join(__dirname, '../node_modules')],
-      extensions: ['.json', '.js', '.jsx']
+      extensions: ['.json', '.js', '.jsx'],
+      alias: {
+        // use browser build of handlebars
+        handlebars: 'handlebars/dist/handlebars.min.js'
+      }
     },
     resolveLoader: {
       // This allows you to set a fallback for where Webpack should look for loader modules.
