@@ -3,7 +3,7 @@ import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
 import { observer, inject } from 'mobx-react'
 import { DragSource } from 'react-dnd'
-import componentRegistry from '@local/shared/componentRegistry'
+import componentRegistry from '../../../shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
 import './DesignComponent.css'
 

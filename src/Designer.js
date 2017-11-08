@@ -33,16 +33,16 @@ class Designer {
   /** configuration **/
 
   /**
-   * Add new design component type, which will be available in ComponentBar
-   * @example Studio.addComponentType({ name: 'Text', icon: 'fa-text', module: TextImport, propertiesEditor: CustomPropertiesEditorComponent })
-   * @param {Object} componentTypeConfig - configuration for the component (meta-data)
+   * Registers new design component type, which will be available in ComponentBar and in the rest of designer
+   * @example Studio.registerComponent({ name: 'Text', icon: 'fa-text', module: TextImport, propertiesEditor: CustomPropertiesEditorComponent })
+   * @param {Object} componentConfig - configuration for the component (meta-data)
    */
-  addComponentType (componentTypeConfig) {
-    configuration.componentTypes[componentTypeConfig.name] = { ...componentTypeConfig }
+  registerComponent (componentConfig) {
+    configuration.componentTypes[componentConfig.name] = { ...componentConfig }
 
     // default propertiesEditor
-    if (componentTypeConfig.propertiesEditor == null) {
-      configuration.componentTypes[componentTypeConfig.name].propertiesEditor = PropertiesEditor
+    if (componentConfig.propertiesEditor == null) {
+      configuration.componentTypes[componentConfig.name].propertiesEditor = PropertiesEditor
     }
   }
 

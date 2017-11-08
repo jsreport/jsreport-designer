@@ -24,7 +24,6 @@
     "not ie < 9"
   ],
   "dependencies": {
-    "@local/shared": "file:shared",
     "bluebird": "3.5.1",
     "draft-js": "0.10.3",
     "draft-js-export-html": "1.2.0",

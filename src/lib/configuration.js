@@ -17,4 +17,4 @@ export let apiHeaders = {}
 
 export const rootPath = _rootPath
 
-export let extensions = []
+export let extensions = {}

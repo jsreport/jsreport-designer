@@ -2,7 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { useStrict, toJS } from 'mobx';
 import { Provider } from 'mobx-react';
-import componentRegistry from '@local/shared/componentRegistry'
+import zipObject from 'lodash/zipObject'
+import fetchExtensions from './lib/fetchExtensions'
+import componentRegistry from '../shared/componentRegistry'
 import * as configuration from './lib/configuration.js'
 import defaults from './configurationDefaults.js'
 import createStores from './mobx/create'
@@ -37,9 +39,18 @@ const { stores, actions } = createStores(storesDefaults)
 Designer = window.Designer = createDesigner(stores)
 
 // expose utility for debugging
-window.observableToJS = toJS
+if (__DEVELOPMENT__) {
+  window.observableToJS = toJS
+}
 
 const start = async () => {
+  await fetchExtensions()
+
+  const extensionsArray = await Designer.api.get('/api/extensions')
+  const extensions = zipObject(extensionsArray.map((e) => e.name), extensionsArray)
+
+  Object.keys(extensions).forEach(extName => configuration.extensions[extName] = extensions[extName])
+
   await Promise.all([
     Designer.api.get('/api/componentTypes').then((compTypes) => {
       Object.keys(compTypes).forEach((compName) => {
@@ -66,13 +77,13 @@ const start = async () => {
 
   componentRegistry.loadComponents(componentsToLoad)
 
-  // create a default design at the start
-  actions.designsActions.add()
-  actions.editorActions.openDesign(stores.designsStore.designs.keys()[0])
-
   for (const key in Designer.initializeListeners) {
     await Designer.initializeListeners[key]()
   }
+
+  // create a default design at the start
+  actions.designsActions.add()
+  actions.editorActions.openDesign(stores.designsStore.designs.keys()[0])
 
   ReactDOM.render(
     <Provider {...stores} {...actions}>

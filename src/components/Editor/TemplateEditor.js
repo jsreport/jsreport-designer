@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import componentRegistry from '@local/shared/componentRegistry'
+import componentRegistry from '../../../shared/componentRegistry'
 import CommandButton from '../CommandButton'
 
 class TemplateEditor extends PureComponent {

@@ -1,5 +1,7 @@
 import React, { PureComponent } from 'react'
-import { PropertyControl } from './PropertiesEditor'
+import Designer from 'jsreport-designer'
+
+const PropertyControl = Designer.PropertyControl
 
 function getBindingNameForColumn (colIndex, property) {
   if (colIndex == null || property == null) {
