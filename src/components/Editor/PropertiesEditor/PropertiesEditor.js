@@ -1,7 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import PropertyControl from './PropertyControl'
-import './PropertiesEditor.css'
 
 class PropertiesEditor extends PureComponent {
   render () {
@@ -17,7 +16,7 @@ class PropertiesEditor extends PureComponent {
     } = this.props
 
     return (
-      <div className="PropertiesEditor">
+      <div className="propertiesEditor">
         {Object.keys(properties).map((propName) => {
           return (
             <PropertyControl

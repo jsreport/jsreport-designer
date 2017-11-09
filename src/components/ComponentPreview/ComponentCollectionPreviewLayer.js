@@ -3,7 +3,7 @@ import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
 import componentRegistry from '../../../shared/componentRegistry'
 import { Component as DesignComponent } from '../DesignComponent'
-import './ComponentCollectionPreviewLayer.css'
+import styles from './ComponentCollectionPreviewLayer.scss'
 
 @observer
 class ComponentCollectionPreviewLayer extends Component {
@@ -62,8 +62,8 @@ class ComponentCollectionPreviewLayer extends Component {
 
   render () {
     return (
-      <div className="ComponentCollectionPreviewLayer">
-        <div className="ComponentCollectionPreviewLayer-list">
+      <div className={styles.componentCollectionPreviewLayer}>
+        <div className={styles.componentCollectionPreviewLayerList}>
           {this.registeredComponents.map(this.renderComponentPreview)}
         </div>
       </div>

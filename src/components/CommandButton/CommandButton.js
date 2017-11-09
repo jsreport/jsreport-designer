@@ -1,13 +1,22 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import './CommandButton.css'
+import styles from './CommandButton.scss'
 
 class CommandButton extends Component {
   render () {
     const { title, titlePosition, text, icon, children, ...restProps } = this.props
+    let positionStyle
+
+    if (titlePosition === 'top' || titlePosition == null) {
+      positionStyle = styles.commandButtonTooltipTop
+    } else if (titlePosition === 'bottom') {
+      positionStyle = styles.commandButtonTooltipBottom
+    } else {
+      positionStyle = ''
+    }
 
     return (
-      <div className="CommandButton">
+      <div className={styles.commandButton}>
         {!children ? (
           <button {...restProps}>
             <span className={`fa fa-${icon != null ? icon : 'circle'}`}></span>
@@ -17,7 +26,7 @@ class CommandButton extends Component {
           children
         )}
         {title != null && (
-          <span className={`CommandButton-tooltip CommandButton-tooltip-${titlePosition || 'top'}`}>{title}</span>
+          <span className={`${styles.commandButtonTooltip} ${positionStyle}`}>{title}</span>
         )}
       </div>
     )

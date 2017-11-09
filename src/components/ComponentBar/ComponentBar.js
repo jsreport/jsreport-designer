@@ -3,7 +3,7 @@ import PropTypes from 'prop-types'
 import omit from 'lodash/omit'
 import groupBy from 'lodash/groupBy'
 import ComponentBarItem from './ComponentBarItem'
-import './ComponentBar.css'
+import styles from './ComponentBar.scss'
 
 class ComponentBar extends PureComponent {
   constructor (props) {
@@ -147,7 +147,7 @@ class ComponentBar extends PureComponent {
       collectionId = 'ComponentsGroupStandard'
 
       return (
-        <div key={collectionId} className="ComponentBar-component-list">
+        <div key={collectionId} className={styles.componentBarComponentList}>
           {this.renderComponentBarList({
             collapsed: false,
             components
@@ -161,10 +161,10 @@ class ComponentBar extends PureComponent {
     return (
       <div
         key={collectionId}
-        className="ComponentBar-component-list"
+        className={styles.componentBarComponentList}
       >
         <div
-          className="ComponentBar-component-group"
+          className={styles.componentBarComponentGroup}
           onClick={() => this.collapse(collectionId)}
         >
           <span>
@@ -183,9 +183,9 @@ class ComponentBar extends PureComponent {
 
   renderComponentBarList ({ components, collapsed }) {
     return (
-      <ul className={'ComponentBar-component-list' + (collapsed ? ' collapsed' : '')}>
+      <ul className={`${styles.componentBarComponentList} ${collapsed ? ' ' + styles.collapsed : ''}`}>
         {components.map(componentType => (
-          <li key={componentType.name} className="ComponentBar-component-container">
+          <li key={componentType.name} className={styles.componentBarComponentContainer}>
             <div>
               <ComponentBarItem
                 onMouseOver={this.ensureInitialPositionOfComponentBarItem}
@@ -209,7 +209,7 @@ class ComponentBar extends PureComponent {
     return (
       <div
         ref={(el) => this.componentBar = el}
-        className="ComponentBar"
+        className={styles.componentBar}
         onScroll={this.keepComponentBarItemCloneAspect}
       >
         {this.groupAndSortComponents(componentCollection).map((group) => {

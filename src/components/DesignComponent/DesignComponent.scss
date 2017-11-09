@@ -1,5 +1,5 @@
 
-.DesignComponent {
+.designComponent {
   display: inline-block;
   position: relative;
   cursor: move;
@@ -12,7 +12,7 @@
 /*pseudo-element to prevent any dom element inside to a component*/
 /*to be draggable (since images an links are draggable by default*/
 /*we need to disable that behaviour)*/
-.DesignComponent:before {
+.designComponent:before {
   content: "";
   display: block;
   position: absolute;
@@ -23,31 +23,31 @@
   z-index: 0;
 }
 
-.DesignComponent[data-selected],
-.DesignComponent[data-selected-preview],
-.DesignComponent[data-dragging-placeholder] {
+.designComponent[data-selected],
+.designComponent[data-selected-preview],
+.designComponent[data-dragging-placeholder] {
   z-index: 1;
 }
 
-.DesignComponent[data-selected] {
+.designComponent[data-selected] {
   /*is important to use outline because outline does not consume*/
   /*the width and height of element*/
   outline: 1px dashed rgba(0, 0, 0, 0.8);
 }
 
-.DesignComponent[data-selected-preview] {
+.designComponent[data-selected-preview] {
   /*if the component is selected in preview use border instead of outline*/
   /*because Safari has issues when using outline in drag snapshots*/
   border: 1px dashed rgba(0, 0, 0, 0.8);
 }
 
-.DesignComponent[data-dragging-placeholder] {
+.designComponent[data-dragging-placeholder] {
   outline: 2px solid rgba(9, 110, 179, 0.6);
   color: inherit;
   opacity: 0.6;
 }
 
-.DesignComponent[data-dragging] {
+.designComponent[data-dragging] {
   background-color: transparent;
   color: transparent;
   cursor: default;

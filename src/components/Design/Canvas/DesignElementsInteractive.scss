@@ -1,0 +1,26 @@
+
+.designGroupInteractive[data-items-remarked] > .designItemInteractive {
+  z-index: 1;
+}
+
+.designGroupInteractive[data-items-remarked] > .designItemInteractive {
+  opacity: 0.85;
+}
+
+.designGroupInteractive[data-items-remarked] > .designItemInteractive:before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -2px;
+  right: 0px;
+  bottom: -3px;
+  outline: 2px solid rgba(228, 228, 23, 0.7);
+}
+
+.designGroupInteractive[data-items-remarked] > .designItemInteractive[data-dragging-over]:before {
+  outline: 2px solid rgba(134, 206, 31, 0.7);
+}
+
+.designItemInteractive[data-selected] {
+  z-index: 2;
+}

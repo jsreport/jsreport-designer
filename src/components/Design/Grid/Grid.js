@@ -2,7 +2,7 @@ import React, { Component, PureComponent } from 'react'
 import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
 import GridCol from './GridCol'
-import './Grid.css'
+import styles from './Grid.scss'
 
 class GridContent extends PureComponent {
   render () {
@@ -22,7 +22,7 @@ class GridContent extends PureComponent {
     }
 
     return (
-      <div className="Grid-content">
+      <div className={styles.gridContent}>
         {gridCols}
       </div>
     )
@@ -39,9 +39,9 @@ class Grid extends Component {
     const { colWidth, numberOfCols } = design
 
     return (
-      <div className="Grid" data-design-grid="true">
+      <div className={styles.grid} data-design-grid="true">
         {showTopBorder && (
-          <div className="Grid-top" data-design-grid-border />
+          <div className={styles.gridTop} data-design-grid-border />
         )}
         <GridContent
           colWidth={colWidth}

@@ -5,7 +5,8 @@ import { DropTarget } from 'react-dnd'
 import { ComponentDragTypes } from '../../../Constants'
 import Grid from '../Grid'
 import DesignItem from './DesignItem'
-import './DesignGroup.css'
+import styles from '../../../../static/DesignElements.css'
+import interactiveStyles from './DesignElementsInteractive.scss'
 
 const groupTarget = {
   hover (props, monitor, component) {
@@ -89,15 +90,15 @@ class DesignGroup extends Component {
     const { rowHeight } = design
     const { layoutMode, items, itemsRemarked, placeholder } = group
 
-    let styles = {}
+    let inlineStyles = {}
     let extraProps = {}
 
     if (placeholder === true) {
-      styles.backgroundColor = 'rgba(87, 191, 216, 0.3)'
+      inlineStyles.backgroundColor = 'rgba(87, 191, 216, 0.3)'
     }
 
     if (items.length === 0) {
-      styles.height = `${rowHeight}px`
+      inlineStyles.height = `${rowHeight}px`
     }
 
     extraProps[`data-layout-${layoutMode}-mode`] = true
@@ -109,8 +110,8 @@ class DesignGroup extends Component {
     return connectDropTarget(
       <div
         ref={this.getNode}
-        className="DesignGroup"
-        style={styles}
+        className={`${styles.designGroup} ${interactiveStyles.designGroupInteractive}`}
+        style={inlineStyles}
         {...extraProps}
       >
         <Grid

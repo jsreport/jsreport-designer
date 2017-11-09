@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import { observer, inject } from 'mobx-react'
 import HighlightedArea from './HighlightedArea'
 import DesignGroup from './DesignGroup'
-import './DesignContainer.css'
+import styles from '../../../../static/DesignElements.css'
 
 @inject((injected) => ({
   design: injected.design
@@ -15,7 +15,7 @@ class DesignContainer extends Component {
 
     return (
       <div
-        className="DesignContainer"
+        className={styles.designContainer}
         style={{ width: baseWidth }}
       >
         <HighlightedArea />

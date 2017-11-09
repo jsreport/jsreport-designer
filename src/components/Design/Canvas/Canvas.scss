@@ -1,12 +1,13 @@
+@import '../../../theme/common.scss';
 
-.Canvas {
+.canvas {
   position: relative;
 }
 
 /*we are using a pseudo-element for the border of the canvas (previously we were using "outline")*/
 /*because firefox has issues when some absolute node overflows the limits*/
 /*of a container that is using "outline" (the container grows with the absolute node)*/
-.Canvas:before {
+.canvas:before {
   display: block;
   content: "";
   position: absolute;
@@ -18,7 +19,7 @@
   border: 1px dashed rgba(0, 0, 0, 0.25);
 }
 
-.Canvas[data-dragging]:before {
+.canvas[data-dragging]:before {
   top: -2px;
   left: -2px;
   right: -2px;
@@ -26,7 +27,7 @@
   border: 2px dotted #dede26;
 }
 
-.Canvas[data-can-drop]:before {
+.canvas[data-can-drop]:before {
   top: -2px;
   left: -2px;
   right: -2px;
@@ -34,14 +35,14 @@
   border: 2px dotted #a8e64f;
 }
 
-.Canvas [data-design-grid] {
+.canvas [data-design-grid] {
   z-index: -1;
 }
 
-.Canvas[data-grid-lines-remarked] [data-design-grid] {
+.canvas[data-grid-lines-remarked] [data-design-grid] {
   z-index: 1;
 }
 
-.Canvas[data-grid-lines-remarked] [data-design-grid-border] {
+.canvas[data-grid-lines-remarked] [data-design-grid-border] {
   border-color: rgba(0, 0, 0, 0.2);
 }

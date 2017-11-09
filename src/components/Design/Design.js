@@ -4,7 +4,7 @@ import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
 import { ComponentDragTypes } from '../../Constants'
 import Canvas from './Canvas'
-import './Design.css'
+import styles from './Design.scss'
 
 @inject((injected) => ({
   clearSelection: injected.designsActions.clearSelection,
@@ -106,7 +106,7 @@ class Design extends Component {
     const { design, canvasRef } = this.props
 
     return (
-      <div className="Design">
+      <div className={styles.design}>
         <Canvas
           nodeRef={canvasRef}
           design={design}

@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 // import { toolbarComponents } from '../../lib/configuration'
 import DataInputCommand from './DataInputCommand'
 import CommandButton from '../CommandButton'
-import './CommandBar.css'
+import styles from './CommandBar.scss'
 
 class CommandBar extends PureComponent {
   // renderGeneralCommands () {
@@ -13,7 +13,7 @@ class CommandBar extends PureComponent {
 
   render () {
     return (
-      <div className="CommandBar">
+      <div className={styles.commandBar}>
         <CommandButton title="Data Input">
           <DataInputCommand />
         </CommandButton>

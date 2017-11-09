@@ -9,8 +9,8 @@ import * as configuration from './lib/configuration.js'
 import defaults from './configurationDefaults.js'
 import createStores from './mobx/create'
 import { createDesigner } from './Designer'
-import App from './App'
-import './client.css'
+import App from './components/App'
+import './theme/style.scss'
 
 let Designer
 

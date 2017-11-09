@@ -7,13 +7,12 @@ import {
   RichUtils,
   convertFromRaw
 } from 'draft-js'
-import 'draft-js/dist/Draft.css'
-import './ContentEditor.css'
+import styles from './ContentEditor.scss'
 
 function getBlockStyle(block) {
   switch (block.getType()) {
     case 'blockquote':
-      return 'ContentEditor-blockquote'
+      return styles.contentEditorBlockquote
     default:
       return null
   }
@@ -125,7 +124,7 @@ class ContentEditor extends Component {
 
     // If the user changes block type before entering any text, we can
     // either style the placeholder or hide it. Let's just hide it now.
-    let className = 'ContentEditor-editor'
+    let className = styles.contentEditorEditor
     var contentState = editorState.getCurrentContent()
 
     if (!contentState.hasText()) {
@@ -135,12 +134,12 @@ class ContentEditor extends Component {
           .first()
           .getType() !== 'unstyled'
       ) {
-        className += ' ContentEditor-hidePlaceholder'
+        className += ` ${styles.contentEditorHidePlaceholder}`
       }
     }
 
     return (
-      <div className="ContentEditor-root">
+      <div className={styles.contentEditorRoot}>
         <BlockStyleControls
           editorState={editorState}
           onToggle={this.toggleBlockType}
@@ -181,10 +180,10 @@ class StyleButton extends React.Component {
 
   render() {
     const { label, icon } = this.props
-    let className = 'ContentEditor-styleButton'
+    let className = styles.contentEditorStyleButton
 
     if (this.props.active) {
-      className += ' ContentEditor-activeButton'
+      className += ` ${styles.contentEditorActiveButton}`
     }
 
     return (
@@ -211,7 +210,7 @@ const BlockStyleControls = props => {
   )
 
   return (
-    <div className="ContentEditor-controls">
+    <div className={styles.contentEditorControls}>
       {BLOCK_TYPES.map(type => (
         <StyleButton
           key={type.label}
@@ -230,7 +229,7 @@ const InlineStyleControls = props => {
   let currentStyle = props.editorState.getCurrentInlineStyle()
 
   return (
-    <div className="ContentEditor-controls">
+    <div className={styles.contentEditorControls}>
       {INLINE_STYLES.map(type => (
         <StyleButton
           key={type.label}

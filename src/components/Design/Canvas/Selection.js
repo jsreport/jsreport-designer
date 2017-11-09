@@ -2,7 +2,7 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import Resizer from './Resizer'
-import './Selection.css'
+import styles from './Selection.scss'
 
 class Selection extends Component {
   render () {
@@ -17,28 +17,28 @@ class Selection extends Component {
       isResizing
     } = this.props
 
-    let styles = {}
+    let inlineStyles = {}
     let space = 5
     let extraProps = {}
 
     if (left != null) {
-      styles.left = `${(left * -1) - space}px`
+      inlineStyles.left = `${(left * -1) - space}px`
     } else {
-      styles.left = `${space * -1}px`
+      inlineStyles.left = `${space * -1}px`
     }
 
     if (right != null) {
-      styles.right = `${(right * -1) - space}px`
+      inlineStyles.right = `${(right * -1) - space}px`
     } else {
-      styles.right = `${space * -1}px`
+      inlineStyles.right = `${space * -1}px`
     }
 
     if (state === 'default') {
-      styles.borderColor = '#18449e'
+      inlineStyles.borderColor = '#18449e'
     } else if (state === 'active') {
-      styles.borderColor = '#1b8ac7'
+      inlineStyles.borderColor = '#1b8ac7'
     } else if (state === 'invalid') {
-      styles.borderColor = '#c54040'
+      inlineStyles.borderColor = '#c54040'
     }
 
     if (isResizing) {
@@ -48,8 +48,8 @@ class Selection extends Component {
     return [
       <div
         key="selection"
-        className="Selection Selection-top Selection-bottom"
-        style={styles}
+        className={`${styles.selection} ${styles.selectionTop} ${styles.selectionBottom}`}
+        style={inlineStyles}
         // tab index necessary to make key events to work
         tabIndex="0"
         draggable={false}
@@ -58,8 +58,8 @@ class Selection extends Component {
       />,
       <div
         key="selection-left"
-        className="Selection Selection-left"
-        style={{ left: styles.left, borderColor: styles.borderColor }}
+        className={`${styles.selection} ${styles.selectionLeft}`}
+        style={{ left: inlineStyles.left, borderColor: inlineStyles.borderColor }}
         // tab index necessary to make key events to work
         tabIndex="1"
         draggable={false}
@@ -76,8 +76,8 @@ class Selection extends Component {
       </div>,
       <div
         key="selection-right"
-        className="Selection Selection-right"
-        style={{ right: styles.right, borderColor: styles.borderColor }}
+        className={`${styles.selection} ${styles.selectionRight}`}
+        style={{ right: inlineStyles.right, borderColor: inlineStyles.borderColor }}
         // tab index necessary to make key events to work
         tabIndex="2"
         draggable={false}

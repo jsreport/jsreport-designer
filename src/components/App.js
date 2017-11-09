@@ -3,11 +3,11 @@ import { findDOMNode } from 'react-dom'
 import { observer, inject } from 'mobx-react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
-import SplitPane from './components/SplitPane'
-import SideBar from './components/SideBar'
-import EditingArea from './components/EditingArea'
-import { ComponentDragLayer } from './components/ComponentPreview'
-import './App.css'
+import SplitPane from './SplitPane'
+import SideBar from './SideBar'
+import EditingArea from './EditingArea'
+import { ComponentDragLayer } from './ComponentPreview'
+import styles from './App.scss'
 
 @inject((injected) => ({
   currentDesign: injected.editorStore.currentDesign,
@@ -77,7 +77,7 @@ class App extends Component {
     const { currentDesign } = this.props
 
     return (
-      <div className="App container">
+      <div className={`${styles.app} container`}>
         <div className="block">
           <SplitPane
             defaultSize={'175px'}

@@ -9,7 +9,7 @@ import { ComponentCollectionPreviewLayer } from '../ComponentPreview'
 import ComponentBar from '../ComponentBar'
 import { ComponentEditor } from '../Editor'
 import CommandBar from '../CommandBar'
-import './SideBar.css'
+import styles from './SideBar.scss'
 
 @inject((injected) => ({
   updateComponent: injected.designsActions.updateComponent
@@ -131,9 +131,9 @@ class SideBar extends Component {
     const { selection } = design
 
     return (
-      <div ref={nodeRef} className="SideBar">
+      <div ref={nodeRef} className={styles.sideBar}>
         <div
-          className="SideBar-content"
+          className={styles.sideBarContent}
           style={{
             transform: selection ? 'translateX(-100%)' : undefined
           }}
@@ -143,11 +143,11 @@ class SideBar extends Component {
             onItemDragStart={this.handleComponentBarItemDragStart}
             onItemDragEnd={this.handleComponentBarItemDragEnd}
           />
-          <div className="SideBar-offset" style={{ transform: selection ? 'translateX(0)' : 'translateX(-200%)', opacity: selection ? 1 : 0 }}>
+          <div className={styles.sideBarOffset} style={{ transform: selection ? 'translateX(0)' : 'translateX(-200%)', opacity: selection ? 1 : 0 }}>
             {selection && this.renderComponentEditor(selection)}
           </div>
         </div>
-        <div className="SideBar-footer">
+        <div className={styles.sideBarFooter}>
           <CommandBar />
         </div>
         {createPortal(

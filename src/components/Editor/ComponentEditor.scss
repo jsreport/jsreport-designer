@@ -1,5 +1,6 @@
+@import '../../theme/common.scss';
 
-.ComponentEditor {
+.componentEditor {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -9,13 +10,13 @@
   overflow: auto;
 }
 
-.ComponentEditor-content {
-  color: #eee;
+.componentEditorContent {
+  color: $secondaryBackgroundColor;
   padding-left: 0.9rem;
   padding-right: 0.9rem;
 }
 
-.ComponentEditor-title {
+.componentEditorTitle {
   font-size: 1.2rem;
   font-weight: 400;
   line-height: 1.5;
@@ -23,11 +24,11 @@
   margin-bottom: 0;
 }
 
-.ComponentEditor-separator {
-  border: 1px solid #444;
+.componentEditorSeparator {
+  border: 1px solid $secondarySelectionColor;
   margin-bottom: 15px;
 }
 
-.ComponentEditor-options {
+.componentEditorOptions {
   margin-bottom: 15px;
 }

@@ -1,5 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import styles from './GridCol.scss'
 
 class GridCol extends PureComponent {
   render () {
@@ -16,7 +17,7 @@ class GridCol extends PureComponent {
     }
 
     return (
-      <div className="Grid-col" data-design-grid-border="true" style={colStyles} />
+      <div className={styles.gridCol} data-design-grid-border="true" style={colStyles} />
     )
   }
 }

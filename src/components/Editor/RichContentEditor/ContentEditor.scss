@@ -1,35 +1,36 @@
+@import '../../../theme/common.scss';
 
-.ContentEditor-root {
-  background: #fff;
+.contentEditorRoot {
+  background: $primarySelectionColor;
   border: 1px solid #ddd;
   font-family: 'Georgia', serif;
   font-size: 14px;
   padding: 15px;
 }
 
-.ContentEditor-editor {
+.contentEditorEditor {
   border-top: 1px solid #ddd;
   cursor: text;
   font-size: 16px;
   margin-top: 10px;
 }
 
-.ContentEditor-editor .public-DraftEditorPlaceholder-root,
-.ContentEditor-editor .public-DraftEditor-content {
+.contentEditorEditor :global(.public-DraftEditorPlaceholder-root),
+.contentEditorEditor :global(.public-DraftEditor-content) {
   margin: 0 -15px -15px;
   padding: 15px;
 }
 
-.ContentEditor-editor .public-DraftEditor-content {
+.contentEditorEditor :global(.public-DraftEditor-content) {
   min-height: 100px;
 }
 
-.ContentEditor-hidePlaceholder .public-DraftEditorPlaceholder-root {
+.contentEditorHidePlaceholder :global(.public-DraftEditorPlaceholder-root) {
   display: none;
 }
 
-.ContentEditor-editor .ContentEditor-blockquote {
-  border-left: 5px solid #eee;
+.contentEditorEditor .contentEditorBlockquote {
+  border-left: 5px solid $secondaryBackgroundColor;
   color: #666;
   font-family: 'Hoefler Text', 'Georgia', serif;
   font-style: italic;
@@ -37,21 +38,21 @@
   padding: 10px 20px;
 }
 
-.ContentEditor-editor .public-DraftStyleDefault-pre {
+.contentEditorEditor :global(.public-DraftStyleDefault-pre) {
   background-color: rgba(0, 0, 0, 0.05);
   font-family: 'Inconsolata', 'Menlo', 'Consolas', monospace;
   font-size: 16px;
   padding: 20px;
 }
 
-.ContentEditor-controls {
+.contentEditorControls {
   font-family: 'Helvetica', sans-serif;
   font-size: 14px;
   margin-bottom: 5px;
   user-select: none;
 }
 
-.ContentEditor-styleButton {
+.contentEditorStyleButton {
   color: #999;
   cursor: pointer;
   margin-right: 16px;
@@ -59,11 +60,11 @@
   display: inline-block;
 }
 
-.ContentEditor-styleButton:hover {
+.contentEditorStyleButton:hover {
   color: #1d1b1b;
 }
 
-.ContentEditor-activeButton,
-.ContentEditor-activeButton:hover {
+.contentEditorActiveButton,
+.contentEditorActiveButton:hover {
   color: #5890ff;
 }

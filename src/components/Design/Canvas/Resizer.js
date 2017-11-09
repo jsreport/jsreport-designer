@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
-import './Resizer.css'
+import styles from './Resizer.scss'
 
 let events = {
   mouseup: function (ev) {
@@ -113,7 +113,7 @@ class Resizer extends PureComponent {
       direction
     } = this.props
 
-    let className = (direction === 'left') ? 'ResizerLeft' : 'ResizerRight'
+    let className = (direction === 'left') ? styles.resizerLeft : styles.resizerRight
 
     return (
       <div

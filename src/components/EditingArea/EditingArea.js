@@ -2,14 +2,14 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import Design from '../Design'
-import './EditingArea.css'
+import styles from './EditingArea.scss'
 
 const IS_DEV = true
 
 let DevTools
 
 if (IS_DEV) {
-  DevTools = require('./DevTools').default
+  DevTools = require('../DevTools').default
 }
 
 @observer
@@ -30,7 +30,7 @@ class EditingArea extends Component {
 
     return (
       <div
-        className="EditingArea"
+        className={styles.editingArea}
         style={areaStyles}
       >
         {DevTools && (

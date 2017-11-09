@@ -108,35 +108,31 @@ module.exports = (appDir, extensions) => {
           }
         },
         {
+          // styles by default are local (css modules)
+          // except for styles inside theme folder
           test: /\.css$/,
-          use: [
-            'style-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                modules: true,
-                importLoaders: 1
-              }
-            },
-            {
-              loader: 'postcss-loader',
-              options: {
-                // webpack requires an identifier to support all cases
-                ident: 'postcss',
-                plugins: () => [
-                  designerDev.deps['postcss-flexbugs-fixes'],
-                  autoprefixer
-                ],
-              },
-            },
-          ]
+          exclude: [/.*theme.*/],
+          use: getStylesConfig({ modulesEnabled: true })
         },
-        // {
-        //   // TODO: scss loader
-        // },
-        // {
-        //   // TODO; theme scss loader
-        // },
+        {
+          // styles inside theme folder are global
+          test: /\.css$/,
+          include: [/.*theme.*\.css/],
+          use: getStylesConfig()
+        },
+        {
+          // sass styles by default are local (css modules)
+          // except for styles inside theme folder
+          test: /\.scss$/,
+          exclude: [/.*theme.*/],
+          use: getStylesConfig({ modulesEnabled: true, sassEnabled: true })
+        },
+        {
+          // sass styles inside theme folder are global
+          test: /\.scss$/,
+          include: [/.*theme.*\.scss/],
+          use: getStylesConfig({ sassEnabled: true })
+        },
         {
           test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
           loader: 'url-loader',
@@ -231,4 +227,58 @@ module.exports = (appDir, extensions) => {
       hints: false,
     }
   }
+}
+
+function getStylesConfig ({ modulesEnabled, sassEnabled } = {}) {
+  let loaders = [{
+    loader: 'style-loader',
+    options: {
+      sourceMap: modulesEnabled === true || sassEnabled === true
+    }
+  }]
+
+  if (modulesEnabled === true) {
+    loaders.push({
+      loader: 'css-loader',
+      options: {
+        modules: true,
+        localIdentName: '[local]___[hash:base64:5]',
+        sourceMap: true,
+        importLoaders: sassEnabled === true ? 2 : 1
+      }
+    })
+  } else {
+    loaders.push({
+      loader: 'css-loader',
+      options: {
+        sourceMap: sassEnabled === true,
+        importLoaders: sassEnabled === true ? 2 : 1
+      }
+    })
+  }
+
+  loaders.push({
+    loader: 'postcss-loader',
+    options: {
+      sourceMap: modulesEnabled === true || sassEnabled === true,
+      // webpack requires an identifier to support all cases
+      ident: 'postcss',
+      plugins: () => [
+        designerDev.deps['postcss-flexbugs-fixes'],
+        autoprefixer
+      ]
+    }
+  })
+
+  if (sassEnabled === true) {
+    loaders.push({
+      loader: 'sass-loader',
+      options: {
+        sourceMap: true,
+        outputStyle: 'expanded'
+      }
+    })
+  }
+
+  return loaders
 }

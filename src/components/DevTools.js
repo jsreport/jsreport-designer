@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import { observer, inject } from 'mobx-react'
 import MobxDevTools, { configureDevtool } from 'mobx-react-devtools'
-import { rootPath } from '../../lib/configuration'
+import { rootPath } from '../lib/configuration'
 import jsreportClient from 'jsreport-browser-client-dist'
 
 // full url

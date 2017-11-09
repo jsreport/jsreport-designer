@@ -4,7 +4,7 @@ import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragLayer } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
 import ComponentDragPreviewBox from './ComponentDragPreviewBox'
-import './ComponentDragLayer.css'
+import styles from './ComponentDragLayer.scss'
 
 function getDragLayerStyles (dragItemType, props) {
   const {
@@ -93,19 +93,19 @@ class ComponentDragLayer extends Component {
       isDragging
     } = this.props
 
-    let styles
+    let inlineStyles
 
     if (!isDragging) {
-      styles = {
+      inlineStyles = {
         display: 'none'
       }
     } else {
-      styles = getDragLayerStyles(dragItemType, this.props)
+      inlineStyles = getDragLayerStyles(dragItemType, this.props)
     }
 
     return (
-      <div className='ComponentDragLayer'>
-        <div style={styles}>
+      <div className={styles.componentDragLayer}>
+        <div style={inlineStyles}>
           {isDragging && this.renderPreview(dataInput, dragItemType, design.colWidth, componentMeta)}
         </div>
       </div>

@@ -8,7 +8,7 @@ import { componentTypes } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import RichContentEditor from './RichContentEditor'
 import BindToDataEditor from './BindToDataEditor'
-import './ComponentEditor.css'
+import styles from './ComponentEditor.scss'
 
 @inject((injected) => ({
   dataInput: injected.dataInputStore.value,
@@ -434,15 +434,15 @@ class ComponentEditor extends Component {
     } = this.props
 
     return (
-      <div className="ComponentEditor">
-        <div className="ComponentEditor-content">
-          <h3 className="ComponentEditor-title">
+      <div className={styles.componentEditor}>
+        <div className={styles.componentEditorContent}>
+          <h3 className={styles.componentEditorTitle}>
             <span className={`fa ${(this.meta.icon || '')}`} />
             &nbsp;
             {type}
           </h3>
-          <hr className="ComponentEditor-separator" />
-          <div className="ComponentEditor-options">
+          <hr className={styles.componentEditorSeparator} />
+          <div className={styles.componentEditorOptions}>
             <CommandButton
               title="Edit component template"
               titlePosition="bottom"

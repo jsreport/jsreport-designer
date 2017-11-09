@@ -1,0 +1,40 @@
+
+.designContainer {
+  position: relative;
+  margin: 0;
+  user-select: none;
+}
+
+.designContainer:before,
+.designContainer:after {
+  content: " ";
+  display: table;
+}
+
+.designContainer:after {
+  clear: both;
+}
+
+.designGroup {
+  position: relative;
+  /*prevents safari to highlight when resizing/dragging*/
+  user-select: none;
+}
+
+.designGroup:before,
+.designGroup:after {
+  content: " ";
+  display: table;
+}
+
+.designGroup:after {
+  clear: both;
+}
+
+.designItem {
+  position: relative;
+  float: left;
+  min-height: 1px;
+  /* prevents safari to highlight when resizing/dragging */
+  user-select: none;
+}

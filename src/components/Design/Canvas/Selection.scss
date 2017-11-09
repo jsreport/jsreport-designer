@@ -1,5 +1,5 @@
 
-.Selection {
+.selection {
   display: block;
   position: absolute;
   top: -4px;
@@ -11,32 +11,32 @@
   z-index: 1;
 }
 
-.Selection-top {
+.selectionTop {
   border-top: 2px dashed;
 }
 
-.Selection-bottom {
+.selectionBottom {
   border-bottom: 2px dashed;
 }
 
-.Selection-left {
+.selectionLeft {
   border-left: 2px dashed;
   width: 2px;
   z-index: 2;
 }
 
-.Selection-right {
+.selectionRight {
   border-right: 2px dashed;
   width: 2px;
   z-index: 2;
 }
 
-.Selection:focus {
+.selection:focus {
   outline: none;
   -webkit-box-shadow: none;
   box-shadow: none;
 }
 
-.Selection[data-resizing] {
+.selection[data-resizing] {
   z-index: 2;
 }

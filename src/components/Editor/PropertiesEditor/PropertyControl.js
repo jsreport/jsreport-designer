@@ -67,13 +67,13 @@ class PropertyControl extends PureComponent {
     }
 
     return (
-      <div className="PropertiesEditor-prop">
+      <div className="propertiesEditor-prop">
         <div>
           <label>
             {label || name}
             {' '}
           </label>
-          <div className="PropertiesEditor-prop-controls">
+          <div className="propertiesEditor-prop-controls">
             {meta && meta.allowsBinding !== false && (
               <button
                 disabled={bindToData === false}
@@ -104,7 +104,7 @@ class PropertyControl extends PureComponent {
           })
         ) : (
           <input
-            className={isSpecialValue ? 'PropertiesEditor-prop-special-value' : ''}
+            className={isSpecialValue ? 'propertiesEditor-prop-special-value' : ''}
             type="text"
             name={name}
             readOnly={isSpecialValue}

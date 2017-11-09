@@ -216,7 +216,7 @@ class TablePropertiesEditor extends PureComponent {
 
     return (
       <input
-        className="PropertiesEditor-prop-special-value"
+        className="propertiesEditor-prop-special-value"
         type="text"
         name="data"
         readOnly={true}
@@ -242,7 +242,7 @@ class TablePropertiesEditor extends PureComponent {
 
     return (
       <input
-        className={valueRefToBinding ? 'PropertiesEditor-prop-special-value' : ''}
+        className={valueRefToBinding ? 'propertiesEditor-prop-special-value' : ''}
         type="text"
         name={propName}
         readOnly={valueRefToBinding}
@@ -263,7 +263,7 @@ class TablePropertiesEditor extends PureComponent {
     } = this.props
 
     return (
-      <div className="PropertiesEditor">
+      <div className="propertiesEditor">
         <PropertyControl
           key="data"
           componentType={componentType}
@@ -275,7 +275,7 @@ class TablePropertiesEditor extends PureComponent {
           renderValue={this.renderDataPropValue}
           onBindToDataClick={onBindToDataClick}
         />
-        <div className="PropertiesEditor-prop">
+        <div className="propertiesEditor-prop">
           <label>
             columns
           </label>
@@ -283,7 +283,7 @@ class TablePropertiesEditor extends PureComponent {
             return (
               <div
                 key={`col-${idx}`}
-                className="PropertiesEditor-prop-group"
+                className="propertiesEditor-prop-group"
                 style={{ position: 'relative' }}
               >
                 <PropertyControl

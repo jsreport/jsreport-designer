@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { observer, inject } from 'mobx-react'
-import './BindToDataEditor.css'
+import styles from './BindToDataEditor.scss'
 
 @inject((injected, props) => {
   let dataProperties
@@ -226,10 +226,10 @@ class BindToDataEditor extends Component {
     isFieldSelected = (selectedFullExpression != null && selectedFullExpression === fullExpression)
 
     return (
-      <ul className="BindToDataEditor-field-container">
+      <ul className={styles.bindToDataEditorFieldContainer}>
         <li
           key="field-name"
-          className={`BindToDataEditor-field-header BindToDataEditor-field-item ${isFieldSelected ? 'selected' : ''}`}
+          className={`${styles.bindToDataEditorFieldHeader} ${styles.bindToDataEditorFieldItem} ${isFieldSelected ? styles.selected : ''}`}
           onClick={() => !isFieldDisabled && this.select({
             field,
             idParts,
@@ -243,7 +243,7 @@ class BindToDataEditor extends Component {
               onClick={(ev) => { ev.stopPropagation(); this.collapse(key); }}
             />
             {' '}
-            <span className={`BindToDataEditor-field-item-label ${isFieldDisabled ? 'disabled' : ''}`}>
+            <span className={`${styles.bindToDataEditorFieldItemLabel} ${isFieldDisabled ? styles.disabled : ''}`}>
               {`${field.key != null ? field.key + ' ' : ''}(${field.type})`}
             </span>
           </div>
@@ -252,11 +252,11 @@ class BindToDataEditor extends Component {
         {false && Array.isArray(field.indexes) && (
           <div
             key="field-indexes"
-            className={`BindToDataEditor-field-indexes ${collapsed ? 'collapsed' : ''}`}
+            className={`${bindToDataEditorFieldIndexes} ${collapsed ? styles.collapsed : ''}`}
           >
             <div
               key="field-indexes-title"
-              className="BindToDataEditor-field-header"
+              className={styles.bindToDataEditorFieldHeader}
               style={{ padding: `0 ${padding + leftSpace}rem` }}
               onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__indexes'); }}
             >
@@ -270,7 +270,7 @@ class BindToDataEditor extends Component {
             </div>
             <div
               key="field-indexes-content"
-              className={`BindToDataEditor-field-indexes ${this.state.fieldCollapse[key + '__indexes'] ? 'collapsed' : ''}`}
+              className={`${bindToDataEditorFieldIndexes} ${this.state.fieldCollapse[key + '__indexes'] ? styles.collapsed : ''}`}
             >
               {field.indexes.map((indexItem) => {
                 let indexKey = `${key}--${indexItem[0]}--field`
@@ -298,7 +298,7 @@ class BindToDataEditor extends Component {
                 return (
                   <li key={indexKey}>
                     <div
-                      className={`BindToDataEditor-field-item ${indexIsSelected ? 'selected' : ''}`}
+                      className={`${bindToDataEditorFieldItem} ${indexIsSelected ? styles.selected : ''}`}
                       onClick={() => !indexIsDisabled && this.select({
                         field: indexItem,
                         idParts,
@@ -308,7 +308,7 @@ class BindToDataEditor extends Component {
                       })}
                     >
                       <span
-                        className={`BindToDataEditor-field-item-label ${indexIsDisabled ? 'disabled' : ''}`}
+                        className={`${bindToDataEditorFieldItemLabel} ${indexIsDisabled ? styles.disabled : ''}`}
                         style={{ padding: `0 ${(padding * 3) + leftSpace}rem` }}
                       >
                         {`${indexItem[0]} (${indexType})`}
@@ -323,12 +323,12 @@ class BindToDataEditor extends Component {
         {Array.isArray(field.properties) && (
           <div
             key="field-properties"
-            className={`BindToDataEditor-field-properties ${collapsed ? 'collapsed' : ''}`}
+            className={`${styles.bindToDataEditorFieldProperties} ${collapsed ? styles.collapsed : ''}`}
           >
             {field.type === 'array' && (
               <div
                 key="field-properties-title"
-                className="BindToDataEditor-field-header"
+                className={styles.bindToDataEditorFieldHeader}
                 style={{ padding: `0 ${padding  + leftSpace}rem` }}
                 onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__properties'); }}
               >
@@ -343,7 +343,7 @@ class BindToDataEditor extends Component {
             )}
             <div
               key="field-properties-content"
-              className={`BindToDataEditor-field-properties ${this.state.fieldCollapse[key + '__properties'] ? 'collapsed' : ''}`}
+              className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__properties'] ? styles.collapsed : ''}`}
             >
               {field.properties.map((innerField) => {
                 let isSimpleField = Array.isArray(innerField)
@@ -377,7 +377,7 @@ class BindToDataEditor extends Component {
                   <li key={innerFieldKey}>
                     {isSimpleField ? (
                       <div
-                        className={`BindToDataEditor-field-item ${innerIsSelected ? 'selected' : ''}`}
+                        className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
                         onClick={() => !innerIsDisabled && this.select({
                           field: innerField,
                           idParts,
@@ -387,7 +387,7 @@ class BindToDataEditor extends Component {
                         })}
                       >
                         <span
-                          className={`BindToDataEditor-field-item-label ${innerIsDisabled ? 'disabled' : ''}`}
+                          className={`${styles.bindToDataEditorFieldItemLabel} ${innerIsDisabled ? styles.disabled : ''}`}
                           style={{ padding: `0 ${(padding * (field.type === 'array' ? 3 : 2)) + leftSpace}rem` }}
                         >
                           {`${innerFieldId} (${innerFieldType})`}

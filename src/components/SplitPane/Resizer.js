@@ -1,5 +1,4 @@
 import React, { Component } from 'react'
-import './Resizer.css'
 
 class Resizer extends Component {
   constructor(props) {
@@ -25,7 +24,7 @@ class Resizer extends Component {
       undocked,
       undockeable
     } = this.props
-    const classes = ['Resizer', split, className]
+    const classes = ['resizer', split, className]
 
     return (
       <div className={classes.join(' ') + (collapsed ? ' collapsed' : '')} onMouseDown={this.onMouseDown}>

@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { DragSource } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
-import './ComponentBarItem.css'
+import styles from './ComponentBarItem.scss'
 
 const componentTypeSource = {
   beginDrag (props, monitor, component) {
@@ -206,7 +206,7 @@ class ComponentBarItem extends PureComponent {
       // we apply the style to the item on the javascript events instead
       <div
         ref={this.setNode}
-        className="ComponentBarItem"
+        className={styles.componentBarItem}
         onMouseOver={this.onMouseOver}
         onMouseLeave={this.onMouseLeave}
         style={{
@@ -226,8 +226,8 @@ class ComponentBarItem extends PureComponent {
         }}
         {...extraProps}
       >
-        <span className={`ComponentBarItem-icon fa ${componentType.icon}`} />
-        <span className="ComponentBarItem-name">{componentType.name}</span>
+        <span className={`${styles.componentBarItemIcon} fa ${componentType.icon}`} />
+        <span className={styles.componentBarItemName}>{componentType.name}</span>
         {this.getEmptyPreview(true)}
       </div>
     )

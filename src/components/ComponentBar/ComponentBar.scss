@@ -1,9 +1,6 @@
+@import '../../theme/common.scss';
 
-/*$primarySelectionColor: #FFFFFF;*/
-/*$tertiaryColor: $primarySelectionColor;*/
-/*$tertiaryBackgroundColor:rgb(85, 85, 85);*/
-
-.ComponentBar {
+.componentBar {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -13,17 +10,17 @@
   overflow: auto;
 }
 
-.ComponentBar:before {
+.componentBar:before {
   flex: 0 0 1.60rem;
   content: '';
 }
 
-.ComponentBar:after {
+.componentBar:after {
   flex: 0 0 0.9rem;
   content: '';
 }
 
-.ComponentBar-component-list {
+.componentBarComponentList {
   flex: 0 0 auto;
   margin: 0;
   padding: 0;
@@ -31,17 +28,17 @@
   user-select: none;
 }
 
-.ComponentBar-component-list.collapsed {
+.componentBarComponentList.collapsed {
   max-height: 0;
   overflow: hidden;
   transition: .15s;
 }
 
-.ComponentBar-component-list > .ComponentBar-component-container:last-child {
+.componentBarComponentList > .componentBarComponentContainer:last-child {
   margin-bottom: 0;
 }
 
-.ComponentBar-component-container {
+.componentBarComponentContainer {
   display: block;
   margin-bottom: 0.3rem;
   padding-left: 0.9rem;
@@ -49,7 +46,7 @@
   text-align: center;
 }
 
-.ComponentBar-component-group {
+.componentBarComponentGroup {
   background-color: rgba(0, 0, 0, 0.5);
   border-bottom: 1px solid rgba(0, 0, 0, 0.2);
   border-top: 1px solid rgba(0, 0, 0, 0.2);
@@ -61,6 +58,6 @@
   text-align: center;
 }
 
-.ComponentBar-component-group:hover {
+.componentBarComponentGroup:hover {
   background-color: rgba(0, 0, 0, 0.7);
 }

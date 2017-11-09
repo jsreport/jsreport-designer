@@ -5,7 +5,7 @@ import { DropTarget } from 'react-dnd'
 import throttle from 'lodash/throttle'
 import { ComponentDragTypes } from '../../../Constants'
 import DesignContainer from './DesignContainer'
-import './Canvas.css'
+import styles from './Canvas.scss'
 
 const canvasTarget = {
   hover (props, monitor, component) {
@@ -242,7 +242,7 @@ class Canvas extends Component {
     return connectDropTarget(
       <div
         ref={this.setNode}
-        className="Canvas"
+        className={styles.canvas}
         style={canvasStyles}
         onClick={onClick}
         {...extraProps}

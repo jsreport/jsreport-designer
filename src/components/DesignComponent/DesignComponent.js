@@ -5,7 +5,7 @@ import { observer, inject } from 'mobx-react'
 import { DragSource } from 'react-dnd'
 import componentRegistry from '../../../shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
-import './DesignComponent.css'
+import styles from './DesignComponent.scss'
 
 const componentDragSource = {
   beginDrag(props, monitor, originComponent) {
@@ -215,7 +215,7 @@ class DesignComponent extends Component {
     return connectToDragSourceConditionally(
       <div
         ref={this.getComponentRef}
-        className="DesignComponent"
+        className={styles.designComponent}
         {...extraProps}
         data-jsreport-component-type={type}
         onClick={this.handleClick}

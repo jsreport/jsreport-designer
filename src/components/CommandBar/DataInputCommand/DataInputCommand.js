@@ -32,8 +32,8 @@ class DataInputCommand extends PureComponent {
     const { showEditor } = this.state
 
     return (
-      <div className="CommandBar-command">
-        <button className="CommandBar-button" onClick={this.handleClick}>
+      <div className="commandBar-command">
+        <button className="commandBar-button" onClick={this.handleClick}>
           <span className="fa fa-database"></span>
         </button>
         {showEditor && (

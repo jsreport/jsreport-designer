@@ -1,7 +1,6 @@
+@import '../../theme/common.scss';
 
-/*$primaryHoverBackgroundColor: #1C97EA;*/
-
-.ComponentBarItem {
+.componentBarItem {
   display: block;
   font-size: 0.8rem;
   position: relative;
@@ -12,23 +11,23 @@
   user-select: none;
 }
 
-.ComponentBarItem[data-over],
-.ComponentBarItem[data-dragging-placeholder] {
+.componentBarItem[data-over],
+.componentBarItem[data-dragging-placeholder] {
   background-color: rgba(0, 0, 0, 0.3);
 }
 
-.ComponentBarItem[data-dragging-placeholder] {
+.componentBarItem[data-dragging-placeholder] {
   color: inherit;
   opacity: 0.7;
 }
 
-.ComponentBarItem-icon {
+.componentBarItemIcon {
   display: block;
   font-size: 1.5rem;
   pointer-events: none;
 }
 
-.ComponentBarItem-name {
+.componentBarItemName {
   display: block;
   font-size: 0.85rem;
   margin-top: 1rem;

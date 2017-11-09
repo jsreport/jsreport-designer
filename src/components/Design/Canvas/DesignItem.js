@@ -7,7 +7,8 @@ import Selection from './Selection'
 import DesignComponent from '../../DesignComponent'
 import getConsumedColsFromWidth from '../../../helpers/getConsumedColsFromWidth'
 import { ComponentDragTypes } from '../../../Constants'
-import './DesignItem.css'
+import styles from '../../../../static/DesignElements.css'
+import interactiveStyles from './DesignElementsInteractive.scss'
 
 const itemTarget = {
   hover (props, monitor) {
@@ -308,7 +309,7 @@ class DesignItem extends Component {
     return connectDropTarget(
       <div
         ref={this.setNode}
-        className="DesignItem"
+        className={`${styles.designItem} ${interactiveStyles.designItemInteractive}`}
         style={itemStyles}
         {...extraProps}
         onClick={this.handleClick}
