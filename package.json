@@ -56,6 +56,7 @@
   "devDependencies": {
     "font-awesome": "4.7.0",
     "font-awesome-webpack": "0.0.5-beta.2",
+    "in-publish": "2.0.0",
     "jsreport-browser-client-dist": "1.0.4",
     "jsreport-designer-dev": "file:jsreport-designer-dev",
     "mobx-react-devtools": "4.2.15"
@@ -63,6 +64,7 @@
   "scripts": {
     "start": "jsreport-designer-start --httpPort 4000",
     "run": "npm run build && jsreport-designer-start --run-only --httpPort 4000",
+    "prepublish": "in-publish && npm run build || not-in-publish",
     "build": "jsreport-designer-build --cwd built-in-components && jsreport-designer-build --config webpack/prod.config.js --disable-chunks-info"
   }
 }
