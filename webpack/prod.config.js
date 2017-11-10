@@ -8,6 +8,7 @@ const assetsPath = path.resolve(__dirname, '../static/dist')
 const {
   webpack,
   HtmlWebpackPlugin,
+  CleanWebpackPlugin,
   CaseSensitivePathsPlugin
 } = designerDev.deps
 
@@ -130,6 +131,7 @@ module.exports = {
     ]
   },
   plugins: [
+    new CleanWebpackPlugin([assetsPath], { root: path.resolve(__dirname, '../') }),
     // Makes some environment variables available to the JS code, for example:
     // if (process.env.NODE_ENV === 'production') { ... }
     new webpack.DefinePlugin({

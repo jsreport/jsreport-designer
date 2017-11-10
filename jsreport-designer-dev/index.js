@@ -16,6 +16,7 @@ module.exports = {
     webpackHotDevClientPath: require.resolve('./config/customWebpackHotDevClient'),
     errorOverlayMiddleware: require('react-dev-utils/errorOverlayMiddleware'),
     HtmlWebpackPlugin: require('html-webpack-plugin'),
+    CleanWebpackPlugin: require('clean-webpack-plugin'),
     CaseSensitivePathsPlugin: require('case-sensitive-paths-webpack-plugin'),
     WatchMissingNodeModulesPlugin: require('react-dev-utils/WatchMissingNodeModulesPlugin')
   }
