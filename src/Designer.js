@@ -1,3 +1,9 @@
+import bluebird from 'bluebird'
+import React from 'react'
+import ReactDom from 'react-dom'
+import superagent from 'superagent'
+import handlebars from 'handlebars'
+import babelRuntime from './lib/babelRuntime.js'
 import * as configuration from './lib/configuration.js'
 import api, { methods } from './helpers/api.js'
 import PropertiesEditor, { PropertyControl } from './components/Editor/PropertiesEditor'
@@ -134,6 +140,20 @@ class Designer {
         })
       }
     })
+
+    // webpack replaces all the babel runtime references in extensions with externals taking runtime from this field
+    // this basically removes the duplicated babel runtime code from extensions and decrease its sizes
+    this.runtime = babelRuntime
+
+    // the same case as for babel runtime, we expose the following libraries and replace their references in extensions
+    // using webpack externals
+    this.libraries = {
+      react: React,
+      'react-dom': ReactDom,
+      superagent: superagent,
+      bluebird: bluebird,
+      handlebars: handlebars
+    }
   }
 }
 

@@ -1,13 +1,13 @@
 
 const path = require('path')
 const designerDev = require('jsreport-designer-dev')
+const getBabelPreset = designerDev.getBabelPreset
+const getStylesConfig = designerDev.getStylesConfig
 const assetsPath = path.resolve(__dirname, '../static/dist')
 
 const {
-  babelPreset,
   webpack,
   webpackHotDevClientPath,
-  autoprefixer,
   HtmlWebpackPlugin,
   CaseSensitivePathsPlugin,
   WatchMissingNodeModulesPlugin
@@ -22,7 +22,9 @@ module.exports = (appDir, extensions) => {
     context: path.resolve(__dirname, '..'),
     entry: {
       main: [
+        // add some polyfills
         './src/polyfill.js',
+        // configure webpack publich path
         './src/publicPath.js',
         // Include an alternative client for dev-middleware. A client's job is to
         // connect to dev-middleware by a socket and get notified about changes.
@@ -102,7 +104,7 @@ module.exports = (appDir, extensions) => {
           },
           options: {
             // using our prepared preset
-            presets: [babelPreset],
+            presets: [getBabelPreset()],
             // This is a feature of `babel-loader` for webpack (not Babel itself).
             // It enables caching results in ./node_modules/.cache/babel-loader/
             // directory for faster rebuilds.
@@ -152,7 +154,7 @@ module.exports = (appDir, extensions) => {
           loader: 'file-loader'
         },
         {
-          test: /\.(png|jpg)$/,
+          test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
           loader: 'url-loader',
           options: {
             limit: 8192
@@ -161,12 +163,6 @@ module.exports = (appDir, extensions) => {
       ]
     },
     plugins: [
-      // Generates an `index.html` file with the <script> injected.
-      new HtmlWebpackPlugin({
-        hash: true,
-        inject: true,
-        template: path.join(__dirname, '../static/index.html'),
-      }),
       // Add module names to factory functions so they appear in browser profiler.
       new webpack.NamedModulesPlugin(),
       // Makes some environment variables available to the JS code, for example:
@@ -191,7 +187,13 @@ module.exports = (appDir, extensions) => {
       // solution that requires the user to opt into importing specific locales.
       // https://github.com/jmblog/how-to-optimize-momentjs-with-webpack
       // You can remove this if you don't use Moment.js:
-      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/)
+      new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/),
+      // Generates an `index.html` file with the <script> injected.
+      new HtmlWebpackPlugin({
+        hash: true,
+        inject: true,
+        template: path.join(__dirname, '../static/index.html'),
+      })
     ],
     // Some libraries import Node modules but don't use them in the browser.
     // Tell Webpack to provide empty mocks for them so importing them works.
@@ -209,66 +211,4 @@ module.exports = (appDir, extensions) => {
       hints: false
     }
   }
-}
-
-function getStylesConfig ({ modulesEnabled, processor } = {}) {
-  let loaders = [{
-    loader: 'style-loader',
-    options: {
-      sourceMap: modulesEnabled === true || processor != null
-    }
-  }]
-
-  if (modulesEnabled === true) {
-    loaders.push({
-      loader: 'css-loader',
-      options: {
-        modules: true,
-        localIdentName: '[local]___[hash:base64:5]',
-        sourceMap: true,
-        importLoaders: processor != null ? 2 : 1
-      }
-    })
-  } else {
-    loaders.push({
-      loader: 'css-loader',
-      options: {
-        sourceMap: processor != null,
-        importLoaders: processor != null ? 2 : 1
-      }
-    })
-  }
-
-  loaders.push({
-    loader: 'postcss-loader',
-    options: {
-      sourceMap: modulesEnabled === true || processor != null,
-      // webpack requires an identifier to support all cases
-      ident: 'postcss',
-      plugins: () => [
-        designerDev.deps['postcss-flexbugs-fixes'],
-        autoprefixer
-      ]
-    }
-  })
-
-  if (processor === 'sass') {
-    loaders.push({
-      loader: 'sass-loader',
-      options: {
-        sourceMap: true,
-        outputStyle: 'expanded'
-      }
-    })
-  } else if (processor === 'less') {
-    loaders.push({
-      loader: 'less-loader',
-      options: {
-        sourceMap: true,
-        outputStyle: 'expanded'
-      }
-    })
-  }
-
-  return loaders
 }

@@ -37,6 +37,8 @@ node_modules
 /build
 static/dist
 extensions_dev.js
+built-in-components/designer/main.js
+built-in-components/designer/main.js.map
 
 # misc
 .DS_Store

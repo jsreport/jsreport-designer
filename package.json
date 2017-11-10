@@ -23,7 +23,18 @@
     "Firefox ESR",
     "not ie < 9"
   ],
+  "files": [
+    "built-in-components",
+    "lib",
+    "shared",
+    "src",
+    "static",
+    "webpack",
+    "index.js",
+    "jsreport.config.js"
+  ],
   "dependencies": {
+    "babel-runtime": "6.26.0",
     "bluebird": "3.5.1",
     "draft-js": "0.10.3",
     "draft-js-export-html": "1.2.0",
@@ -51,7 +62,7 @@
   },
   "scripts": {
     "start": "jsreport-designer-start --httpPort 4000",
-    "run": "npm run build && jsreport-designer-start --run-only",
-    "build": "jsreport-designer-build --disable-chunks-info"
+    "run": "npm run build && jsreport-designer-start --run-only --httpPort 4000",
+    "build": "jsreport-designer-build --cwd built-in-components && jsreport-designer-build --config webpack/prod.config.js --disable-chunks-info"
   }
 }
