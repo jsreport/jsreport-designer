@@ -31,6 +31,8 @@ module.exports = (appDir, extensions) => {
         // make a syntax error, this client will display a syntax error overlay.
         // Note: we use a custom client to bring better experience.
         webpackHotDevClientPath,
+        // load font-awesome based on configuration
+        'font-awesome-webpack!./src/theme/font-awesome.config.js',
         // Finally, the designer entry point code
         './src/client.js',
         // We include the app code last so that if there is a runtime error during
@@ -125,16 +127,20 @@ module.exports = (appDir, extensions) => {
           // except for styles inside theme folder
           test: /\.scss$/,
           exclude: [/.*theme.*/],
-          use: getStylesConfig({ modulesEnabled: true, sassEnabled: true })
+          use: getStylesConfig({ modulesEnabled: true, processor: 'sass' })
         },
         {
           // sass styles inside theme folder are global
           test: /\.scss$/,
           include: [/.*theme.*\.scss/],
-          use: getStylesConfig({ sassEnabled: true })
+          use: getStylesConfig({ processor: 'sass' })
         },
         {
-          test: /\.woff(\?v=\d+\.\d+\.\d+)?$/,
+          test: /\.less$/,
+          use: getStylesConfig({ modulesEnabled: true, processor: 'less' })
+        },
+        {
+          test: /\.woff(2)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
           loader: 'url-loader',
           options: {
             limit: 10000,
@@ -142,28 +148,8 @@ module.exports = (appDir, extensions) => {
           }
         },
         {
-          test: /\.woff2(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader',
-          options: {
-            limit: 10000,
-            mimetype: 'application/font-woff'
-          }
-        },
-        {
-          test: /\.ttf(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader',
-          options: {
-            limit: 10000,
-            mimetype: 'application/octet-stream'
-          }
-        },
-        {
-          test: /\.svg(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'url-loader',
-          options: {
-            limit: 10000,
-            mimetype: 'image/svg+xml'
-          }
+          test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+          loader: 'file-loader'
         },
         {
           test: /\.(png|jpg)$/,
@@ -171,10 +157,6 @@ module.exports = (appDir, extensions) => {
           options: {
             limit: 8192
           }
-        },
-        {
-          test: /\.eot(\?v=\d+\.\d+\.\d+)?$/,
-          loader: 'file-loader'
         }
       ]
     },
@@ -218,22 +200,22 @@ module.exports = (appDir, extensions) => {
       fs: 'empty',
       net: 'empty',
       tls: 'empty',
-      child_process: 'empty',
+      child_process: 'empty'
     },
     // Turn off performance hints during development because we don't do any
     // splitting or minification in interest of speed. These warnings become
     // cumbersome.
     performance: {
-      hints: false,
+      hints: false
     }
   }
 }
 
-function getStylesConfig ({ modulesEnabled, sassEnabled } = {}) {
+function getStylesConfig ({ modulesEnabled, processor } = {}) {
   let loaders = [{
     loader: 'style-loader',
     options: {
-      sourceMap: modulesEnabled === true || sassEnabled === true
+      sourceMap: modulesEnabled === true || processor != null
     }
   }]
 
@@ -244,15 +226,15 @@ function getStylesConfig ({ modulesEnabled, sassEnabled } = {}) {
         modules: true,
         localIdentName: '[local]___[hash:base64:5]',
         sourceMap: true,
-        importLoaders: sassEnabled === true ? 2 : 1
+        importLoaders: processor != null ? 2 : 1
       }
     })
   } else {
     loaders.push({
       loader: 'css-loader',
       options: {
-        sourceMap: sassEnabled === true,
-        importLoaders: sassEnabled === true ? 2 : 1
+        sourceMap: processor != null,
+        importLoaders: processor != null ? 2 : 1
       }
     })
   }
@@ -260,7 +242,7 @@ function getStylesConfig ({ modulesEnabled, sassEnabled } = {}) {
   loaders.push({
     loader: 'postcss-loader',
     options: {
-      sourceMap: modulesEnabled === true || sassEnabled === true,
+      sourceMap: modulesEnabled === true || processor != null,
       // webpack requires an identifier to support all cases
       ident: 'postcss',
       plugins: () => [
@@ -270,9 +252,17 @@ function getStylesConfig ({ modulesEnabled, sassEnabled } = {}) {
     }
   })
 
-  if (sassEnabled === true) {
+  if (processor === 'sass') {
     loaders.push({
       loader: 'sass-loader',
+      options: {
+        sourceMap: true,
+        outputStyle: 'expanded'
+      }
+    })
+  } else if (processor === 'less') {
+    loaders.push({
+      loader: 'less-loader',
       options: {
         sourceMap: true,
         outputStyle: 'expanded'

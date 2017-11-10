@@ -43,6 +43,8 @@
     "superagent": "3.6.3"
   },
   "devDependencies": {
+    "font-awesome": "4.7.0",
+    "font-awesome-webpack": "0.0.5-beta.2",
     "jsreport-browser-client-dist": "1.0.4",
     "jsreport-designer-dev": "file:jsreport-designer-dev",
     "mobx-react-devtools": "4.2.15"
