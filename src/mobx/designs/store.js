@@ -1,4 +1,4 @@
-import shortid from 'shortid'
+import nanoid from 'nanoid'
 import { observable, computed } from 'mobx'
 
 function setDefaults (instance, defaults) {
@@ -79,7 +79,7 @@ class Design {
     setDefaults(this, defaults)
 
     if (this.id == null) {
-      this.id = `D-${shortid.generate()}`
+      this.id = `D-${nanoid(7)}`
     }
   }
 }
@@ -118,7 +118,7 @@ class DesignGroup {
     setDefaults(this, defaults)
 
     if (this.id == null) {
-      this.id = `DG-${shortid.generate()}`
+      this.id = `DG-${nanoid(7)}`
     }
   }
 }
@@ -163,7 +163,7 @@ class DesignItem {
     setDefaults(this, defaults)
 
     if (this.id == null) {
-      this.id = `DI-${shortid.generate()}`
+      this.id = `DI-${nanoid(7)}`
     }
   }
 }
@@ -203,7 +203,7 @@ class DesignComponent {
     setDefaults(this, defaults)
 
     if (this.id == null) {
-      this.id = `DC-${shortid.generate()}`
+      this.id = `DC-${nanoid(7)}`
     }
   }
 }

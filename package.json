@@ -34,32 +34,31 @@
     "jsreport.config.js"
   ],
   "dependencies": {
-    "babel-runtime": "6.26.0",
     "bluebird": "3.5.1",
-    "draft-js": "0.10.3",
-    "draft-js-export-html": "1.2.0",
     "handlebars": "4.0.10",
     "lodash": "4.17.4",
+    "nanoid": "1.0.1",
+    "object-assign": "4.1.1",
+    "serve-favicon": "2.4.5",
+    "serve-static": "1.13.1"
+  },
+  "devDependencies": {
+    "babel-runtime": "6.26.0",
+    "draft-js": "0.10.3",
+    "draft-js-export-html": "1.2.0",
+    "font-awesome": "4.7.0",
+    "font-awesome-webpack": "0.0.5-beta.2",
+    "in-publish": "2.0.0",
+    "jsreport-browser-client-dist": "1.0.4",
     "mobx": "3.3.1",
     "mobx-react": "4.3.3",
-    "object-assign": "4.1.1",
+    "mobx-react-devtools": "4.2.15",
     "prop-types": "15.6.0",
     "react": "16.0.0",
     "react-dnd": "2.5.3",
     "react-dnd-html5-backend": "2.5.3",
     "react-dom": "16.0.0",
-    "serve-favicon": "2.4.5",
-    "serve-static": "1.13.1",
-    "shortid": "2.2.8",
     "superagent": "3.6.3"
-  },
-  "devDependencies": {
-    "font-awesome": "4.7.0",
-    "font-awesome-webpack": "0.0.5-beta.2",
-    "in-publish": "2.0.0",
-    "jsreport-browser-client-dist": "1.0.4",
-    "jsreport-designer-dev": "file:jsreport-designer-dev",
-    "mobx-react-devtools": "4.2.15"
   },
   "scripts": {
     "start": "jsreport-designer-start --httpPort 4000",

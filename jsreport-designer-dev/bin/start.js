@@ -66,6 +66,7 @@ if (!argv.runOnly) {
   // different projects (like JSREPORT_DESIGNER_DEV) and also add
   // JSREPORT_ENV as a source for reporter.options.mode
 
+  // enable this when studio does not use the same var for webpack compilation
   // process.env.NODE_ENV = 'jsreport-development'
   // put jsreport designer in dev to compile dependencies in express middleware
   process.env.JSREPORT_DESIGNER_DEV = true
