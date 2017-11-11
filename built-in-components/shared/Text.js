@@ -1,14 +1,15 @@
 
-module.exports.getDefaultProps = function () {
-  return {
-    text: 'Sample text'
+module.exports = {
+  getDefaultProps () {
+    return {
+      text: 'Sample text'
+    }
+  },
+  template () {
+    return (
+      `
+        <span>{{text}}</span>
+      `
+    )
   }
-}
-
-module.exports.template = function () {
-  return (
-    `
-      <span>{{text}}</span>
-    `
-  )
 }

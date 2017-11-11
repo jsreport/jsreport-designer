@@ -222,9 +222,11 @@ function resolveBindingExpression (expression, context) {
   return result
 }
 
-module.exports.loadComponents = loadComponents
-module.exports.getComponentsDefinition = getComponentsDefinition
-module.exports.getComponentDefinition = getComponentDefinition
-module.exports.getComponents = getComponents
-module.exports.getComponent = getComponent
-module.exports.compileTemplate = compileTemplate
+module.exports = {
+  loadComponents,
+  getComponentsDefinition,
+  getComponentDefinition,
+  getComponents,
+  getComponent,
+  compileTemplate
+}

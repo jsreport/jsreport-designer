@@ -92,9 +92,17 @@ module.exports = (appDir, extensions) => {
           loader: 'babel-loader',
           exclude: (modulePath) => {
             for (let key in extensions) {
+              let pathRelativeToExtension = modulePath.replace(extensions[key].directory, '')
+
               if (
                 modulePath.indexOf(extensions[key].directory) !== -1 &&
-                modulePath.replace(extensions[key].directory, '').indexOf('node_modules') === -1
+                // this condition prevents collisions when an extensions like
+                // "../jsreport-browser-client" is found but modulePath includes a file with a name
+                // that contains the extension (like "../jsreport-browser-client-dist/"),
+                // se we ensure that next character of relative path should be a path separator
+                // to avoid this cases
+                (pathRelativeToExtension[0] === '/' || pathRelativeToExtension[0] === '\\') &&
+                pathRelativeToExtension.indexOf('node_modules') === -1
               ) {
                 return false
               }
