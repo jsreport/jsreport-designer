@@ -4,6 +4,7 @@ export default {
   'core-js/object/keys': require('babel-runtime/core-js/object/keys'),
   'core-js/json/stringify': require('babel-runtime/core-js/json/stringify'),
   'core-js/object/assign': require('babel-runtime/core-js/object/assign'),
+  'helpers/typeof': require('babel-runtime/helpers/typeof'),
   'helpers/defineProperty': require('babel-runtime/helpers/defineProperty'),
   'helpers/classCallCheck': require('babel-runtime/helpers/classCallCheck'),
   'helpers/createClass': require('babel-runtime/helpers/createClass'),
