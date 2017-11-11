@@ -1,1 +1,0 @@
-# jsreport-designer-dev
