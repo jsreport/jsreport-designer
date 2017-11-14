@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
+import deepForceUpdate from 'react-deep-force-update'
 import { useStrict, toJS } from 'mobx';
 import { Provider } from 'mobx-react';
 import zipObject from 'lodash/zipObject'
@@ -40,7 +41,54 @@ Designer = window.Designer = createDesigner(stores)
 
 // expose utility for debugging
 if (__DEVELOPMENT__) {
+  const mitt = require('mitt')
+
   window.observableToJS = toJS
+
+  if (!window.__designer_components_hmr__) {
+    Object.defineProperty(window, '__designer_components_hmr__', {
+      value: mitt(),
+      writable: false
+    })
+  }
+
+  // hot reload of component files
+  window.__designer_components_hmr__.on('designerComponentFileHMR', (componentChanged) => {
+    let compName = componentChanged.name
+    let compModule = componentChanged.module
+    let componentsToReload
+
+    // first delete cache for changed component type (all components of this type will refreshed)
+    if (componentRegistry.componentsCache[compName]) {
+      Object.keys(componentRegistry.componentsCache[compName]).forEach((compId) => {
+        componentRegistry.componentsCache[compName][compId] = undefined
+      })
+    }
+
+    // then update `configuration.componentTypes`
+    if (configuration.componentTypes[compName]) {
+      configuration.componentTypes[compName].module = compModule
+    }
+
+    componentsToReload = getComponentsToLoad([compName])
+
+    // reload components in registry
+    componentRegistry.loadComponents(componentsToReload, true)
+
+    render()
+  })
+}
+
+class AppContainer extends Component {
+  componentWillReceiveProps() {
+    // Force-update the whole tree when hot reloading, including
+    // components that refuse to update.
+    deepForceUpdate(this)
+  }
+
+  render() {
+    return this.props.children
+  }
 }
 
 const start = async () => {
@@ -59,9 +107,31 @@ const start = async () => {
     })
   ])
 
+  let componentsToLoad = getComponentsToLoad(Object.keys(configuration.componentTypesDefinition))
+
+  componentRegistry.loadComponents(componentsToLoad)
+
+  for (const key in Designer.initializeListeners) {
+    await Designer.initializeListeners[key]()
+  }
+
+  // create a default design at the start
+  actions.designsActions.add()
+  actions.editorActions.openDesign(stores.designsStore.designs.keys()[0])
+
+  render()
+
+  for (const key in Designer.readyListeners) {
+    await Designer.readyListeners[key]()
+  }
+}
+
+start()
+
+function getComponentsToLoad (componentsTypes) {
   let componentsToLoad = []
 
-  Object.keys(configuration.componentTypesDefinition).forEach((compName) => {
+  componentsTypes.forEach((compName) => {
     let compDef = configuration.componentTypesDefinition[compName]
 
     if (configuration.componentTypes[compDef.name] != null) {
@@ -75,26 +145,25 @@ const start = async () => {
     }
   })
 
-  componentRegistry.loadComponents(componentsToLoad)
-
-  for (const key in Designer.initializeListeners) {
-    await Designer.initializeListeners[key]()
-  }
-
-  // create a default design at the start
-  actions.designsActions.add()
-  actions.editorActions.openDesign(stores.designsStore.designs.keys()[0])
-
-  ReactDOM.render(
-    <Provider {...stores} {...actions}>
-      <App />
-    </Provider>,
-    document.getElementById('root')
-  )
-
-  for (const key in Designer.readyListeners) {
-    await Designer.readyListeners[key]()
-  }
+  return componentsToLoad
 }
 
-start()
+function render () {
+  if (__DEVELOPMENT__) {
+    ReactDOM.render(
+      <Provider {...stores} {...actions}>
+        <AppContainer>
+          <App />
+        </AppContainer>
+      </Provider>,
+      document.getElementById('root')
+    )
+  } else {
+    ReactDOM.render(
+      <Provider {...stores} {...actions}>
+        <App />
+      </Provider>,
+      document.getElementById('root')
+    )
+  }
+}

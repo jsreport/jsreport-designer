@@ -12,8 +12,6 @@ class ComponentCollectionPreviewLayer extends Component {
 
     this.previewNodes = {}
 
-    this.registeredComponents = Object.keys(componentRegistry.getComponents())
-
     this.renderComponentPreview = this.renderComponentPreview.bind(this)
     this.getRefPreviewNode = this.getRefPreviewNode.bind(this)
   }
@@ -52,6 +50,7 @@ class ComponentCollectionPreviewLayer extends Component {
     return (
       <div key={componentType} style={{ width: `${colWidth}px`, display: 'none' }}>
         <DesignComponent
+          id={`collectionPreview${componentType}`}
           componentRef={this.getRefPreviewNode}
           type={componentType}
           componentProps={this.getDefaultPropsForComponent(componentType)}
@@ -64,7 +63,7 @@ class ComponentCollectionPreviewLayer extends Component {
     return (
       <div className={styles.componentCollectionPreviewLayer}>
         <div className={styles.componentCollectionPreviewLayerList}>
-          {this.registeredComponents.map(this.renderComponentPreview)}
+          {Object.keys(componentRegistry.getComponents()).map(this.renderComponentPreview)}
         </div>
       </div>
     )

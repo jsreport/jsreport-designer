@@ -19,7 +19,17 @@ class SideBar extends Component {
   constructor (props) {
     super(props)
 
-    this.registeredComponents = Object.keys(
+    this.componentCollectionPreviewNode = document.getElementById('component-collection-preview-root')
+
+    this.getRegisteredComponents = this.getRegisteredComponents.bind(this)
+    this.handleComponentPreviewNodesChange = this.handleComponentPreviewNodesChange.bind(this)
+    this.handleComponentBarItemDragStart = this.handleComponentBarItemDragStart.bind(this)
+    this.handleComponentBarItemDragEnd = this.handleComponentBarItemDragEnd.bind(this)
+    this.handleChangesInEditor = this.handleChangesInEditor.bind(this)
+  }
+
+  getRegisteredComponents () {
+    return Object.keys(
       componentRegistry.getComponents()
     ).map((compName) => {
       return {
@@ -28,13 +38,6 @@ class SideBar extends Component {
         group: configuration.componentTypesDefinition[compName].group,
       }
     })
-
-    this.componentCollectionPreviewNode = document.getElementById('component-collection-preview-root')
-
-    this.handleComponentPreviewNodesChange = this.handleComponentPreviewNodesChange.bind(this)
-    this.handleComponentBarItemDragStart = this.handleComponentBarItemDragStart.bind(this)
-    this.handleComponentBarItemDragEnd = this.handleComponentBarItemDragEnd.bind(this)
-    this.handleChangesInEditor = this.handleChangesInEditor.bind(this)
   }
 
   handleComponentPreviewNodesChange (previewNodes) {
@@ -139,7 +142,7 @@ class SideBar extends Component {
           }}
         >
           <ComponentBar
-            componentCollection={this.registeredComponents}
+            componentCollection={this.getRegisteredComponents()}
             onItemDragStart={this.handleComponentBarItemDragStart}
             onItemDragEnd={this.handleComponentBarItemDragEnd}
           />

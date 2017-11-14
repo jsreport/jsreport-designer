@@ -25,11 +25,10 @@ class ComponentEditor extends Component {
       richContentEditor: null
     }
 
-    this.meta = componentRegistry.getComponentDefinition(props.type) || {}
-
     this.changesInterceptor = null
 
     this.connectToChangesInterceptor = this.connectToChangesInterceptor.bind(this)
+    this.getMeta = this.getMeta.bind(this)
     this.getPropMeta = this.getPropMeta.bind(this)
     this.getValue = this.getValue.bind(this)
     this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
@@ -58,8 +57,13 @@ class ComponentEditor extends Component {
     return componentTypes[type].propertiesEditor
   }
 
+  getMeta () {
+    return componentRegistry.getComponentDefinition(this.props.type) || {}
+  }
+
   getPropMeta (propName) {
-    let propsMeta = this.meta.propsMeta != null ? this.meta.propsMeta : {}
+    const meta = this.getMeta()
+    let propsMeta = meta.propsMeta != null ? meta.propsMeta : {}
     let keys = propName == null ? '' : propName.split('.')
     let context = propsMeta
     let result
@@ -437,7 +441,7 @@ class ComponentEditor extends Component {
       <div className={styles.componentEditor}>
         <div className={styles.componentEditorContent}>
           <h3 className={styles.componentEditorTitle}>
-            <span className={`fa ${(this.meta.icon || '')}`} />
+            <span className={`fa ${(this.getMeta().icon || '')}`} />
             &nbsp;
             {type}
           </h3>

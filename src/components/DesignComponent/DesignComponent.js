@@ -5,7 +5,8 @@ import { observer, inject } from 'mobx-react'
 import { DragSource } from 'react-dnd'
 import componentRegistry from '../../../shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
-import styles from './DesignComponent.scss'
+import styles from '../../../static/DesignElements.css'
+import interactiveStyles from './DesignComponentInteractive.scss'
 
 const componentDragSource = {
   beginDrag(props, monitor, originComponent) {
@@ -40,13 +41,15 @@ class DesignComponent extends Component {
   constructor (props) {
     super(props)
 
-    this.cacheProps = {}
     this.dataInputChanged = false
     this.customCompiledTemplate = null
 
     if (props.template != null && props.rawContent == null) {
       this.customCompiledTemplate = componentRegistry.compileTemplate(props.template)
     }
+
+    this.setComponentCache = this.setComponentCache.bind(this)
+    this.getComponentCache = this.getComponentCache.bind(this)
 
     this.getComponentRef = this.getComponentRef.bind(this)
     this.getRawContent = this.getRawContent.bind(this)
@@ -55,7 +58,23 @@ class DesignComponent extends Component {
     this.renderComponent = this.renderComponent.bind(this)
   }
 
+  componentWillMount () {
+    let componentCache = this.getComponentCache()
+
+    if (componentCache) {
+      this.setComponentCache({ ...componentCache, keep: true })
+    } else {
+      this.setComponentCache(undefined)
+    }
+  }
+
   componentDidMount () {
+    let componentCache = this.getComponentCache()
+
+    if (componentCache && componentCache.keep) {
+      this.setComponentCache({ ...componentCache, keep: false })
+    }
+
     if (!this.props.connectDragPreview) {
       return
     }
@@ -67,7 +86,7 @@ class DesignComponent extends Component {
 
   componentWillReceiveProps (nextProps) {
     if (this.props.type !== nextProps.type) {
-      this.cacheProps = {}
+      this.setComponentCache(undefined)
     }
 
     if (nextProps.bindings != null && this.props.dataInput !== nextProps.dataInput) {
@@ -77,13 +96,39 @@ class DesignComponent extends Component {
 
     if (this.props.template == null && nextProps.template != null) {
       this.customCompiledTemplate = componentRegistry.compileTemplate(nextProps.template)
-      this.cacheProps = {}
+      this.setComponentCache(undefined)
     } else if (this.props.template != null && nextProps.template == null) {
       this.customCompiledTemplate = null
-      this.cacheProps = {}
+      this.setComponentCache(undefined)
     } else if (this.props.bindings !== nextProps.bindings) {
-      this.cacheProps = {}
+      this.setComponentCache(undefined)
     }
+  }
+
+  componentWillUnmount () {
+    let componentCache = this.getComponentCache()
+
+    if (componentCache && componentCache.keep) {
+      return
+    }
+
+    this.setComponentCache(undefined)
+  }
+
+  setComponentCache (value) {
+    componentRegistry.componentsCache[this.props.type] = componentRegistry.componentsCache[this.props.type] || {}
+    componentRegistry.componentsCache[this.props.type][this.props.id] = value
+  }
+
+  getComponentCache () {
+    if (
+      !componentRegistry.componentsCache[this.props.type] ||
+      !componentRegistry.componentsCache[this.props.type][this.props.id]
+    ) {
+      return
+    }
+
+    return componentRegistry.componentsCache[this.props.type][this.props.id]
   }
 
   getComponentRef (el) {
@@ -110,8 +155,10 @@ class DesignComponent extends Component {
   }
 
   getRawContent () {
-    if (this.cacheProps && this.cacheProps[this.props.type]) {
-      return this.cacheProps[this.props.type].content
+    let componentCache = this.getComponentCache()
+
+    if (componentCache) {
+      return componentCache.content
     }
 
     return null
@@ -146,14 +193,13 @@ class DesignComponent extends Component {
   renderComponent (type, componentProps) {
     const { bindings, dataInput } = this.props
     const customCompiledTemplate = this.customCompiledTemplate
+    const componentCache = this.getComponentCache()
     const renderComponentFromTemplate = componentRegistry.getComponent(type).render
     let shouldRenderAgain = true
     let result
     let content
 
-    if (this.cacheProps[type] == null) {
-      this.cacheProps = {}
-    } else if (this.cacheProps[type].props === componentProps && !this.dataInputChanged) {
+    if (componentCache != null && componentCache.props === componentProps && !this.dataInputChanged) {
       shouldRenderAgain = false
     }
 
@@ -173,14 +219,14 @@ class DesignComponent extends Component {
         data: dataInput != null ? dataInput.data : null,
       })
 
-      this.cacheProps[type] = {
+      this.setComponentCache({
         props: componentProps,
         content: result.content
-      }
+      })
 
       content = result.content
     } else {
-      content = this.cacheProps[type].content
+      content = componentCache.content
     }
 
     return content
@@ -215,7 +261,7 @@ class DesignComponent extends Component {
     return connectToDragSourceConditionally(
       <div
         ref={this.getComponentRef}
-        className={styles.designComponent}
+        className={`${styles.designComponent} ${interactiveStyles.designComponentInteractive}`}
         {...extraProps}
         data-jsreport-component-type={type}
         onClick={this.handleClick}

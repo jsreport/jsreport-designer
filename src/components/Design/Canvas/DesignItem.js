@@ -327,7 +327,9 @@ class DesignItem extends Component {
         )}
         {components.map((component, index) => (
           <DesignComponent
-            key={component.id}
+            // type is in key because we want the component to re-mount if type
+            // is changed
+            key={`${component.type}-${component.id}`}
             component={component}
             onClick={this.handleComponentClick}
             onDragStart={this.handleComponentDragStart}

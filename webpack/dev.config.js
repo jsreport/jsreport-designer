@@ -69,9 +69,9 @@ module.exports = (appDir, extensions) => {
     },
     resolveLoader: {
       // This allows you to set a fallback for where Webpack should look for loader modules.
-      // first we look in designer dev package modules,
+      // first we look in designer dev local loaders, then designer dev loaders in node modules,
       // and then fallback to normal node modules resolution
-      modules: [path.join(designerDev.dirname, 'node_modules'), 'node_modules']
+      modules: [path.join(designerDev.dirname, 'loaders'), path.join(designerDev.dirname, 'node_modules'), 'node_modules']
     },
     externals: [
       // we expose Designer API as 'jsreport-designer' for extensions
@@ -89,8 +89,42 @@ module.exports = (appDir, extensions) => {
       rules: [
         {
           test: /\.(js|jsx)$/,
+          // we process extensions entry points separately because we want
+          // to run a custom loader that add HMR to component files
+          include: [/main_dev\.(js|jsx)$/],
+          use: [
+            {
+              loader: 'accept-component-definition-hmr-loader',
+              options: {
+                // the name of the directory (inside extension working directory)
+                // that contains the components
+                componentsDirName: 'shared'
+              }
+            },
+            {
+              loader: 'babel-loader',
+              options: {
+                // using our prepared preset
+                presets: [getBabelPreset(true)],
+                // This is a feature of `babel-loader` for webpack (not Babel itself).
+                // It enables caching results in ./node_modules/.cache/babel-loader/
+                // directory for faster rebuilds.
+                cacheDirectory: true
+              }
+            }
+          ]
+        },
+        {
+          test: /\.(js|jsx)$/,
           loader: 'babel-loader',
           exclude: (modulePath) => {
+            const ignoreExtensionEntryPointRegExp = /main_dev\.(js|jsx)$/
+
+            // ignore extension entry points because they are handled in the above configuration
+            if (ignoreExtensionEntryPointRegExp.test(modulePath)) {
+              return true
+            }
+
             for (let key in extensions) {
               let pathRelativeToExtension = modulePath.replace(extensions[key].directory, '')
 

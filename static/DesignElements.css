@@ -38,3 +38,26 @@
   /* prevents safari to highlight when resizing/dragging */
   user-select: none;
 }
+
+.designComponent {
+  display: inline-block;
+  position: relative;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/*pseudo-element to prevent any dom element inside to a component*/
+/*to be draggable (since images an links are draggable by default*/
+/*we need to disable that behaviour)*/
+.designComponent:before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 0;
+}

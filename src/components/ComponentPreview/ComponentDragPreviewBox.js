@@ -16,6 +16,7 @@ class ComponentDragPreviewBox extends PureComponent {
         opacity: '0.7'
       }}>
         <DesignComponent
+          id={`dragPreview${componentMeta.name}`}
           type={componentMeta.name}
           dataInput={dataInput}
           componentProps={componentMeta.props}

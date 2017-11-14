@@ -29,7 +29,7 @@ function compileTemplate (template) {
   return Handlebars.compile(template)
 }
 
-function loadComponents (componentsToLoad) {
+function loadComponents (componentsToLoad, reload = false) {
   const componentRequires = componentsToLoad.map((componentDef) => {
     let originalComponentModule
     let componentTemplate
@@ -37,7 +37,7 @@ function loadComponents (componentsToLoad) {
     let helpersInTemplate
     let componentModule
 
-    if (getComponent(componentDef.name) != null) {
+    if (!reload && getComponent(componentDef.name) != null) {
       // component type is already registered don't try to load it again
       return undefined
     }
@@ -228,5 +228,6 @@ module.exports = {
   getComponentDefinition,
   getComponents,
   getComponent,
-  compileTemplate
+  compileTemplate,
+  componentsCache: {}
 }
