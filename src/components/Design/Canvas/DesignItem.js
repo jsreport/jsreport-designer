@@ -227,7 +227,7 @@ class DesignItem extends Component {
     componentDimensions = componentRef.node.getBoundingClientRect()
 
     componentConsumedCols = getConsumedColsFromWidth({
-      colWidth: colWidth,
+      baseColWidth: colWidth,
       width: componentDimensions.width
     })
 

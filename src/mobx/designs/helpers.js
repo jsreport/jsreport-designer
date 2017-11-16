@@ -328,10 +328,20 @@ function findProjectedFilledAreaWhenResizing ({
     ) : baseHighlightedArea.areaBox.left
 
     if (direction === 'left') {
-      let prevItem = currentGroup.items[canvasRegistry.get(element.id).index - 1]
+      let prevItem
+
+      if (canvasRegistry.get(element.id).index - 1 >= 0) {
+        prevItem = currentGroup.items[canvasRegistry.get(element.id).index - 1]
+      }
+
       newSelectionIsEmpty = !prevItem || (prevItem.end < fromCol)
     } else {
-      let nextItem = currentGroup.items[canvasRegistry.get(element.id).index + 1]
+      let nextItem
+
+      if (canvasRegistry.get(element.id).index + 1 < currentGroup.items.length) {
+        nextItem = currentGroup.items[canvasRegistry.get(element.id).index + 1]
+      }
+
       newSelectionIsEmpty = !nextItem || (nextItem.start > toCol)
     }
   } else {
