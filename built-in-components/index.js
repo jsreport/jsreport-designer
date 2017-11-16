@@ -1,5 +1,5 @@
 
-const main = require('./lib/components')
+const main = require('./lib/main')
 const config = require('./jsreport.config')
 
 module.exports = function (options) {

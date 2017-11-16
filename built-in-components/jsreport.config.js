@@ -1,5 +1,5 @@
 module.exports = {
   'name': 'designer-built-in-components',
-  'main': 'lib/components.js',
+  'main': 'lib/main.js',
   'dependencies': ['designer']
 }

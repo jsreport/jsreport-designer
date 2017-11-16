@@ -13,7 +13,7 @@ const {
   WatchMissingNodeModulesPlugin
 } = designerDev.deps
 
-module.exports = (appDir, extensions) => {
+module.exports = (appDir, extensions, componentTypes) => {
   return {
     // this shows original source files as is in devtools.
     // set 'eval' instead if you prefer to see the compiled output in DevTools.
@@ -89,16 +89,15 @@ module.exports = (appDir, extensions) => {
       rules: [
         {
           test: /\.(js|jsx)$/,
-          // we process extensions entry points separately because we want
+          // we process components entry points separately because we want
           // to run a custom loader that add HMR to component files
-          include: [/main_dev\.(js|jsx)$/],
+          include: [/index.designer\.(js|jsx)$/],
           use: [
             {
               loader: 'accept-component-definition-hmr-loader',
               options: {
-                // the name of the directory (inside extension working directory)
-                // that contains the components
-                componentsDirName: 'shared'
+                // registered components
+                componentTypes
               }
             },
             {
@@ -118,9 +117,9 @@ module.exports = (appDir, extensions) => {
           test: /\.(js|jsx)$/,
           loader: 'babel-loader',
           exclude: (modulePath) => {
-            const ignoreExtensionEntryPointRegExp = /main_dev\.(js|jsx)$/
+            const ignoreExtensionEntryPointRegExp = /index.designer\.(js|jsx)$/
 
-            // ignore extension entry points because they are handled in the above configuration
+            // ignore extension component entry points because they are handled in the above configuration
             if (ignoreExtensionEntryPointRegExp.test(modulePath)) {
               return true
             }

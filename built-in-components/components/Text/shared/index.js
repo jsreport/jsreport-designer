@@ -8,7 +8,7 @@ module.exports = {
   template () {
     return (
       `
-        <span>{{text}}</span>
+      <span>{{text}}</span>
       `
     )
   }

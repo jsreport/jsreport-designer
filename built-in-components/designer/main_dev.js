@@ -1,32 +1,16 @@
 import Designer from 'jsreport-designer'
-import Text from '../shared/Text'
-import Image from '../shared/Image'
-import Table from '../shared/Table'
-import TablePropertiesEditor from './TablePropertiesEditor'
+import Text from '../components/Text/index.designer.js'
+import Image from '../components/Image/index.designer.js'
+import Table from '../components/Table/index.designer.js'
 
 const PropertiesEditor = Designer.PropertiesEditor
 
-Designer.registerComponent({
-  name: 'Text',
-  icon: 'fa-font',
-  module: Text,
-  propertiesEditor: PropertiesEditor
-})
+Designer.registerComponent(Text())
+Designer.registerComponent(Image())
+Designer.registerComponent(Table())
 
-Designer.registerComponent({
-  name: 'Image',
-  icon: 'fa-image',
-  module: Image,
-  propertiesEditor: PropertiesEditor
-})
-
-Designer.registerComponent({
-  name: 'Table',
-  icon: 'fa-table',
-  module: Table,
-  propertiesEditor: TablePropertiesEditor
-})
-
+// NOTE: next are placeholder components just to fill component bar in designer
+// (delete them later)
 Designer.registerComponent({
   name: 'Products-Map',
   icon: 'fa-map',

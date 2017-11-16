@@ -34,7 +34,6 @@ function loadComponents (componentsToLoad, reload = false) {
     let originalComponentModule
     let componentTemplate
     let compiledTemplate
-    let helpersInTemplate
     let componentModule
 
     if (!reload && getComponent(componentDef.name) != null) {
@@ -60,20 +59,19 @@ function loadComponents (componentsToLoad, reload = false) {
       }
     }
 
-    componentTemplate = originalComponentModule.template()
-
+    componentTemplate = callInterop(originalComponentModule, originalComponentModule.template)
     compiledTemplate = compileTemplate(componentTemplate)
 
-    if (typeof originalComponentModule.helpers === 'function') {
-      helpersInTemplate = originalComponentModule.helpers()
-    } else {
-      helpersInTemplate = {}
-    }
-
     componentModule = Object.assign({}, originalComponentModule, {
+      getDefaultProps: () => {
+        return callInterop(originalComponentModule, originalComponentModule.getDefaultProps)
+      },
+      template: () => {
+        return callInterop(originalComponentModule, originalComponentModule.template)
+      },
       helpers: () => {
-        if (typeof originalComponentModule.helpers === 'function') {
-          return originalComponentModule.helpers()
+        if (originalComponentModule.helpers) {
+          return callInterop(originalComponentModule, originalComponentModule.helpers)
         }
 
         return {}
@@ -138,7 +136,7 @@ function loadComponents (componentsToLoad, reload = false) {
 
             return resolveBindingExpression(expression, currentContext)
           }
-        }, helpersInTemplate)
+        }, componentModule.helpers())
 
         if (customCompiledTemplate) {
           result.content = customCompiledTemplate(newProps, {
@@ -220,6 +218,14 @@ function resolveBindingExpression (expression, context) {
   }
 
   return result
+}
+
+function callInterop (context, fn) {
+  if (fn && fn.default) {
+    return fn.default.apply(context)
+  }
+
+  return fn.apply(context)
 }
 
 module.exports = {
