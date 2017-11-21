@@ -22,7 +22,8 @@ configureDevtool({
 })
 
 @inject((injected) => ({
-  data: injected.dataInputStore.value ? injected.dataInputStore.value.data : undefined
+  data: injected.dataInputStore.value ? injected.dataInputStore.value.data : undefined,
+  computedFieldsSources: injected.dataInputStore.computedFieldsValues ? injected.dataInputStore.computedFieldsValues.source : undefined
 }))
 @observer
 class DevTools extends Component {
@@ -36,11 +37,12 @@ class DevTools extends Component {
   }
 
   getDesignPayload () {
-    const { design } = this.props
+    const { design, computedFieldsSources } = this.props
 
     let lastGroupWithContent
     let designGroupsToSend = []
     let designObject = design.toJS()
+    let payload
 
     designObject.groups.forEach((group, idx) => {
       let topSpace
@@ -64,14 +66,21 @@ class DevTools extends Component {
       designGroupsToSend.push(group)
     })
 
-    return {
+    payload = {
       grid: {
         width: designObject.baseWidth,
         numberOfCols: designObject.numberOfCols,
         defaultRowHeight: designObject.rowHeight
-      },
-      groups: designGroupsToSend
+      }
     }
+
+    if (computedFieldsSources != null) {
+      payload.computedFields = computedFieldsSources
+    }
+
+    payload.groups = designGroupsToSend
+
+    return payload
   }
 
   onInspectPayloadClick () {

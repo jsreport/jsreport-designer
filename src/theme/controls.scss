@@ -92,7 +92,7 @@ select:active {
   border-bottom: solid 0.2rem $primarySelectionBackgroundColor;
 }
 
-input {
+input, textarea {
   border: none;
   border-bottom: solid 0.2rem $secondaryColor;
   transition: border 0.3s;
@@ -101,7 +101,10 @@ input {
 
 input:hover,
 input:focus,
-input:active {
+input:active,
+textarea:hover,
+textarea:focus,
+textarea:active {
   border-bottom: solid 0.2rem $primarySelectionBackgroundColor;
 }
 

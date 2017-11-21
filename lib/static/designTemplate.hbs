@@ -31,6 +31,9 @@
   </head>
   <body>
     <div class="designContainer" style="width: {{getDesignInformation 'grid.width'}}; margin-left: auto; margin-right: auto;">
+      {{!-- resolving computed fields first --}}
+      {{#resolveComputedFields}}{{/resolveComputedFields}}
+
       {{#each (getDesignInformation 'groups')}}
         {{#renderDesignGroup this (getDesignInformation 'grid.defaultRowHeight')}}
           {{#renderDesignItem this}}

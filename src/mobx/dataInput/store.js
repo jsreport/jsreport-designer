@@ -1,10 +1,13 @@
-import { observable } from 'mobx'
+import { observable, computed } from 'mobx'
+import evaluateScript from '../../../shared/evaluateScript'
 
 class DataInput {
   @observable.ref value = undefined
+  @observable.ref computedFieldsValues = undefined
 
   constructor () {
     this.extractProperties = this.extractProperties.bind(this)
+    this.getComputedFunctions = this.getComputedFunctions.bind(this)
   }
 
   extractProperties (json, _blackList = [], parentType) {
@@ -105,6 +108,51 @@ class DataInput {
     }
 
     return result
+  }
+
+  getComputedFunctions (computedSources) {
+    if (!computedSources) {
+      return
+    }
+
+    const computedFunctions = Object.keys(computedSources).reduce((result, computedName) => {
+      const computedFunctionSrc = computedSources[computedName]
+      const computedFunction = evaluateScript.getSingleExport(computedFunctionSrc)
+
+      result[computedName] = computedFunction
+
+      return result
+    }, {})
+
+    return computedFunctions
+  }
+
+  @computed get computedFieldsFunctions () {
+    if (this.computedFieldsValues == null) {
+      return
+    }
+
+    return this.getComputedFunctions(this.computedFieldsValues.source)
+  }
+
+  @computed get computedFieldsResults () {
+    if (this.computedFieldsFunctions == null) {
+      return
+    }
+
+    const computedResults = Object.keys(this.computedFieldsFunctions).reduce((result, computedName) => {
+      const computedFunction = this.computedFieldsFunctions[computedName]
+
+      if (this.value == null) {
+        result[computedName] = undefined
+      } else {
+        result[computedName] = computedFunction(this.value.data)
+      }
+
+      return result
+    }, {})
+
+    return computedResults
   }
 }
 

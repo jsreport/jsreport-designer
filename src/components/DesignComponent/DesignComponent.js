@@ -89,7 +89,10 @@ class DesignComponent extends Component {
       this.setComponentCache(undefined)
     }
 
-    if (nextProps.bindings != null && this.props.dataInput !== nextProps.dataInput) {
+    if (
+      nextProps.bindings != null &&
+      (this.props.dataInput !== nextProps.dataInput || this.props.computedFieldsInput !== nextProps.computedFieldsInput)
+    ) {
       // the dataInput change is only relevant if the component has bindings
       this.dataInputChanged = true
     }
@@ -191,7 +194,7 @@ class DesignComponent extends Component {
   }
 
   renderComponent (type, componentProps) {
-    const { bindings, dataInput } = this.props
+    const { bindings, dataInput, computedFieldsInput } = this.props
     const customCompiledTemplate = this.customCompiledTemplate
     const componentCache = this.getComponentCache()
     const renderComponentFromTemplate = componentRegistry.getComponent(type).render
@@ -217,6 +220,7 @@ class DesignComponent extends Component {
         bindings,
         customCompiledTemplate,
         data: dataInput != null ? dataInput.data : null,
+        computedFields: computedFieldsInput
       })
 
       this.setComponentCache({
@@ -326,6 +330,7 @@ export default inject((injected, props) => {
     id: component.id,
     type: component.type,
     dataInput: injected.dataInputStore.value,
+    computedFieldsInput: injected.dataInputStore.computedFieldsResults,
     template: component.template,
     componentProps: component.props,
     bindings: component.bindings,

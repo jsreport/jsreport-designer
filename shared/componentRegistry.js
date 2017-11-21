@@ -76,10 +76,10 @@ function loadComponents (componentsToLoad, reload = false) {
 
         return {}
       },
-      render: ({ props, bindings, customCompiledTemplate, data }) => {
-        var newProps = Object.assign({}, props)
-        var result = {}
-        var componentHelpers
+      render: ({ props, bindings, customCompiledTemplate, data, computedFields }) => {
+        const newProps = Object.assign({}, props)
+        let result = {}
+        let componentHelpers
 
         // checking for binded props
         if (isObject(bindings)) {
@@ -103,7 +103,11 @@ function loadComponents (componentsToLoad, reload = false) {
             } else if (isObject(currentBinding.defaultExpression)) {
               if (Array.isArray(currentBinding.defaultExpression.value)) {
                 // resolving direct data binding
-                newProps[propName] = resolveBindingExpression(currentBinding.defaultExpression.value, data)
+                newProps[propName] = resolveBindingExpression(currentBinding.defaultExpression.value, {
+                  context: data,
+                  rootContext: data,
+                  computedFields
+                })
               }
             }
           })
@@ -134,7 +138,11 @@ function loadComponents (componentsToLoad, reload = false) {
               return undefined
             }
 
-            return resolveBindingExpression(expression, currentContext)
+            return resolveBindingExpression(expression, {
+              context: currentContext,
+              rootContext: data,
+              computedFields
+            })
           }
         }, componentModule.helpers())
 
@@ -161,10 +169,11 @@ function loadComponents (componentsToLoad, reload = false) {
   return componentRequires
 }
 
-function resolveBindingExpression (expression, context) {
+function resolveBindingExpression (expression, { context, rootContext, computedFields }) {
   const FIELD_TYPE = {
     property: 'p',
-    index: 'i'
+    index: 'i',
+    computedField: 'c'
   }
 
   let i
@@ -189,7 +198,6 @@ function resolveBindingExpression (expression, context) {
 
     keySeparatorAt = currentExpression.indexOf(':')
 
-
     if (keySeparatorAt === -1) {
       result = undefined
       break;
@@ -208,7 +216,15 @@ function resolveBindingExpression (expression, context) {
       break;
     }
 
-    result = get(currentContext, key, undefined)
+    if (fieldType === FIELD_TYPE.computedField) {
+      if (computedFields && computedFields[key]) {
+        result = computedFields[key]
+      } else {
+        result = undefined
+      }
+    } else {
+      result = get(currentContext, key, undefined)
+    }
 
     if (result === undefined) {
       break;
