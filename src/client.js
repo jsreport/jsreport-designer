@@ -1,6 +1,5 @@
 import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
-import deepForceUpdate from 'react-deep-force-update'
 import { useStrict, toJS } from 'mobx';
 import { Provider } from 'mobx-react';
 import zipObject from 'lodash/zipObject'
@@ -9,11 +8,14 @@ import componentRegistry from '../shared/componentRegistry'
 import * as configuration from './lib/configuration.js'
 import defaults from './configurationDefaults.js'
 import createStores from './mobx/create'
+import connectToEmbedderApp from './connectToEmbedderApp'
 import { createDesigner } from './Designer'
 import App from './components/App'
 import './theme/style.scss'
 
+const mobxStoreExport = {}
 let Designer
+let AppHMRContainer
 
 defaults()
 
@@ -35,63 +37,47 @@ const storesDefaults = {
   }
 }
 
-const { stores, actions } = createStores(storesDefaults)
-
-Designer = window.Designer = createDesigner(stores)
-
-// expose utility for debugging
 if (__DEVELOPMENT__) {
-  const mitt = require('mitt')
-
+  // expose utility for debugging observables
   window.observableToJS = toJS
 
-  if (!window.__designer_components_hmr__) {
-    Object.defineProperty(window, '__designer_components_hmr__', {
-      value: mitt(),
-      writable: false
-    })
-  }
+  // require the App container used to help HMR component source files
+  AppHMRContainer = require('./components/AppHMRContainer').default
 
-  // hot reload of component files
-  window.__designer_components_hmr__.on('designerComponentFileHMR', (componentChanged) => {
-    let compName = componentChanged.name
-    let compModule = componentChanged.module
-    let componentsToReload
-
-    // first delete cache for changed component type (all components of this type will refreshed)
-    if (componentRegistry.componentsCache[compName]) {
-      Object.keys(componentRegistry.componentsCache[compName]).forEach((compId) => {
-        componentRegistry.componentsCache[compName][compId] = undefined
-      })
-    }
-
-    // then update `configuration.componentTypes`
-    if (configuration.componentTypes[compName]) {
-      configuration.componentTypes[compName].module = compModule
-    }
-
-    componentsToReload = getComponentsToLoad([compName])
-
-    // reload components in registry
-    componentRegistry.loadComponents(componentsToReload, true)
-
-    render()
+  // init the setup required to HMR the component source files
+  require('./initComponentsSourceHMR').default({
+    getComponentsToLoad,
+    render,
+    mobxStoreExport
   })
 }
 
-class AppContainer extends Component {
-  componentWillReceiveProps() {
-    // Force-update the whole tree when hot reloading, including
-    // components that refuse to update.
-    deepForceUpdate(this)
-  }
+init()
 
-  render() {
-    return this.props.children
+async function init () {
+  const embedderApp = connectToEmbedderApp()
+
+  // only try to connect if we have detected an embedder app
+  if (embedderApp) {
+    const initialData = await embedderApp.initialize()
+
+    configuration.embedding.app = embedderApp
+
+    start(initialData)
+  } else {
+    // designer is opened in its main url, start it normally
+    start()
   }
 }
 
-const start = async () => {
+async function start (initialData) {
+  const storeExport = createStores(storesDefaults, initialData)
+
+  mobxStoreExport.stores = storeExport.stores
+  mobxStoreExport.actions = storeExport.actions
+
+  Designer = window.Designer = createDesigner(mobxStoreExport.stores)
+
   await fetchExtensions()
 
   const extensionsArray = await Designer.api.get('/api/extensions')
@@ -116,17 +102,18 @@ const start = async () => {
   }
 
   // create a default design at the start
-  actions.designsActions.add()
-  actions.editorActions.openDesign(stores.designsStore.designs.keys()[0])
+  mobxStoreExport.actions.designsActions.add()
+  mobxStoreExport.actions.editorActions.openDesign(mobxStoreExport.stores.designsStore.designs.keys()[0])
 
-  render()
+  render({
+    stores: mobxStoreExport.stores,
+    actions: mobxStoreExport.actions
+  })
 
   for (const key in Designer.readyListeners) {
     await Designer.readyListeners[key]()
   }
 }
-
-start()
 
 function getComponentsToLoad (componentsTypes) {
   let componentsToLoad = []
@@ -148,13 +135,13 @@ function getComponentsToLoad (componentsTypes) {
   return componentsToLoad
 }
 
-function render () {
-  if (__DEVELOPMENT__) {
+function render ({ stores, actions }) {
+  if (AppHMRContainer) {
     ReactDOM.render(
       <Provider {...stores} {...actions}>
-        <AppContainer>
+        <AppHMRContainer>
           <App />
-        </AppContainer>
+        </AppHMRContainer>
       </Provider>,
       document.getElementById('root')
     )

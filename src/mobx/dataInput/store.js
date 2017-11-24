@@ -7,7 +7,6 @@ class DataInput {
 
   constructor () {
     this.extractProperties = this.extractProperties.bind(this)
-    this.getComputedFunctions = this.getComputedFunctions.bind(this)
   }
 
   extractProperties (json, _blackList = [], parentType) {
@@ -110,29 +109,12 @@ class DataInput {
     return result
   }
 
-  getComputedFunctions (computedSources) {
-    if (!computedSources) {
-      return
-    }
-
-    const computedFunctions = Object.keys(computedSources).reduce((result, computedName) => {
-      const computedFunctionSrc = computedSources[computedName]
-      const computedFunction = evaluateScript.getSingleExport(computedFunctionSrc)
-
-      result[computedName] = computedFunction
-
-      return result
-    }, {})
-
-    return computedFunctions
-  }
-
   @computed get computedFieldsFunctions () {
     if (this.computedFieldsValues == null) {
       return
     }
 
-    return this.getComputedFunctions(this.computedFieldsValues.source)
+    return getComputedFunctions(this.computedFieldsValues.source)
   }
 
   @computed get computedFieldsResults () {
@@ -157,6 +139,23 @@ class DataInput {
 }
 
 let store = new DataInput()
+
+function getComputedFunctions (computedSources) {
+  if (!computedSources) {
+    return
+  }
+
+  const computedFunctions = Object.keys(computedSources).reduce((result, computedName) => {
+    const computedFunctionSrc = computedSources[computedName]
+    const computedFunction = evaluateScript.getSingleExport(computedFunctionSrc)
+
+    result[computedName] = computedFunction
+
+    return result
+  }, {})
+
+  return computedFunctions
+}
 
 export { DataInput }
 export default store

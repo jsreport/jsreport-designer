@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sample App using jsreport designer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .designer-container {
+      width: 100%;
+      height: 850px;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <b>Sample App</b>
+    <button id="open-designer">Open designer</button>
+  </div>
+  <br />
+  <div id="designer-container" class="designer-container">
+  </div>
+
+  <!--
+    these are a dependencies of designer browser client
+    (should not be part of sample app, it is here just for demo)
+  -->
+  <script src="https://unpkg.com/post-robot@8.0.14/dist/post-robot.min.js"></script>
+  <script src="https://unpkg.com/cross-domain-utils@2.0.1/dist/cross-domain-utils.min.js"></script>
+  <!-- -->
+
+  <script src="/designer-browser-client"></script>
+  <script>
+    var btnOpenDesigner = document.getElementById('open-designer')
+
+    btnOpenDesigner.addEventListener('click', function () {
+      jsreportDesigner.open(document.getElementById('designer-container'), {
+        url: 'http://localhost:4000/designer',
+        sampleData: {},
+        design: {},
+        // utils: ''
+      }, function (err) {
+        if (err) {
+          return console.error('error loading designer..')
+        }
+
+        console.log('designer loaded..')
+      })
+    })
+  </script>
+</body>
+</html>
