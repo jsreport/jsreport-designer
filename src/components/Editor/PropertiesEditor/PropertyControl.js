@@ -42,6 +42,7 @@ class PropertyControl extends PureComponent {
 
   render () {
     const { label, name, value, binding, context, bindToData, renderValue } = this.props
+    const getExpressionMeta = this.props.getExpressionMeta
     const meta = this.props.getPropMeta(name)
 
     let isSpecialValue = binding != null
@@ -55,7 +56,7 @@ class PropertyControl extends PureComponent {
     }
 
     if (isValueBindToData) {
-      currentValue = `[${binding.defaultExpression.meta.fullId}]`
+      currentValue = getExpressionMeta(binding.defaultExpression.value, 'displayName')
     }
 
     if (isValueRich) {
@@ -126,6 +127,7 @@ PropertyControl.propTypes = {
   bindToData: PropTypes.bool.isRequired,
   context: PropTypes.any,
   getPropMeta: PropTypes.func.isRequired,
+  getExpressionMeta: PropTypes.func.isRequired,
   renderValue: PropTypes.func,
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,

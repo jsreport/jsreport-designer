@@ -3,16 +3,12 @@ import store from './store'
 
 const ACTION = 'DATAINPUT'
 
-export const update = action(`${ACTION}_UPDATE`, ({ value, computedFieldsValues }) => {
-  store.value = { ...value }
+export const update = action(`${ACTION}_UPDATE`, ({ value, computedFields }) => {
+  store.value = Array.isArray(value) ? [ ...value ] : { ...value }
 
-  if (computedFieldsValues == null && store.computedFieldsValues == null) {
+  if (computedFields == null && store.computedFields == null) {
     return
   }
 
-  if (Object.keys(computedFieldsValues.source).length === 0 || computedFieldsValues.order.length === 0) {
-    store.computedFieldsValues = undefined
-  } else {
-    store.computedFieldsValues = { ...computedFieldsValues }
-  }
+  store.computedFields = [ ...computedFields ]
 })

@@ -219,7 +219,7 @@ class DesignComponent extends Component {
         props: componentProps,
         bindings,
         customCompiledTemplate,
-        data: dataInput != null ? dataInput.data : null,
+        data: dataInput,
         computedFields: computedFieldsInput
       })
 
@@ -330,7 +330,7 @@ export default inject((injected, props) => {
     id: component.id,
     type: component.type,
     dataInput: injected.dataInputStore.value,
-    computedFieldsInput: injected.dataInputStore.computedFieldsResults,
+    computedFieldsInput: injected.dataInputStore.computedFieldsValues,
     template: component.template,
     componentProps: component.props,
     bindings: component.bindings,

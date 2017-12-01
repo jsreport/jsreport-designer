@@ -10,6 +10,7 @@ class PropertiesEditor extends PureComponent {
       bindings,
       dataInput,
       getPropMeta,
+      getExpressionMeta,
       onBindToDataClick,
       onEditRichContentClick,
       onChange
@@ -27,6 +28,7 @@ class PropertiesEditor extends PureComponent {
               value={properties[propName]}
               bindToData={dataInput == null ? false : true}
               getPropMeta={getPropMeta}
+              getExpressionMeta={getExpressionMeta}
               onBindToDataClick={onBindToDataClick}
               onEditRichContentClick={onEditRichContentClick}
               onChange={onChange}

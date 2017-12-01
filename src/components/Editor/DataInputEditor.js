@@ -6,8 +6,11 @@ import debounce from 'lodash/debounce'
 import evaluateScript from '../../../shared/evaluateScript'
 
 @inject((injected) => ({
-  dataInput: injected.dataInputStore.value,
-  computedInput: injected.dataInputStore.computedFieldsValues,
+  dataValue: injected.dataInputStore.value,
+  dataValueJSON: injected.dataInputStore.valueJSON,
+  dataProperties: injected.dataInputStore.valueProperties,
+  computedFields: injected.dataInputStore.computedFields,
+  computedFieldsMap: injected.dataInputStore.computedFieldsMap,
   extractProperties: injected.dataInputStore.extractProperties,
   update: injected.dataInputActions.update
 }))
@@ -17,10 +20,9 @@ class DataInputEditor extends Component {
     super(props)
 
     this.state = {
-      dataValue: null,
-      computedFieldsValues: null,
+      editingData: {},
+      editingComputedFields: {},
       selectedComputedField: null,
-      editedComputedFields: {},
       isDirty: false,
       isCreatingComputed: false,
       dataInputError: null,
@@ -33,11 +35,11 @@ class DataInputEditor extends Component {
       400
     )
 
-    this.setDataInputNode = this.setDataInputNode.bind(this)
+    this.setDataTextNode = this.setDataTextNode.bind(this)
     this.setNewComputedNameNode = this.setNewComputedNameNode.bind(this)
     this.setComputedFnNode = this.setComputedFnNode.bind(this)
     this.canSave = this.canSave.bind(this)
-    this.handleDataInputChange = this.handleDataInputChange.bind(this)
+    this.handleDataTextChange = this.handleDataTextChange.bind(this)
     this.handleAddComputedField = this.handleAddComputedField.bind(this)
     this.handleComputedFieldChange = this.handleComputedFieldChange.bind(this)
     this.handleComputedFieldSave = this.handleComputedFieldSave.bind(this)
@@ -46,27 +48,30 @@ class DataInputEditor extends Component {
   }
 
   componentWillMount () {
-    const { dataInput, computedInput } = this.props
+    const {
+      dataValue,
+      dataValueJSON,
+      dataProperties,
+      computedFields,
+      computedFieldsMap
+    } = this.props
 
     this.setState({
-      dataValue: dataInput,
-      computedFieldsValues: computedInput
+      editingData: dataValue ? {
+        json: dataValueJSON,
+        data: dataValue,
+        properties: dataProperties
+      } : {},
+      editingComputedFields: computedFields ? {
+        sourceMap: computedFieldsMap,
+        order: computedFields.map((field) => field.name),
+        updatedSourceMap: {}
+      } : { sourceMap: {}, order: [], updatedSourceMap: {} }
     })
   }
 
-  componentWillReceiveProps (nextProps) {
-    // if dataInput or computedInput have changed (after save) set isDirty to false
-    if (this.props.dataInput !== nextProps.dataInput || this.props.computedInput !== nextProps.computedInput) {
-      this.setState({
-        isDirty: false,
-        isCreatingComputed: false,
-        newComputedError: null
-      })
-    }
-  }
-
-  setDataInputNode (el) {
-    this.dataInputNode = el
+  setDataTextNode (el) {
+    this.dataTextNode = el
   }
 
   setNewComputedNameNode (el) {
@@ -78,22 +83,25 @@ class DataInputEditor extends Component {
   }
 
   canSave () {
-    const { dataValue, editedComputedFields } = this.state
+    const { editingData, editingComputedFields } = this.state
 
-    return dataValue != null && dataValue.parsedProperties != null && Object.keys(editedComputedFields).length === 0
+    return (
+      editingData != null &&
+      editingData.properties != null &&
+      Object.keys(editingComputedFields.updatedSourceMap).length === 0
+    )
   }
 
   checkData () {
-    const { dataValue, editedComputedFields } = this.state
+    const { editingData } = this.state
     const { extractProperties } = this.props
-    let currentDataInput = dataValue || {}
-    let jsonText = currentDataInput.json || ''
+    let jsonText = editingData.json || ''
     let invalidProperties = false
     let jsonObj
     let parsedProperties
 
     let stateToUpdate = {
-      dataValue: { json: jsonText }
+      editingData: { json: jsonText }
     }
 
     try {
@@ -124,22 +132,21 @@ class DataInputEditor extends Component {
       })
     }
 
-    stateToUpdate.dataValue.json = jsonText
-    stateToUpdate.dataValue.data = jsonObj
-    stateToUpdate.dataValue.parsedProperties = parsedProperties
+    stateToUpdate.editingData.json = jsonText
+    stateToUpdate.editingData.data = jsonObj
+    stateToUpdate.editingData.properties = parsedProperties
 
     this.setState(stateToUpdate)
   }
 
-  handleDataInputChange () {
-    const { dataValue } = this.state
-    let currentDataInput = dataValue || {}
-    let jsonText = this.dataInputNode.value
+  handleDataTextChange () {
+    const { editingData } = this.state
+    let jsonText = this.dataTextNode.value
 
     let stateToUpdate = {
       dataInputError: null,
-      dataValue: {
-        ...currentDataInput,
+      editingData: {
+        ...editingData,
         json: jsonText
       },
       isDirty: true
@@ -151,9 +158,8 @@ class DataInputEditor extends Component {
   }
 
   handleAddComputedField () {
-    const { computedFieldsValues } = this.state
+    const { editingComputedFields } = this.state
     const newComputedName = this.newComputedNameNode.value
-    const originalComputedFieldsValues = computedFieldsValues || { source: {}, order: [] }
 
     if (!newComputedName) {
       return this.setState({
@@ -161,7 +167,7 @@ class DataInputEditor extends Component {
       })
     }
 
-    if (originalComputedFieldsValues && originalComputedFieldsValues.source && originalComputedFieldsValues.source[newComputedName]) {
+    if (editingComputedFields && editingComputedFields.sourceMap && editingComputedFields.sourceMap[newComputedName]) {
       return this.setState({
         newComputedError: `computed field with name "${newComputedName}" already exists`
       })
@@ -171,14 +177,14 @@ class DataInputEditor extends Component {
       isDirty: true,
       isCreatingComputed: false,
       newComputedError: null,
-      computedFieldsValues: {
-        ...originalComputedFieldsValues,
-        source: {
-          ...originalComputedFieldsValues.source,
+      editingComputedFields: {
+        ...editingComputedFields,
+        sourceMap: {
+          ...editingComputedFields.sourceMap,
           [newComputedName]: 'function (data) {\n  // your logic here..\n  return\n}'
         },
         order: [
-          ...originalComputedFieldsValues.order,
+          ...editingComputedFields.order,
           newComputedName
         ]
       }
@@ -186,21 +192,24 @@ class DataInputEditor extends Component {
   }
 
   handleComputedFieldChange (ev) {
-    const { editedComputedFields } = this.state
+    const { editingComputedFields } = this.state
     const computedFieldName = ev.target.name
 
     this.setState({
       isDirty: true,
-      editedComputedFields: Object.assign({}, editedComputedFields, {
-        [computedFieldName]: ev.target.value
-      })
+      editingComputedFields: {
+        ...editingComputedFields,
+        updatedSourceMap: {
+          ...editingComputedFields.updatedSourceMap,
+          [computedFieldName]: ev.target.value
+        }
+      }
     })
   }
 
   handleComputedFieldSave () {
-    const { computedFieldsValues, selectedComputedField, editedComputedFields } = this.state
+    const { editingComputedFields, selectedComputedField } = this.state
     const computedFnText = this.computedFnNode.value
-    const originalComputedFieldsValues = computedFieldsValues || { source: {}, order: [] }
 
     try {
       let computedFn = evaluateScript.getSingleExport(computedFnText)
@@ -211,13 +220,13 @@ class DataInputEditor extends Component {
 
       this.setState({
         computedValidationError: null,
-        editedComputedFields: omit(editedComputedFields, [selectedComputedField]),
-        computedFieldsValues: {
-          ...originalComputedFieldsValues,
-          source: {
-            ...originalComputedFieldsValues.source,
+        editingComputedFields: {
+          ...editingComputedFields,
+          sourceMap: {
+            ...editingComputedFields.sourceMap,
             [selectedComputedField]: computedFnText
-          }
+          },
+          updatedSourceMap: omit(editingComputedFields.updatedSourceMap, [selectedComputedField])
         }
       })
     } catch (evaluateErr) {
@@ -228,9 +237,8 @@ class DataInputEditor extends Component {
   }
 
   handleComputedFieldRemove () {
-    const { computedFieldsValues, selectedComputedField, editedComputedFields } = this.state
-    const originalComputedFieldsValues = computedFieldsValues || { source: {}, order: [] }
-    const selectedOrderIndex = originalComputedFieldsValues.order.indexOf(selectedComputedField)
+    const { editingComputedFields, selectedComputedField } = this.state
+    const selectedOrderIndex = editingComputedFields.order.indexOf(selectedComputedField)
 
     if (selectedOrderIndex === -1) {
       return
@@ -239,14 +247,14 @@ class DataInputEditor extends Component {
     this.setState({
       isDirty: true,
       selectedComputedField: null,
-      editedComputedFields: omit(editedComputedFields, [selectedComputedField]),
       computedValidationError: null,
-      computedFieldsValues: {
-        ...originalComputedFieldsValues,
-        source: omit(originalComputedFieldsValues.source, [selectedComputedField]),
+      editingComputedFields: {
+        ...editingComputedFields,
+        sourceMap: omit(editingComputedFields.sourceMap, [selectedComputedField]),
+        updatedSourceMap: omit(editingComputedFields.updatedSourceMap, [selectedComputedField]),
         order: [
-          ...originalComputedFieldsValues.order.slice(0, selectedOrderIndex),
-          ...originalComputedFieldsValues.order.slice(selectedOrderIndex + 1)
+          ...editingComputedFields.order.slice(0, selectedOrderIndex),
+          ...editingComputedFields.order.slice(selectedOrderIndex + 1)
         ]
       }
     })
@@ -254,22 +262,32 @@ class DataInputEditor extends Component {
 
   handleSave () {
     const { update } = this.props
-    let { dataValue, computedFieldsValues } = this.state
+    let { editingData, editingComputedFields } = this.state
 
     if (this.canSave()) {
       update({
-        value: dataValue,
-        computedFieldsValues
+        value: editingData.data,
+        computedFields: editingComputedFields.order.map((fieldName) => {
+          return {
+            name: fieldName,
+            source: editingComputedFields.sourceMap[fieldName]
+          }
+        })
+      })
+
+      this.setState({
+        isDirty: false,
+        isCreatingComputed: false,
+        newComputedError: null
       })
     }
   }
 
   render () {
     const {
-      dataValue,
-      computedFieldsValues,
+      editingData,
+      editingComputedFields,
       selectedComputedField,
-      editedComputedFields,
       isDirty,
       isCreatingComputed,
       dataInputError,
@@ -278,13 +296,13 @@ class DataInputEditor extends Component {
     } = this.state
 
     const canSave = this.canSave()
-    const { dataInput, onClose } = this.props
+    const { dataValue, onClose } = this.props
     let currentValue
 
-    if (dataInput != null && dataValue != null) {
-      currentValue = dataValue.json
-    } else if (dataInput == null && dataValue) {
-      currentValue = dataValue.json
+    if (dataValue != null && editingData.json != null) {
+      currentValue = editingData.json
+    } else if (dataValue == null && editingData.json != null) {
+      currentValue = editingData.json
     } else {
       currentValue = ''
     }
@@ -311,11 +329,11 @@ class DataInputEditor extends Component {
         </div>
         <br />
         <textarea
-          ref={this.setDataInputNode}
+          ref={this.setDataTextNode}
           style={{ overflow: 'auto', resize: 'none', width: '100%', height: '250px' }}
           rows="25"
           value={currentValue}
-          onChange={this.handleDataInputChange}
+          onChange={this.handleDataTextChange}
         />
         <div style={{ color: 'red' }}>{dataInputError || ' '}</div>
         <br />
@@ -331,7 +349,7 @@ class DataInputEditor extends Component {
               <button onClick={() => this.setState({ isCreatingComputed: false, newComputedError: null })}>Cancel</button>
             </div>
           ) : (
-            <button onClick={() => this.setState({ isCreatingComputed: true })} disabled={!dataValue || dataValue.parsedProperties == null}>Add computed field</button>
+            <button onClick={() => this.setState({ isCreatingComputed: true })} disabled={!editingData || editingData.properties == null}>Add computed field</button>
           )}
         </div>
         <div style={{ color: 'red' }}>{newComputedError || ' '}</div>
@@ -347,13 +365,13 @@ class DataInputEditor extends Component {
                 selectedComputedField: ev.target.value
               })}
             >
-              {computedFieldsValues && computedFieldsValues.source && Object.keys(computedFieldsValues.source).map((computedName) => (
-                <option key={computedName} value={computedName}>{computedName}{editedComputedFields[computedName] != null ? '*' : ''}</option>
+              {editingComputedFields && editingComputedFields.sourceMap && Object.keys(editingComputedFields.sourceMap).map((computedName) => (
+                <option key={computedName} value={computedName}>{computedName}{editingComputedFields.updatedSourceMap[computedName] != null ? '*' : ''}</option>
               ))}
             </select>
             <div style={{ marginTop: '5px', marginRight: '5px' }}>
               <button
-                disabled={!selectedComputedField || !computedFieldsValues || Object.keys(computedFieldsValues).length === 0}
+                disabled={!selectedComputedField || !editingComputedFields || Object.keys(editingComputedFields).length === 0}
                 onClick={this.handleComputedFieldRemove}
               >
                 Remove
@@ -376,7 +394,7 @@ class DataInputEditor extends Component {
                 name={selectedComputedField}
                 style={{ overflow: 'auto', resize: 'none', width: '100%', height: '150px' }}
                 rows="25"
-                defaultValue={editedComputedFields[selectedComputedField] != null ? editedComputedFields[selectedComputedField] : computedFieldsValues.source[selectedComputedField]}
+                defaultValue={editingComputedFields.updatedSourceMap[selectedComputedField] != null ? editingComputedFields.updatedSourceMap[selectedComputedField] : editingComputedFields.sourceMap[selectedComputedField]}
                 onChange={this.handleComputedFieldChange}
               />
               <div style={{ marginTop: '5px', marginRight: '5px', textAlign: 'right' }}>
@@ -386,7 +404,10 @@ class DataInputEditor extends Component {
                   onClick={(ev) => this.setState({
                     selectedComputedField: null,
                     computedValidationError: null,
-                    editedComputedFields: omit(editedComputedFields, [selectedComputedField])
+                    editingComputedFields: {
+                      ...editingComputedFields,
+                      updatedSourceMap: omit(editingComputedFields.updatedSourceMap, [selectedComputedField])
+                    }
                   })}
                 >
                   Cancel

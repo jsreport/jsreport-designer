@@ -22,8 +22,8 @@ configureDevtool({
 })
 
 @inject((injected) => ({
-  data: injected.dataInputStore.value ? injected.dataInputStore.value.data : undefined,
-  computedFieldsSources: injected.dataInputStore.computedFieldsValues ? injected.dataInputStore.computedFieldsValues.source : undefined
+  data: injected.dataInputStore.value ? injected.dataInputStore.value : undefined,
+  computedFields: injected.dataInputStore.computedFields ? injected.dataInputStore.computedFields : undefined
 }))
 @observer
 class DevTools extends Component {
@@ -37,7 +37,7 @@ class DevTools extends Component {
   }
 
   getDesignPayload () {
-    const { design, computedFieldsSources } = this.props
+    const { design, computedFields } = this.props
 
     let lastGroupWithContent
     let designGroupsToSend = []
@@ -74,8 +74,8 @@ class DevTools extends Component {
       }
     }
 
-    if (computedFieldsSources != null) {
-      payload.computedFields = computedFieldsSources
+    if (computedFields != null) {
+      payload.computedFields = computedFields
     }
 
     payload.groups = designGroupsToSend

@@ -12,6 +12,9 @@ import styles from './ComponentEditor.scss'
 
 @inject((injected) => ({
   dataInput: injected.dataInputStore.value,
+  dataFieldsMeta: injected.dataInputStore.fieldsMeta,
+  getFullExpressionName: injected.dataInputStore.getFullExpressionName,
+  getFullExpressionDisplayName: injected.dataInputStore.getFullExpressionDisplayName,
   updateComponent: injected.designsActions.updateComponent
 }))
 @observer
@@ -29,8 +32,9 @@ class ComponentEditor extends Component {
 
     this.connectToChangesInterceptor = this.connectToChangesInterceptor.bind(this)
     this.getMeta = this.getMeta.bind(this)
-    this.getPropMeta = this.getPropMeta.bind(this)
     this.getValue = this.getValue.bind(this)
+    this.getPropMeta = this.getPropMeta.bind(this)
+    this.getExpressionMeta = this.getExpressionMeta.bind(this)
     this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
     this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
     this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
@@ -59,6 +63,18 @@ class ComponentEditor extends Component {
 
   getMeta () {
     return componentRegistry.getComponentDefinition(this.props.type) || {}
+  }
+
+  getValue (collection, name) {
+    if (collection == null) {
+      return {}
+    }
+
+    if (name != null) {
+      return collection[name]
+    }
+
+    return collection
   }
 
   getPropMeta (propName) {
@@ -94,16 +110,25 @@ class ComponentEditor extends Component {
     return result
   }
 
-  getValue (collection, name) {
-    if (collection == null) {
-      return {}
+  getExpressionMeta (expression, keyValue, options = {}) {
+    const { dataFieldsMeta, getFullExpressionName, getFullExpressionDisplayName } = this.props
+    const expressionName = getFullExpressionName(expression)
+    const expressionMeta = dataFieldsMeta[expressionName]
+
+    if (keyValue == null) {
+      return expressionMeta
     }
 
-    if (name != null) {
-      return collection[name]
+    if (keyValue === 'displayName') {
+      const expressionDisplayName = getFullExpressionDisplayName(expression)
+
+      return `[${options.displayPrefix != null ? options.displayPrefix : ''}${
+        expressionDisplayName != null ? (expressionDisplayName === '' ?
+        '(root)' : expressionDisplayName) : '(binding)'
+      }]`
     }
 
-    return collection
+    return expressionMeta ? expressionMeta[keyValue] : undefined
   }
 
   handleEditComponentTemplateClick () {
@@ -139,8 +164,7 @@ class ComponentEditor extends Component {
 
       if (bindings[targetBindingName] && bindings[targetBindingName].defaultExpression != null) {
         stateToUpdate.bindToDataEditor.selectedField = {
-          expression: bindings[targetBindingName].defaultExpression.value,
-          meta: bindings[targetBindingName].defaultExpression.meta,
+          expression: bindings[targetBindingName].defaultExpression.value
         }
       }
 
@@ -287,8 +311,7 @@ class ComponentEditor extends Component {
 
     if (selectedField != null) {
       newBinding.defaultExpression = {
-        value: selectedField.expression,
-        meta: selectedField.meta
+        value: selectedField.expression
       }
 
       newBindings = {
@@ -416,6 +439,7 @@ class ComponentEditor extends Component {
       properties,
       bindings,
       getPropMeta: this.getPropMeta,
+      getExpressionMeta: this.getExpressionMeta,
       onBindToDataClick: this.handleBindToDataClick,
       onEditRichContentClick: this.handleEditRichContentClick,
       onChange: this.handlePropChange,

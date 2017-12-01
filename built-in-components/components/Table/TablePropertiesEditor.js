@@ -162,7 +162,7 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   handleColumnBindToDataClick (params) {
-    const { bindings, onBindToDataClick } = this.props
+    const { bindings, getExpressionMeta, onBindToDataClick } = this.props
 
     if (params.context.name === 'value' && (!bindings || bindings.data == null)) {
       return
@@ -171,7 +171,7 @@ class TablePropertiesEditor extends PureComponent {
     onBindToDataClick({
       ...params,
       bindingName: params.context.targetBindingName,
-      dataProperties: params.context.name === 'name' ? undefined :  bindings.data.defaultExpression.meta.dataProperties
+      dataProperties: params.context.name === 'name' ? undefined :  getExpressionMeta(bindings.data.defaultExpression.value, 'dataProperties')
     })
   }
 
@@ -206,12 +206,13 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   renderDataPropValue ({ binding }) {
+    const { getExpressionMeta } = this.props
     let currentValue
 
     if (!binding || binding.defaultExpression == null) {
       currentValue = '--no-value--'
     } else {
-      currentValue = `[${binding.defaultExpression.meta.fullId}]`
+      currentValue = getExpressionMeta(binding.defaultExpression.value, 'displayName')
     }
 
     return (
@@ -226,15 +227,17 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   renderColumnPropValue ({ propName, value, context, onChange }) {
-    const { bindings } = this.props
+    const { bindings, getExpressionMeta } = this.props
     let valueRefToBinding = typeof value === 'object' && value.binding != null
     let currentValue
 
     if (valueRefToBinding) {
       if (context.name === 'value') {
-        currentValue = `[(data).${bindings[value.binding].defaultExpression.meta.fullId}]`
+        currentValue = getExpressionMeta(bindings[value.binding].defaultExpression.value, 'displayName', {
+          displayPrefix: '(data) ',
+        })
       } else {
-        currentValue = `[${bindings[value.binding].defaultExpression.meta.fullId}]`
+        currentValue = getExpressionMeta(bindings[value.binding].defaultExpression.value, 'displayName')
       }
     } else {
       currentValue = value
@@ -259,6 +262,7 @@ class TablePropertiesEditor extends PureComponent {
       bindings,
       dataInput,
       getPropMeta,
+      getExpressionMeta,
       onBindToDataClick
     } = this.props
 
@@ -272,6 +276,7 @@ class TablePropertiesEditor extends PureComponent {
           value={properties.data}
           bindToData={dataInput == null ? false : true}
           getPropMeta={getPropMeta}
+          getExpressionMeta={getExpressionMeta}
           renderValue={this.renderDataPropValue}
           onBindToDataClick={onBindToDataClick}
         />
@@ -295,6 +300,7 @@ class TablePropertiesEditor extends PureComponent {
                   bindToData={dataInput != null ? true : false}
                   context={{ name: 'name', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'name') }}
                   getPropMeta={getPropMeta}
+                  getExpressionMeta={getExpressionMeta}
                   renderValue={this.renderColumnPropValue}
                   onBindToDataClick={this.handleColumnBindToDataClick}
                   onChange={this.handleColumnsChange}
@@ -308,6 +314,7 @@ class TablePropertiesEditor extends PureComponent {
                   bindToData={dataInput != null && bindings && bindings.data ? true : false}
                   context={{ name: 'value', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'value') }}
                   getPropMeta={getPropMeta}
+                  getExpressionMeta={getExpressionMeta}
                   renderValue={this.renderColumnPropValue}
                   onBindToDataClick={this.handleColumnBindToDataClick}
                   onChange={this.handleColumnsChange}
