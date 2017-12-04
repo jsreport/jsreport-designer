@@ -194,7 +194,7 @@ class ComponentEditor extends Component {
       let currentContent
 
       if (currentBinding && currentBinding.richContent != null) {
-        currentContent = currentBinding.richContent.content
+        currentContent = currentBinding.richContent
       } else if (typeof properties[propName] === 'string') {
         currentContent = properties[propName]
       }
@@ -227,7 +227,7 @@ class ComponentEditor extends Component {
     })
   }
 
-  handleEditRichContentSave ({ propName, bindingName, rawContent, html }) {
+  handleEditRichContentSave ({ propName, bindingName, html }) {
     const { richContentEditor } = this.state
     const handleChanges = this.handleChanges
     let bindings = this.props.bindings || {}
@@ -244,7 +244,7 @@ class ComponentEditor extends Component {
       newBinding = {}
     }
 
-    if (rawContent == null) {
+    if (html == null) {
       // editor has removed rich content
       delete newBinding.richContent
 
@@ -253,7 +253,6 @@ class ComponentEditor extends Component {
       }
     } else {
       newBinding.richContent = {
-        content: rawContent,
         html: html
       }
     }

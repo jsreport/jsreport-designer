@@ -1,6 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { convertToRaw } from 'draft-js'
+import { ContentState } from 'draft-js'
+import { stateFromHTML } from 'draft-js-import-html'
 import { stateToHTML } from 'draft-js-export-html'
 import ContentEditor from './ContentEditor'
 
@@ -16,6 +17,7 @@ class RichContentEditor extends Component {
     super(props)
 
     this.state = {
+      initialContentState: null,
       isDirty: false
     }
 
@@ -27,13 +29,38 @@ class RichContentEditor extends Component {
     this.handleRemove = this.handleRemove.bind(this)
   }
 
+  componentWillMount () {
+    const initialContent = this.props.initialContent != null ? this.props.initialContent : ''
+    let contentState
+
+    if (typeof initialContent === 'string') {
+      contentState = ContentState.createFromText(initialContent)
+    } else {
+      contentState = stateFromHTML(initialContent.html, {
+        customInlineFn: (element, {Style, Entity}) => {
+          if (element.tagName === 'SPAN') {
+            const result = Object.keys(editorStyleMap.STRIKE).every((cssKey) => {
+              return element.style[cssKey] = editorStyleMap.STRIKE[cssKey]
+            })
+
+            if (result) {
+              return Style('STRIKE')
+            }
+          }
+        }
+      })
+    }
+
+    this.setState({
+      initialContentState: contentState
+    })
+  }
+
   getContentRepresentation (contentState) {
     const { propName } = this.props
-    let rawContent = convertToRaw(contentState)
 
     return {
       propName,
-      rawContent,
       html: stateToHTML(contentState, {
         defaultBlockTag: 'div',
         inlineStyles: Object.keys(editorStyleMap).reduce((styles, styleKey) => {
@@ -64,13 +91,13 @@ class RichContentEditor extends Component {
     const { propName, onRemove } = this.props
 
     if (onRemove) {
-      onRemove({ propName, rawContent: null, html: null })
+      onRemove({ propName, html: null })
     }
   }
 
   render () {
-    const { isDirty } = this.state
-    const { componentType, propName, initialContent, onClose } = this.props
+    const { isDirty, initialContentState } = this.state
+    const { componentType, propName, onClose } = this.props
 
     return (
       <div
@@ -100,7 +127,7 @@ class RichContentEditor extends Component {
         >
           <ContentEditor
             styleMap={editorStyleMap}
-            initialContent={initialContent}
+            initialContentState={initialContentState}
             onContentChange={this.handleEditorContentChange}
           />
         </div>

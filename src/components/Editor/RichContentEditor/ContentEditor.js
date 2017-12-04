@@ -3,9 +3,7 @@ import PropTypes from 'prop-types'
 import {
   Editor,
   EditorState,
-  ContentState,
-  RichUtils,
-  convertFromRaw
+  RichUtils
 } from 'draft-js'
 import styles from './ContentEditor.scss'
 
@@ -41,18 +39,10 @@ class ContentEditor extends Component {
   constructor (props) {
     super(props)
 
-    const initialContent = props.initialContent != null ? props.initialContent : ''
     let initialState = {}
-    let contentState
-
-    if (typeof initialContent === 'string') {
-      contentState = ContentState.createFromText(initialContent)
-    } else {
-      contentState = convertFromRaw(initialContent)
-    }
 
     initialState = {
-      editorState: EditorState.createWithContent(contentState)
+      editorState: EditorState.createWithContent(props.initialContentState)
     }
 
     this.state = initialState
@@ -246,7 +236,7 @@ const InlineStyleControls = props => {
 
 ContentEditor.propTypes = {
   styleMap: PropTypes.object,
-  initialContent: PropTypes.oneOfType([PropTypes.string, PropTypes.object]),
+  initialContentState: PropTypes.any,
   onContentChange: PropTypes.func
 }
 
