@@ -71,13 +71,18 @@ async function init () {
 }
 
 async function start (initialData) {
+  let customDataInputStoreDefaults = {}
+
+  if (initialData != null && initialData.data != null) {
+    customDataInputStoreDefaults.value = initialData.data
+  }
+
+  if (initialData != null && initialData.design != null && initialData.design.computedFields != null) {
+    customDataInputStoreDefaults.computedFields = initialData.design.computedFields
+  }
+
   const storeExport = createStores(Object.assign({}, storesDefaults, {
-    dataInputStore: {
-      value: initialData != null ? initialData.data : undefined,
-      computedFields: initialData != null && initialData.design ? (
-        initialData.design.computedFields
-      ) : undefined
-    }
+    dataInputStore: customDataInputStoreDefaults
   }))
 
   mobxStoreExport.stores = storeExport.stores
