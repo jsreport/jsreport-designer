@@ -45,6 +45,7 @@ PropertiesEditor.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
+  expressions: PropTypes.object,
   getPropMeta: PropTypes.func.isRequired,
   onBindToDataClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,

@@ -1,7 +1,7 @@
 import pick from 'lodash/pick'
 import { action } from 'mobx'
 import { store as editorStore } from '../editor'
-import store, { Design } from './store'
+import store, { Design, DesignItem, DesignComponent } from './store'
 import { ComponentDragTypes } from '../../Constants'
 import {
   generateGroup,
@@ -15,13 +15,13 @@ import {
 
 const ACTION = 'DESIGNS'
 
-export const add = action(`${ACTION}_ADD`, (config) => {
+export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
   let newDesign
   let elementRecords = []
 
   let designDefaults = {
     baseWidth: editorStore.defaultBaseWidth,
-    numberOfRows: editorStore.defaultNumberOfRows,
+    defaultNumberOfRows: editorStore.defaultNumberOfRows,
     numberOfCols: editorStore.defaultNumberOfCols,
     rowHeight: editorStore.defaultRowHeight,
     groups: [],
@@ -32,37 +32,163 @@ export const add = action(`${ACTION}_ADD`, (config) => {
   if (config) {
     designDefaults = Object.assign(designDefaults, pick(
       config,
-      ['baseWidth', 'numberOfRows', 'numberOfCols', 'rowHeight']
+      ['baseWidth', 'defaultNumberOfRows', 'numberOfCols', 'rowHeight']
     ))
   }
 
-  for (let i = 0, max = designDefaults.numberOfRows - 1; i <= max; i++) {
-    let groupDefaults = {
-      layoutMode: editorStore.defaultLayoutMode
+  if (definition) {
+    designDefaults = Object.assign(designDefaults, pick(
+      definition,
+      ['baseWidth', 'defaultNumberOfRows', 'numberOfCols', 'rowHeight']
+    ))
+  }
+
+  if (definition && Array.isArray(definition.groups)) {
+    let originalGroups = []
+    let lastGroupIndex = null
+
+    definition.groups.forEach((group) => {
+      let currentGroupIndex
+      let lastItemEnd = null
+
+      if (group.topSpace != null) {
+        for (let i = 1; i <= group.topSpace; i++) {
+          let newEmptyGroup = generateGroup({
+            layoutMode: 'grid'
+          })
+
+          elementRecords.push([newEmptyGroup, lastGroupIndex == null ? i - 1 : lastGroupIndex + i])
+          originalGroups.push(newEmptyGroup)
+        }
+
+        lastGroupIndex += group.topSpace
+        lastGroupIndex -= 1
+      }
+
+      const newGroup = generateGroup({
+        layoutMode: group.layoutMode,
+        // NOTE: for now we intentionally don't add "topSpace"
+        // to the group because this field is not being kept in sync
+        // while using the designer, it is calculted in the end when the design
+        // json is exported, so it does not makes sense to have it in the store for now
+      })
+
+      currentGroupIndex = lastGroupIndex == null ? 0 : lastGroupIndex + 1
+
+      newGroup.items = group.items.map((item, itemIndex) => {
+        let newItem
+        let start = lastItemEnd == null ? 0 : lastItemEnd
+
+        start = start + item.leftSpace == null ? 0 : item.leftSpace
+
+        let itemDefaults = {
+          leftSpace: item.leftSpace,
+          start,
+          end: (start + item.space) - 1,
+          minSpace: item.minSpace,
+          space: item.space,
+          parent: newGroup
+        }
+
+        lastItemEnd = itemDefaults.end
+
+        newItem = new DesignItem(itemDefaults)
+
+        elementRecords.push([newItem, itemIndex])
+
+        newItem.components = item.components.map((comp, compIndex) => {
+          let newComp = new DesignComponent({
+            type: comp.type,
+            props: comp.props,
+            bindings: comp.bindings,
+            expressions: comp.expressions,
+            template: comp.template,
+            parent: newItem
+          })
+
+          elementRecords.push([newComp, compIndex, {
+            groupId: newGroup.id,
+            groupIndex: currentGroupIndex,
+            itemId: newItem.id,
+            itemIndex
+          }])
+
+          return newComp
+        })
+
+        return newItem
+      })
+
+      elementRecords.push([newGroup, currentGroupIndex])
+      lastGroupIndex += 1
+
+      originalGroups.push(newGroup)
+    })
+
+    // filling rest to match default number of rows in design
+    if (designDefaults.defaultNumberOfRows - 1 > originalGroups.length) {
+      const rest = (designDefaults.defaultNumberOfRows - 1) - originalGroups.length
+
+      for (let i = 1; i <= rest; i++) {
+        const newGroup = generateGroup({
+          layoutMode: 'grid'
+        })
+
+        elementRecords.push([newGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
+        lastGroupIndex += 1
+
+        originalGroups.push(newGroup)
+      }
     }
 
-    let newGroup
+    const placeholderGroup = generateGroup({
+      layoutMode: 'grid',
+      placeholder: true
+    })
 
-    // last group is placeholder
-    if (i === max) {
-      groupDefaults.placeholder = true
+    elementRecords.push([placeholderGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
+    lastGroupIndex += 1
+
+    originalGroups.push(placeholderGroup)
+
+    designDefaults.groups = originalGroups
+  } else {
+    for (let i = 0, max = designDefaults.defaultNumberOfRows - 1; i <= max; i++) {
+      let groupDefaults = {
+        layoutMode: editorStore.defaultLayoutMode
+      }
+
+      let newGroup
+
+      // last group is placeholder
+      if (i === max) {
+        groupDefaults.placeholder = true
+      }
+
+      newGroup = generateGroup(groupDefaults)
+      elementRecords.push([newGroup, i])
+
+      designDefaults.groups.push(newGroup)
     }
-
-    newGroup = generateGroup(groupDefaults)
-    elementRecords.push([newGroup, i])
-
-    designDefaults.groups.push(newGroup)
   }
 
   newDesign = new Design(designDefaults)
 
   elementRecords.forEach((item) => {
-    let [ el, index ] = item
+    let [ el, index, extra ] = item
 
-    newDesign.canvasRegistry.set(el.id, {
-      index,
-      element: el
-    })
+    if (extra) {
+      newDesign.canvasRegistry.set(el.id, {
+        index,
+        element: el,
+        ...extra
+      })
+    } else {
+      newDesign.canvasRegistry.set(el.id, {
+        index,
+        element: el
+      })
+    }
   })
 
   store.designs.set(newDesign.id, newDesign)
@@ -344,7 +470,7 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     componentToProcess = (
       originItem
       .components[draggedEl.canvas.component]
-      .toJS()
+      .toJS(true)
     )
 
     if (targetItem == null) {
@@ -643,13 +769,14 @@ export const updateComponent = action(`${ACTION}_UPDATE_COMPONENT`, (designId, c
 
   component = component.element
 
-  let { props, bindings, template } = changes
+  let { props, bindings, expressions, template } = changes
 
   updateComponentInDesign({
     design,
     component,
     props,
     bindings,
+    expressions,
     template
   })
 })

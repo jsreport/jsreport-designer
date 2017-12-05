@@ -171,7 +171,13 @@ class TablePropertiesEditor extends PureComponent {
     onBindToDataClick({
       ...params,
       bindingName: params.context.targetBindingName,
-      dataProperties: params.context.name === 'name' ? undefined :  getExpressionMeta(bindings.data.defaultExpression.value, 'dataProperties')
+      dataProperties: params.context.name === 'name' ? undefined :  (
+        getExpressionMeta(
+          'data',
+          bindings.data.expression,
+          'dataProperties'
+        )
+      )
     })
   }
 
@@ -209,10 +215,10 @@ class TablePropertiesEditor extends PureComponent {
     const { getExpressionMeta } = this.props
     let currentValue
 
-    if (!binding || binding.defaultExpression == null) {
+    if (!binding || binding.expression == null) {
       currentValue = '--no-value--'
     } else {
-      currentValue = getExpressionMeta(binding.defaultExpression.value, 'displayName')
+      currentValue = getExpressionMeta('data', binding.expression, 'displayName')
     }
 
     return (
@@ -233,11 +239,14 @@ class TablePropertiesEditor extends PureComponent {
 
     if (valueRefToBinding) {
       if (context.name === 'value') {
-        currentValue = getExpressionMeta(bindings[value.binding].defaultExpression.value, 'displayName', {
-          displayPrefix: '(data) ',
-        })
+        currentValue = getExpressionMeta(
+          context.targetBindingName,
+          bindings[value.binding].expression,
+          'displayName',
+          { displayPrefix: '(data) '}
+        )
       } else {
-        currentValue = getExpressionMeta(bindings[value.binding].defaultExpression.value, 'displayName')
+        currentValue = getExpressionMeta(bindings[value.binding].expression, 'displayName')
       }
     } else {
       currentValue = value

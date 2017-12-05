@@ -688,10 +688,19 @@ function updateComponentInDesign ({
   component,
   props,
   bindings,
+  expressions,
   template
 }) {
   if (props !== undefined) {
     component.props = { ...props }
+  }
+
+  if (expressions !== undefined) {
+    if (expressions === null) {
+      component.expressions = null
+    } else {
+      component.expressions = { ...expressions }
+    }
   }
 
   if (bindings !== undefined) {

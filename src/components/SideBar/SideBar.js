@@ -124,6 +124,7 @@ class SideBar extends Component {
         template={component.template}
         properties={component.props}
         bindings={component.bindings}
+        expressions={component.expressions}
         onChange={this.handleChangesInEditor}
       />
     )

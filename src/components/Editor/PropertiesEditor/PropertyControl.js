@@ -46,17 +46,17 @@ class PropertyControl extends PureComponent {
     const meta = this.props.getPropMeta(name)
 
     let isSpecialValue = binding != null
-    let isValueBindToData = false
+    let isValueBinded = false
     let isValueRich = false
     let currentValue
 
     if (isSpecialValue) {
-      isValueBindToData = binding.defaultExpression != null
+      isValueBinded = binding.expression != null
       isValueRich = binding.richContent != null
     }
 
-    if (isValueBindToData) {
-      currentValue = getExpressionMeta(binding.defaultExpression.value, 'displayName')
+    if (isValueBinded) {
+      currentValue = getExpressionMeta(name, binding.expression, 'displayName')
     }
 
     if (isValueRich) {

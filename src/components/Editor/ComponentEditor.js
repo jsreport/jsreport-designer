@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import { observer, inject } from 'mobx-react'
 import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
+import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
 import { componentTypes } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
@@ -110,17 +111,21 @@ class ComponentEditor extends Component {
     return result
   }
 
-  getExpressionMeta (expression, keyValue, options = {}) {
+  getExpressionMeta (bindingName, expressionResolution, keyValue, options = {}) {
+    const expressions = this.props.expressions || {}
     const { dataFieldsMeta, getFullExpressionName, getFullExpressionDisplayName } = this.props
-    const expressionName = getFullExpressionName(expression)
-    const expressionMeta = dataFieldsMeta[expressionName]
+    const expression = expressionUtils.getExpression(expressions[bindingName], expressionResolution)
+    const expressionName = expression != null ? getFullExpressionName(expression.value) : undefined
+    const expressionMeta = expressionName != null ? dataFieldsMeta[expressionName] : undefined
 
     if (keyValue == null) {
       return expressionMeta
     }
 
     if (keyValue === 'displayName') {
-      const expressionDisplayName = getFullExpressionDisplayName(expression)
+      const expressionDisplayName = expression != null ? (
+        getFullExpressionDisplayName(expression.value)
+      ) : undefined
 
       return `[${options.displayPrefix != null ? options.displayPrefix : ''}${
         expressionDisplayName != null ? (expressionDisplayName === '' ?
@@ -145,6 +150,7 @@ class ComponentEditor extends Component {
 
   handleBindToDataClick ({ propName, bindingName, context, dataProperties }) {
     let bindings = this.props.bindings || {}
+    let expressions = this.props.expressions || {}
     let propMeta = this.getPropMeta(propName) || {}
     let targetBindingName = bindingName != null ? bindingName : propName
 
@@ -162,9 +168,9 @@ class ComponentEditor extends Component {
         stateToUpdate.bindToDataEditor.dataProperties = dataProperties
       }
 
-      if (bindings[targetBindingName] && bindings[targetBindingName].defaultExpression != null) {
+      if (bindings[targetBindingName] && expressionUtils.isDefault(bindings[targetBindingName].expression)) {
         stateToUpdate.bindToDataEditor.selectedField = {
-          expression: bindings[targetBindingName].defaultExpression.value
+          expression: expressions[targetBindingName].$default.value
         }
       }
 
@@ -286,30 +292,41 @@ class ComponentEditor extends Component {
     const { bindToDataEditor } = this.state
     const handleChanges = this.handleChanges
     let bindings = this.props.bindings || {}
+    let expressions = this.props.expressions || {}
     let targetBindingName = bindingName != null ? bindingName : propName
     let currentBinding = bindings[targetBindingName]
-    let currentFieldHasBindedValue = false
+    let currentExpression = expressions[targetBindingName]
+    let currentFieldHasDataBindedValue = false
     let newBinding
     let newBindings
+    let newExpression
+    let newExpressions
 
     if (currentBinding) {
-      newBinding = {
-        ...currentBinding
-      }
+      newBinding = { ...currentBinding }
     } else {
       newBinding = {}
+    }
+
+    if (currentExpression) {
+      newExpression = { ...currentExpression }
+    } else {
+      newExpression = {}
     }
 
     if (
       bindings &&
       currentBinding &&
-      currentBinding.defaultExpression != null
+      expressionUtils.isDefault(currentBinding.expression)
     ) {
-      currentFieldHasBindedValue = true
+      currentFieldHasDataBindedValue = true
     }
 
     if (selectedField != null) {
-      newBinding.defaultExpression = {
+      newBinding.expression = '$default'
+
+      newExpression.$default = {
+        type: 'data',
         value: selectedField.expression
       }
 
@@ -317,11 +334,21 @@ class ComponentEditor extends Component {
         ...bindings,
         [targetBindingName]: newBinding
       }
-    } else if (selectedField == null && currentFieldHasBindedValue) {
-      delete newBinding.defaultExpression
+
+      newExpressions = {
+        ...expressions,
+        [targetBindingName]: newExpression
+      }
+    } else if (selectedField == null && currentFieldHasDataBindedValue) {
+      delete newBinding.expression
+      delete newExpression.$default
 
       if (Object.keys(newBinding).length === 0) {
         newBinding = null
+      }
+
+      if (Object.keys(newExpression).length === 0) {
+        newExpression = null
       }
 
       if (newBinding) {
@@ -336,14 +363,27 @@ class ComponentEditor extends Component {
           newBindings = null
         }
       }
+
+      if (newExpression) {
+        newExpressions = {
+          ...expressions,
+          [targetBindingName]: newExpression
+        }
+      } else {
+        newExpressions = omit(expressions, [propName, targetBindingName])
+
+        if (Object.keys(newExpressions).length === 0) {
+          newExpressions = null
+        }
+      }
     }
 
-    if (newBindings !== undefined) {
+    if (newBindings !== undefined || newExpressions !== undefined) {
       handleChanges({
         origin: 'bindings',
         propName,
         context: bindToDataEditor.context,
-        changes: { bindings: newBindings }
+        changes: { bindings: newBindings, expressions: newExpressions }
       })
     }
 
@@ -430,13 +470,14 @@ class ComponentEditor extends Component {
   }
 
   renderPropertiesEditor () {
-    const { type, dataInput, properties, bindings } = this.props
+    const { type, dataInput, properties, bindings, expressions } = this.props
 
     let props = {
       dataInput,
       componentType: type,
       properties,
       bindings,
+      expressions,
       getPropMeta: this.getPropMeta,
       getExpressionMeta: this.getExpressionMeta,
       onBindToDataClick: this.handleBindToDataClick,
@@ -520,6 +561,7 @@ ComponentEditor.propTypes = {
   template: PropTypes.string,
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
+  expressions: PropTypes.object,
   onChange: PropTypes.func.isRequired
 }
 

@@ -194,7 +194,7 @@ class DesignComponent extends Component {
   }
 
   renderComponent (type, componentProps) {
-    const { bindings, dataInput, computedFieldsInput } = this.props
+    const { bindings, expressions, dataInput, computedFieldsInput } = this.props
     const customCompiledTemplate = this.customCompiledTemplate
     const componentCache = this.getComponentCache()
     const renderComponentFromTemplate = componentRegistry.getComponent(type).render
@@ -218,6 +218,7 @@ class DesignComponent extends Component {
       result = renderComponentFromTemplate({
         props: componentProps,
         bindings,
+        expressions,
         customCompiledTemplate,
         data: dataInput,
         computedFields: computedFieldsInput
@@ -287,6 +288,7 @@ DesignComponent.propTypes = {
   template: PropTypes.string,
   componentProps: PropTypes.object.isRequired,
   bindings: PropTypes.object,
+  expressions: PropTypes.object,
   rawContent: PropTypes.string,
   selected: PropTypes.bool,
   selectedPreview: PropTypes.bool,
@@ -334,6 +336,7 @@ export default inject((injected, props) => {
     template: component.template,
     componentProps: component.props,
     bindings: component.bindings,
+    expressions: component.expressions,
     selected: component.selected,
     ...restProps
   }

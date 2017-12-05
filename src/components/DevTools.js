@@ -68,9 +68,10 @@ class DevTools extends Component {
 
     payload = {
       grid: {
-        width: designObject.baseWidth,
+        baseWidth: designObject.baseWidth,
         numberOfCols: designObject.numberOfCols,
-        defaultRowHeight: designObject.rowHeight
+        defaultNumberOfRows: designObject.defaultNumberOfRows,
+        rowHeight: designObject.rowHeight
       }
     }
 

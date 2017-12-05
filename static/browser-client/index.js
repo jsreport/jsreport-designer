@@ -25,7 +25,7 @@
 
     designerInstanceLoaded.sender.send('ready', {
       design: designerInstanceLoaded.options.design,
-      sampleData: designerInstanceLoaded.options.sampleData,
+      data: designerInstanceLoaded.options.data,
       utils: designerInstanceLoaded.options.utils
     }).then(function () {
       callback(null)

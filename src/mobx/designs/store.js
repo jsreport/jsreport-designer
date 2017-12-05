@@ -31,7 +31,7 @@ class Designs {
 class Design {
   @observable id = null
   @observable baseWidth = null
-  @observable numberOfRows = null
+  @observable defaultNumberOfRows = null
   @observable numberOfCols = null
   @observable rowHeight = null
   @observable groups = []
@@ -65,6 +65,7 @@ class Design {
     let design = {
       baseWidth: this.baseWidth,
       numberOfCols: this.numberOfCols,
+      defaultNumberOfRows: this.defaultNumberOfRows,
       rowHeight: this.rowHeight
     }
 
@@ -152,6 +153,10 @@ class DesignItem {
 
     item.space = this.space
 
+    if (this.minSpace != null) {
+      item.minSpace = this.minSpace
+    }
+
     item.components = this.components.map((comp) => {
       return comp.toJS()
     })
@@ -173,6 +178,7 @@ class DesignComponent {
   @observable type = null
   @observable.ref props = null
   @observable.ref bindings = null
+  @observable.ref expressions = null
   @observable template = null
   @observable parent = null
   @observable selected = false
@@ -181,15 +187,22 @@ class DesignComponent {
     return 'component'
   }
 
-  toJS () {
-    let comp = {
-      id: this.id,
-      type: this.type,
-      props: this.props
+  toJS (includeId) {
+    let comp = {}
+
+    if (includeId === true) {
+      comp.id = this.id
     }
+
+    comp.type = this.type
+    comp.props = this.props
 
     if (this.bindings != null) {
       comp.bindings = this.bindings
+    }
+
+    if (this.expressions != null) {
+      comp.expressions = this.expressions
     }
 
     if (this.template != null) {

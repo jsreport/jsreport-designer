@@ -1,6 +1,7 @@
 
 const get = require('lodash/get')
 const Handlebars = require('handlebars')
+const expressionUtils = require('./expressionUtils')
 
 const componentsDefinition = {}
 const components = {}
@@ -76,7 +77,7 @@ function loadComponents (componentsToLoad, reload = false) {
 
         return {}
       },
-      render: ({ props, bindings, customCompiledTemplate, data, computedFields }) => {
+      render: ({ props, bindings, expressions, customCompiledTemplate, data, computedFields }) => {
         const newProps = Object.assign({}, props)
         let result = {}
         let componentHelpers
@@ -86,12 +87,14 @@ function loadComponents (componentsToLoad, reload = false) {
           Object.keys(bindings).forEach((propName) => {
             const isLazyBinding = propName[0] === '@'
             let currentBinding
+            let expressionsMap
 
             if (isLazyBinding) {
               return
             }
 
             currentBinding = bindings[propName]
+            expressionsMap = expressions != null ? expressions[propName] : undefined
 
             if (!isObject(currentBinding)) {
               return
@@ -100,15 +103,13 @@ function loadComponents (componentsToLoad, reload = false) {
             if (isObject(currentBinding.richContent)) {
               // resolving rich content
               newProps[propName] = new Handlebars.SafeString(currentBinding.richContent.html)
-            } else if (isObject(currentBinding.defaultExpression)) {
-              if (Array.isArray(currentBinding.defaultExpression.value)) {
-                // resolving direct data binding
-                newProps[propName] = resolveBindingExpression(currentBinding.defaultExpression.value, {
-                  context: data,
-                  rootContext: data,
-                  computedFields
-                })
-              }
+            } else if (currentBinding.expression != null) {
+              // resolving direct data binding
+              newProps[propName] = resolveBindingExpression(expressionsMap, currentBinding.expression, {
+                context: data,
+                rootContext: data,
+                computedFields
+              })
             }
           })
         }
@@ -117,7 +118,8 @@ function loadComponents (componentsToLoad, reload = false) {
 
         componentHelpers = Object.assign({
           resolveBinding: (bindingName, context, options) => {
-            let expression
+            let expressionsMap
+            let expressionResolution
             let currentContext
 
             if (context == null || options == null) {
@@ -130,15 +132,17 @@ function loadComponents (componentsToLoad, reload = false) {
               currentContext = context
             }
 
+            expressionsMap = expressions != null ? expressions[bindingName] : undefined
+
             if (isObject(bindings) && bindings[bindingName] != null) {
-              expression = bindings[bindingName].defaultExpression.value
+              expressionResolution = bindings[bindingName].expression
             }
 
-            if (!expression) {
+            if (!expressionResolution) {
               return undefined
             }
 
-            return resolveBindingExpression(expression, {
+            return resolveBindingExpression(expressionsMap, expressionResolution, {
               context: currentContext,
               rootContext: data,
               computedFields
@@ -169,7 +173,9 @@ function loadComponents (componentsToLoad, reload = false) {
   return componentRequires
 }
 
-function resolveBindingExpression (expression, { context, rootContext, computedFields }) {
+function resolveBindingExpression (expressionsMap, expressionResolution, { context, rootContext, computedFields }) {
+  let expression = expressionUtils.getExpression(expressionsMap, expressionResolution)
+
   const FIELD_TYPE = {
     property: 'p',
     index: 'i',
@@ -181,9 +187,11 @@ function resolveBindingExpression (expression, { context, rootContext, computedF
   let currentContext = context
   let result
 
-  if (context == null) {
+  if (context == null || expression == null) {
     return undefined
   }
+
+  expression = expression.value
 
   for (i = 0; i < expression.length; i++) {
     const currentExpression = expression[i]

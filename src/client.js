@@ -71,7 +71,14 @@ async function init () {
 }
 
 async function start (initialData) {
-  const storeExport = createStores(storesDefaults, initialData)
+  const storeExport = createStores(Object.assign({}, storesDefaults, {
+    dataInputStore: {
+      value: initialData != null ? initialData.data : undefined,
+      computedFields: initialData != null && initialData.design ? (
+        initialData.design.computedFields
+      ) : undefined
+    }
+  }))
 
   mobxStoreExport.stores = storeExport.stores
   mobxStoreExport.actions = storeExport.actions
@@ -102,7 +109,7 @@ async function start (initialData) {
   }
 
   // create a default design at the start
-  mobxStoreExport.actions.designsActions.add()
+  mobxStoreExport.actions.designsActions.add({ definition: initialData != null ? initialData.design : undefined })
   mobxStoreExport.actions.editorActions.openDesign(mobxStoreExport.stores.designsStore.designs.keys()[0])
 
   render({

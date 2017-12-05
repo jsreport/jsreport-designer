@@ -30,15 +30,15 @@
     {{/each}}
   </head>
   <body>
-    <div class="designContainer" style="width: {{getDesignInformation 'grid.width'}}; margin-left: auto; margin-right: auto;">
+    <div class="designContainer" style="width: {{getDesignInformation 'grid.baseWidth'}}; margin-left: auto; margin-right: auto;">
       {{!-- resolving computed fields first --}}
       {{#resolveComputedFields}}{{/resolveComputedFields}}
 
       {{#each (getDesignInformation 'groups')}}
-        {{#renderDesignGroup this (getDesignInformation 'grid.defaultRowHeight')}}
+        {{#renderDesignGroup this (getDesignInformation 'grid.rowHeight')}}
           {{#renderDesignItem this}}
             {{#each components}}
-              {{#renderComponent type props bindings template }}
+              {{#renderComponent type props bindings expressions template }}
               {{/renderComponent}}
             {{/each}}
           {{/renderDesignItem}}
