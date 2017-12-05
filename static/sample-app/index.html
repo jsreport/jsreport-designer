@@ -18,9 +18,29 @@
   </style>
 </head>
 <body>
-  <div>
+  <div style="padding: 5px">
     <b>Sample App</b>
-    <button id="open-designer">Open designer</button>
+    <div>
+      <div style="display: inline-block">
+        <textarea
+          id="data-input"
+          placeholder="Paste here your json data input"
+          rows="5"
+          cols="50"
+        ></textarea>
+      </div>
+      <div style="display: inline-block">
+        <textarea
+          id="design-definition-input"
+          placeholder="Paste here your design json definition"
+          rows="5"
+          cols="50"
+        /></textarea>
+      </div>
+      <div>
+        <button id="open-designer">Open designer</button>
+      </div>
+    </div>
   </div>
   <br />
   <div id="designer-container" class="designer-container">
@@ -39,11 +59,26 @@
     var btnOpenDesigner = document.getElementById('open-designer')
 
     btnOpenDesigner.addEventListener('click', function () {
+      var dataInput = document.getElementById('data-input')
+      var designDefinitionInput = document.getElementById('design-definition-input')
+
+      try {
+        dataInput = dataInput.value === '' ? undefined : JSON.parse(dataInput.value)
+      } catch (err) {
+        alert('invalid data input, data input should be a valid json value')
+      }
+
+      try {
+        designDefinitionInput = designDefinitionInput.value === '' ? undefined : JSON.parse(designDefinitionInput.value)
+      } catch (err) {
+        alert('invalid design definition input, design definition should be a valid json value')
+      }
+
       jsreportDesigner.open(document.getElementById('designer-container'), {
         url: 'http://localhost:4000/designer',
-        sampleData: {},
-        design: {},
-        // utils: ''
+        data: dataInput,
+        design: designDefinitionInput,
+        // utils: undefined
       }, function (err) {
         if (err) {
           return console.error('error loading designer..')
