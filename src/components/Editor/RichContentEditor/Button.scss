@@ -1,0 +1,14 @@
+
+.button {
+  composes: control from './Control.scss';
+  cursor: pointer;
+}
+
+.button:hover {
+  color: #1d1b1b;
+}
+
+.buttonActive,
+.buttonActive:hover {
+  color: #5890ff;
+}

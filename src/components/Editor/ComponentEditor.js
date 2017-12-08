@@ -8,7 +8,7 @@ import CommandButton from '../CommandButton'
 import { componentTypes } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import RichContentEditor from './RichContentEditor'
-import BindToDataEditor from './BindToDataEditor'
+import SelectDataFieldEditor from './SelectDataFieldEditor'
 import styles from './ComponentEditor.scss'
 
 @inject((injected) => ({
@@ -25,7 +25,7 @@ class ComponentEditor extends Component {
 
     this.state = {
       editComponentTemplate: null,
-      bindToDataEditor: null,
+      selectedDataFieldEditor: null,
       richContentEditor: null
     }
 
@@ -37,13 +37,13 @@ class ComponentEditor extends Component {
     this.getPropMeta = this.getPropMeta.bind(this)
     this.getExpressionMeta = this.getExpressionMeta.bind(this)
     this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
-    this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
+    this.handleSelectDataFieldClick = this.handleSelectDataFieldClick.bind(this)
     this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
     this.handleTemplateEditorSave = this.handleTemplateEditorSave.bind(this)
-    this.handleBindToDataEditorSave = this.handleBindToDataEditorSave.bind(this)
+    this.handleSelectDataFieldEditorSave = this.handleSelectDataFieldEditorSave.bind(this)
     this.handleEditRichContentSave = this.handleEditRichContentSave.bind(this)
     this.handleTemplateEditorClose = this.handleTemplateEditorClose.bind(this)
-    this.handleBindToDataEditorClose = this.handleBindToDataEditorClose.bind(this)
+    this.handleSelectDataFieldEditorClose = this.handleSelectDataFieldEditorClose.bind(this)
     this.handleEditRichContentClose = this.handleEditRichContentClose.bind(this)
     this.handleChanges = this.handleChanges.bind(this)
     this.handlePropChange = this.handlePropChange.bind(this)
@@ -148,44 +148,44 @@ class ComponentEditor extends Component {
     }
   }
 
-  handleBindToDataClick ({ propName, bindingName, context, dataProperties }) {
+  handleSelectDataFieldClick ({ propName, bindingName, context, dataProperties }) {
     let bindings = this.props.bindings || {}
     let expressions = this.props.expressions || {}
     let propMeta = this.getPropMeta(propName) || {}
     let targetBindingName = bindingName != null ? bindingName : propName
 
-    if (!this.state.bindToDataEditor) {
+    if (!this.state.selectedDataFieldEditor) {
       let stateToUpdate = {
-        bindToDataEditor: {
+        selectedDataFieldEditor: {
           propName,
           context
         }
       }
 
-      stateToUpdate.bindToDataEditor.bindingName = targetBindingName
+      stateToUpdate.selectedDataFieldEditor.bindingName = targetBindingName
 
       if (dataProperties != null) {
-        stateToUpdate.bindToDataEditor.dataProperties = dataProperties
+        stateToUpdate.selectedDataFieldEditor.dataProperties = dataProperties
       }
 
       if (bindings[targetBindingName] && expressionUtils.isDefault(bindings[targetBindingName].expression)) {
-        stateToUpdate.bindToDataEditor.selectedField = {
+        stateToUpdate.selectedDataFieldEditor.selectedField = {
           expression: expressions[targetBindingName].$default.value
         }
       }
 
       if (propMeta == null) {
-        stateToUpdate.bindToDataEditor.allowedTypes = ['scalar']
+        stateToUpdate.selectedDataFieldEditor.allowedTypes = ['scalar']
       } else if (Array.isArray(propMeta.allowedBindingValueTypes) || typeof propMeta.allowedBindingValueTypes === 'string') {
-        stateToUpdate.bindToDataEditor.allowedTypes = !Array.isArray(propMeta.allowedBindingValueTypes) ? [propMeta.allowedBindingValueTypes] : propMeta.allowedBindingValueTypes
+        stateToUpdate.selectedDataFieldEditor.allowedTypes = !Array.isArray(propMeta.allowedBindingValueTypes) ? [propMeta.allowedBindingValueTypes] : propMeta.allowedBindingValueTypes
       } else {
-        stateToUpdate.bindToDataEditor.allowedTypes = []
+        stateToUpdate.selectedDataFieldEditor.allowedTypes = []
       }
 
       this.setState(stateToUpdate)
     } else {
       this.setState({
-        bindToDataEditor: null
+        selectedDataFieldEditor: null
       })
     }
   }
@@ -288,8 +288,8 @@ class ComponentEditor extends Component {
     })
   }
 
-  handleBindToDataEditorSave ({ propName, bindingName, selectedField }) {
-    const { bindToDataEditor } = this.state
+  handleSelectDataFieldEditorSave ({ propName, bindingName, selectedField }) {
+    const { selectedDataFieldEditor } = this.state
     const handleChanges = this.handleChanges
     let bindings = this.props.bindings || {}
     let expressions = this.props.expressions || {}
@@ -382,19 +382,19 @@ class ComponentEditor extends Component {
       handleChanges({
         origin: 'bindings',
         propName,
-        context: bindToDataEditor.context,
+        context: selectedDataFieldEditor.context,
         changes: { bindings: newBindings, expressions: newExpressions }
       })
     }
 
     this.setState({
-      bindToDataEditor: null
+      selectedDataFieldEditor: null
     })
   }
 
-  handleBindToDataEditorClose () {
+  handleSelectDataFieldEditorClose () {
     this.setState({
-      bindToDataEditor: null
+      selectedDataFieldEditor: null
     })
   }
 
@@ -480,7 +480,7 @@ class ComponentEditor extends Component {
       expressions,
       getPropMeta: this.getPropMeta,
       getExpressionMeta: this.getExpressionMeta,
-      onBindToDataClick: this.handleBindToDataClick,
+      onSelectDataFieldClick: this.handleSelectDataFieldClick,
       onEditRichContentClick: this.handleEditRichContentClick,
       onChange: this.handlePropChange,
       connectToChangesInterceptor: this.connectToChangesInterceptor
@@ -494,7 +494,7 @@ class ComponentEditor extends Component {
   }
 
   render () {
-    const { bindToDataEditor, richContentEditor, editComponentTemplate } = this.state
+    const { selectedDataFieldEditor, richContentEditor, editComponentTemplate } = this.state
 
     const {
       type,
@@ -520,16 +520,16 @@ class ComponentEditor extends Component {
           </div>
           {this.renderPropertiesEditor()}
         </div>
-        {bindToDataEditor && (
-          <BindToDataEditor
-            dataProperties={bindToDataEditor.dataProperties}
+        {selectedDataFieldEditor && (
+          <SelectDataFieldEditor
+            dataProperties={selectedDataFieldEditor.dataProperties}
             componentType={type}
-            propName={bindToDataEditor.propName}
-            bindingName={bindToDataEditor.bindingName}
-            defaultSelectedField={bindToDataEditor.selectedField}
-            allowedTypes={bindToDataEditor.allowedTypes}
-            onSave={this.handleBindToDataEditorSave}
-            onClose={this.handleBindToDataEditorClose}
+            propName={selectedDataFieldEditor.propName}
+            bindingName={selectedDataFieldEditor.bindingName}
+            defaultSelectedField={selectedDataFieldEditor.selectedField}
+            allowedTypes={selectedDataFieldEditor.allowedTypes}
+            onSave={this.handleSelectDataFieldEditorSave}
+            onClose={this.handleSelectDataFieldEditorClose}
           />
         )}
         {richContentEditor && (

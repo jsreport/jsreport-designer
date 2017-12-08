@@ -162,13 +162,13 @@ class TablePropertiesEditor extends PureComponent {
   }
 
   handleColumnBindToDataClick (params) {
-    const { bindings, getExpressionMeta, onBindToDataClick } = this.props
+    const { bindings, getExpressionMeta, onSelectDataFieldClick } = this.props
 
     if (params.context.name === 'value' && (!bindings || bindings.data == null)) {
       return
     }
 
-    onBindToDataClick({
+    onSelectDataFieldClick({
       ...params,
       bindingName: params.context.targetBindingName,
       dataProperties: params.context.name === 'name' ? undefined :  (
@@ -272,7 +272,7 @@ class TablePropertiesEditor extends PureComponent {
       dataInput,
       getPropMeta,
       getExpressionMeta,
-      onBindToDataClick
+      onSelectDataFieldClick
     } = this.props
 
     return (
@@ -287,7 +287,7 @@ class TablePropertiesEditor extends PureComponent {
           getPropMeta={getPropMeta}
           getExpressionMeta={getExpressionMeta}
           renderValue={this.renderDataPropValue}
-          onBindToDataClick={onBindToDataClick}
+          onSelectDataFieldClick={onSelectDataFieldClick}
         />
         <div className="propertiesEditor-prop">
           <label>
@@ -311,7 +311,7 @@ class TablePropertiesEditor extends PureComponent {
                   getPropMeta={getPropMeta}
                   getExpressionMeta={getExpressionMeta}
                   renderValue={this.renderColumnPropValue}
-                  onBindToDataClick={this.handleColumnBindToDataClick}
+                  onSelectDataFieldClick={this.handleColumnBindToDataClick}
                   onChange={this.handleColumnsChange}
                 />
                 <PropertyControl
@@ -325,7 +325,7 @@ class TablePropertiesEditor extends PureComponent {
                   getPropMeta={getPropMeta}
                   getExpressionMeta={getExpressionMeta}
                   renderValue={this.renderColumnPropValue}
-                  onBindToDataClick={this.handleColumnBindToDataClick}
+                  onSelectDataFieldClick={this.handleColumnBindToDataClick}
                   onChange={this.handleColumnsChange}
                 />
                 <div key="remove-columns">

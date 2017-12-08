@@ -1,0 +1,10 @@
+
+.separator {
+  margin-left: -12px;
+  composes: control from './Control.scss';
+  margin-right: 8px;
+}
+
+.separatorLabel {
+  border-left: 1px solid;
+}

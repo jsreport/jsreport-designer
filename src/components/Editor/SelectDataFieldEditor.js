@@ -1,7 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import { observer, inject } from 'mobx-react'
-import styles from './BindToDataEditor.scss'
+import styles from './SelectDataFieldEditor.scss'
 
 @inject((injected, props) => {
   let dataProperties
@@ -25,7 +25,7 @@ import styles from './BindToDataEditor.scss'
   }
 })
 @observer
-class BindToDataEditor extends Component {
+class SelectDataFieldEditor extends Component {
   constructor (props) {
     super(props)
 
@@ -440,11 +440,11 @@ class BindToDataEditor extends Component {
         }}
       >
         <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>
-          Bind To Data Editor - {`${componentType} (property: ${propName}${isDirty ? '*' : ''})`}
+          Select Data field Editor - {`${componentType} (property: ${propName}${isDirty ? '*' : ''})`}
         </h3>
         <br />
         <div style={{ fontSize: '0.7rem' }}>
-          Select the data field to bind
+          Select a field to bind
         </div>
         <div style={{
           marginTop: '0.6rem',
@@ -478,7 +478,7 @@ class BindToDataEditor extends Component {
   }
 }
 
-BindToDataEditor.propTypes = {
+SelectDataFieldEditor.propTypes = {
   dataProperties: PropTypes.object,
   componentType: PropTypes.string.isRequired,
   propName: PropTypes.string.isRequired,
@@ -489,4 +489,4 @@ BindToDataEditor.propTypes = {
   onClose: PropTypes.func
 }
 
-export default BindToDataEditor
+export default SelectDataFieldEditor

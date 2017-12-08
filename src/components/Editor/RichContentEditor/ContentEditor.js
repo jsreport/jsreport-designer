@@ -1,63 +1,77 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import {
-  Editor,
   EditorState,
+  ContentState,
   RichUtils
 } from 'draft-js'
+import Editor from 'draft-js-plugins-editor'
+import { stateFromHTML } from 'draft-js-import-html'
+import { stateToHTML } from 'draft-js-export-html'
+import createBlockStylesPlugin from './plugins/BlockStyles'
+import createInlineStylesPlugin from './plugins/InlineStyles'
+import createExpressionPlugin from './plugins/Expression'
+import Separator from './Separator'
 import styles from './ContentEditor.scss'
 
-function getBlockStyle(block) {
-  switch (block.getType()) {
-    case 'blockquote':
-      return styles.contentEditorBlockquote
-    default:
-      return null
-  }
-}
-
-const BLOCK_TYPES = [
-  { label: 'H1', style: 'header-one' },
-  { label: 'H2', style: 'header-two' },
-  { label: 'H3', style: 'header-three' },
-  { label: 'H4', style: 'header-four' },
-  { label: 'H5', style: 'header-five' },
-  { label: 'H6', style: 'header-six' },
-  { label: 'Blockquote', style: 'blockquote', icon: 'quote-left' },
-  { label: 'UL', style: 'unordered-list-item', icon: 'list-ul' },
-  { label: 'OL', style: 'ordered-list-item', icon: 'list-ol' }
-]
-
-const INLINE_STYLES = [
-  { label: 'Bold', style: 'BOLD', icon: 'bold' },
-  { label: 'Italic', style: 'ITALIC', icon: 'italic' },
-  { label: 'Underline', style: 'UNDERLINE', icon: 'underline' },
-  { label: 'Strikethrough', style: 'STRIKE', icon: 'strikethrough'  }
-]
+const blockStylesPlugin = createBlockStylesPlugin()
+const inlineStylesPlugin = createInlineStylesPlugin()
+const expressionPlugin = createExpressionPlugin()
+const plugins = [blockStylesPlugin, inlineStylesPlugin, expressionPlugin]
+const BlockStylesButtons = blockStylesPlugin.BlockStylesButtons
+const InlineStylesButtons = inlineStylesPlugin.InlineStylesButtons
+const ExpressionButton = expressionPlugin.ExpressionButton
 
 class ContentEditor extends Component {
   constructor (props) {
     super(props)
 
-    let initialState = {}
-
-    initialState = {
-      editorState: EditorState.createWithContent(props.initialContentState)
+    let initialState = {
+      editorState: null
     }
 
     this.state = initialState
 
     this.setEditorRef = this.setEditorRef.bind(this)
     this.focus = this.focus.bind(this)
+    this.getContentRepresentation = this.getContentRepresentation.bind(this)
     this.handleKeyCommand = this.handleKeyCommand.bind(this)
-    this.handleTab = this.handleTab.bind(this)
     this.handleEditorChange = this.handleEditorChange.bind(this)
-    this.toggleBlockType = this.toggleBlockType.bind(this);
-    this.toggleInlineStyle = this.toggleInlineStyle.bind(this);
 
     if (props.onContentChange) {
       props.onContentChange(initialState.editorState.getCurrentContent())
     }
+  }
+
+  componentWillMount () {
+    const initialContent = this.props.initialContent != null ? this.props.initialContent : ''
+    let contentState
+
+    if (typeof initialContent === 'string') {
+      contentState = ContentState.createFromText(initialContent)
+    } else {
+      contentState = stateFromHTML(initialContent.html, {
+        customInlineFn: (element, { Style, Entity }) => {
+          const inlineResolvers = [
+            inlineStylesPlugin.convertStyleFrom,
+            expressionPlugin.convertEntityFrom
+          ]
+
+          let result
+
+          inlineResolvers.some((resolver) => {
+            result = resolver(element, { Style, Entity })
+            return result != null
+          })
+
+          return result
+        }
+      })
+    }
+
+    this.setState({
+      editorState: EditorState.createWithContent(contentState)
+    })
   }
 
   setEditorRef (el) {
@@ -72,19 +86,32 @@ class ContentEditor extends Component {
     this.editor.focus()
   }
 
-  toggleBlockType (blockType) {
-    this.handleEditorChange(
-      RichUtils.toggleBlockType(this.state.editorState, blockType)
-    );
-  }
+  getContentRepresentation () {
+    const { editorState } = this.state
 
-  toggleInlineStyle (inlineStyle) {
-    this.handleEditorChange(
-      RichUtils.toggleInlineStyle(this.state.editorState, inlineStyle)
-    );
+    return stateToHTML(editorState.getCurrentContent(), {
+      defaultBlockTag: 'div',
+      inlineStyles: inlineStylesPlugin.convertStyleTo(),
+      entityStyleFn: (entity) => {
+        const entityResolvers = [
+          expressionPlugin.convertEntityTo
+        ]
+
+        let result
+
+        entityResolvers.some((resolver) => {
+          result = resolver(entity)
+          return result != null
+        })
+
+        return result
+      }
+    })
   }
 
   handleKeyCommand (command, editorState) {
+    // this handles just basic rich commands, exactly the ones that we use
+    // for inline, block styles
     const newState = RichUtils.handleKeyCommand(editorState, command)
 
     if (newState) {
@@ -93,11 +120,6 @@ class ContentEditor extends Component {
     }
 
     return false
-  }
-
-  handleTab (ev) {
-    const maxDepth = 4
-    this.handleEditorChange(RichUtils.onTab(ev, this.state.editorState, maxDepth))
   }
 
   handleEditorChange (editorState) {
@@ -109,12 +131,11 @@ class ContentEditor extends Component {
   }
 
   render () {
-    const { styleMap } = this.props
     const { editorState } = this.state
 
     // If the user changes block type before entering any text, we can
     // either style the placeholder or hide it. Let's just hide it now.
-    let className = styles.contentEditorEditor
+    let className = styles.contentEditorInput
     var contentState = editorState.getCurrentContent()
 
     if (!contentState.hasText()) {
@@ -130,25 +151,22 @@ class ContentEditor extends Component {
 
     return (
       <div className={styles.contentEditorRoot}>
-        <BlockStyleControls
-          editorState={editorState}
-          onToggle={this.toggleBlockType}
-        />
-        <InlineStyleControls
-          editorState={editorState}
-          onToggle={this.toggleInlineStyle}
-        />
+        <div className={styles.contentEditorButtonsContainer}>
+          <BlockStylesButtons editorState={editorState} />
+        </div>
+        <div className={styles.contentEditorButtonsContainer}>
+          <InlineStylesButtons editorState={editorState} />
+          <Separator />
+          <ExpressionButton editorState={editorState} />
+        </div>
         <div className={className} onClick={this.focus}>
           <Editor
-            blockStyleFn={getBlockStyle}
-            customStyleMap={styleMap}
             editorState={editorState}
             handleKeyCommand={this.handleKeyCommand}
             onChange={this.handleEditorChange}
-            onTab={this.handleTab}
             placeholder="Add some content..."
+            plugins={plugins}
             ref={this.setEditorRef}
-            spellCheck={true}
           />
         </div>
       </div>
@@ -156,87 +174,8 @@ class ContentEditor extends Component {
   }
 }
 
-class StyleButton extends React.Component {
-  constructor() {
-    super()
-
-    this.onToggle = this.onToggle.bind(this)
-  }
-
-  onToggle (ev) {
-    ev.preventDefault();
-    this.props.onToggle(this.props.style);
-  }
-
-  render() {
-    const { label, icon } = this.props
-    let className = styles.contentEditorStyleButton
-
-    if (this.props.active) {
-      className += ` ${styles.contentEditorActiveButton}`
-    }
-
-    return (
-      <span className={className} onMouseDown={this.onToggle}>
-        {icon ? (
-          <span className={`fa fa-${icon}`} title={label}></span>
-        ) : (
-          label
-        )}
-      </span>
-    );
-  }
-}
-
-const BlockStyleControls = props => {
-  const { editorState } = props
-  const selection = editorState.getSelection()
-
-  const blockType = (
-    editorState
-    .getCurrentContent()
-    .getBlockForKey(selection.getStartKey())
-    .getType()
-  )
-
-  return (
-    <div className={styles.contentEditorControls}>
-      {BLOCK_TYPES.map(type => (
-        <StyleButton
-          key={type.label}
-          active={type.style === blockType}
-          label={type.label}
-          onToggle={props.onToggle}
-          icon={type.icon}
-          style={type.style}
-        />
-      ))}
-    </div>
-  )
-}
-
-const InlineStyleControls = props => {
-  let currentStyle = props.editorState.getCurrentInlineStyle()
-
-  return (
-    <div className={styles.contentEditorControls}>
-      {INLINE_STYLES.map(type => (
-        <StyleButton
-          key={type.label}
-          active={currentStyle.has(type.style)}
-          label={type.label}
-          onToggle={props.onToggle}
-          icon={type.icon}
-          style={type.style}
-        />
-      ))}
-    </div>
-  )
-}
-
 ContentEditor.propTypes = {
-  styleMap: PropTypes.object,
-  initialContentState: PropTypes.any,
+  initialContent: PropTypes.any,
   onContentChange: PropTypes.func
 }
 

@@ -13,8 +13,8 @@ class PropertyControl extends PureComponent {
   handleBindToDataClick (ev) {
     ev.preventDefault()
 
-    if (this.props.onBindToDataClick) {
-      this.props.onBindToDataClick({
+    if (this.props.onSelectDataFieldClick) {
+      this.props.onSelectDataFieldClick({
         propName: this.props.name,
         context: this.props.context
       })
@@ -129,7 +129,7 @@ PropertyControl.propTypes = {
   getPropMeta: PropTypes.func.isRequired,
   getExpressionMeta: PropTypes.func.isRequired,
   renderValue: PropTypes.func,
-  onBindToDataClick: PropTypes.func,
+  onSelectDataFieldClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,
   onChange: PropTypes.func
 }
