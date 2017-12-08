@@ -1,6 +1,9 @@
 
 .designComponentInteractive {
   cursor: move;
+  min-width: 5px;
+  min-height: 5px;
+  box-shadow: 0px 0px 1px 0px #3068d8;
 }
 
 .designComponentInteractive[data-selected],
