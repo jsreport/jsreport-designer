@@ -1,6 +1,8 @@
 const JsReport = require('jsreport-core')
 const Design = require('./designs/design.js')
 const Text = require('./designs/text.js')
+const TextWithBoundProp = require('./designs/textWithBoundProp.js')
+
 require('should')
 
 describe('designer', () => {
@@ -36,5 +38,14 @@ describe('designer', () => {
       template: { design: design, recipe: 'html', engine: 'none' }
     })
     res.content.toString().should.containEql('Sample text')
+  })
+
+  it('text component should render bound value from input data', async () => {
+    design.groups[0].items.push(TextWithBoundProp())
+    const res = await jsreport.render({
+      template: { design: design, recipe: 'html', engine: 'none' },
+      data: { foo: 'Hello world' }
+    })
+    res.content.toString().should.containEql('Hello world')
   })
 })
