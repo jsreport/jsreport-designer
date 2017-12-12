@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import Resizer from './Resizer'
 import styles from './Selection.scss'
@@ -47,46 +49,46 @@ class Selection extends Component {
 
     return [
       <div
-        key="selection"
+        key='selection'
         className={`${styles.selection} ${styles.selectionTop} ${styles.selectionBottom}`}
         style={inlineStyles}
         // tab index necessary to make key events to work
-        tabIndex="0"
+        tabIndex='0'
         draggable={false}
         {...extraProps}
         onKeyDown={onKeyDown}
       />,
       <div
-        key="selection-left"
+        key='selection-left'
         className={`${styles.selection} ${styles.selectionLeft}`}
         style={{ left: inlineStyles.left, borderColor: inlineStyles.borderColor }}
         // tab index necessary to make key events to work
-        tabIndex="1"
+        tabIndex='1'
         draggable={false}
         {...extraProps}
         onKeyDown={onKeyDown}
       >
         <Resizer
-          key="resize-left-picker"
-          direction="left"
+          key='resize-left-picker'
+          direction='left'
           onResizeStart={onResizeStart}
           onResize={onResize}
           onResizeEnd={onResizeEnd}
         />
       </div>,
       <div
-        key="selection-right"
+        key='selection-right'
         className={`${styles.selection} ${styles.selectionRight}`}
         style={{ right: inlineStyles.right, borderColor: inlineStyles.borderColor }}
         // tab index necessary to make key events to work
-        tabIndex="2"
+        tabIndex='2'
         draggable={false}
         {...extraProps}
         onKeyDown={onKeyDown}
       >
         <Resizer
-          key="resize-right-picker"
-          direction="right"
+          key='resize-right-picker'
+          direction='right'
           onResizeStart={onResizeStart}
           onResize={onResize}
           onResizeEnd={onResizeEnd}

@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { observer, inject } from 'mobx-react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import styles from './SelectDataFieldEditor.scss'
 
 @inject((injected, props) => {
@@ -70,7 +72,6 @@ class SelectDataFieldEditor extends Component {
 
   select ({ expression, fieldType, id }) {
     const { getExpressionName } = this.props
-    let isSimple = true
 
     let selection = {
       expression: [
@@ -157,253 +158,251 @@ class SelectDataFieldEditor extends Component {
 
     isFieldSelected = (selectedFullExpression != null && selectedFullExpression === fullExpression)
 
-    return (
-      [
-        <ul key="data-input-fields" className={styles.bindToDataEditorFieldContainer}>
-          <li
-            key="field-name"
-            className={`${styles.bindToDataEditorFieldHeader} ${styles.bindToDataEditorFieldItem} ${isFieldSelected ? styles.selected : ''}`}
-            onClick={() => !isFieldDisabled && this.select({
-              expression,
-              fieldType: expression.length > 0 ? 'property' : 'root',
-            })}
+    return ([
+      <ul key='data-input-fields' className={styles.bindToDataEditorFieldContainer}>
+        <li
+          key='field-name'
+          className={`${styles.bindToDataEditorFieldHeader} ${styles.bindToDataEditorFieldItem} ${isFieldSelected ? styles.selected : ''}`}
+          onClick={() => !isFieldDisabled && this.select({
+            expression,
+            fieldType: expression.length > 0 ? 'property' : 'root'
+          })}
+        >
+          <div style={{ padding: `0 ${leftSpace}rem` }}>
+            <span
+              className={'fa fa-' + (this.state.fieldCollapse[key] ? 'plus-square' : 'minus-square')}
+              onClick={(ev) => { ev.stopPropagation(); this.collapse(key) }}
+            />
+            {' '}
+            <span className={`${styles.bindToDataEditorFieldItemLabel} ${isFieldDisabled ? styles.disabled : ''}`}>
+              {`${expression.length === 0 ? '(Data input fields)' : ''} ${field.key != null ? field.key + ' ' : ''}(${field.type})`}
+            </span>
+          </div>
+        </li>
+        {/* for now, selecting indexes is disabled, until we figure out a simple way (less technical) for users to select these fields */}
+        {false && Array.isArray(field.indexes) && (
+          <div
+            key='field-indexes'
+            className={`${styles.bindToDataEditorFieldIndexes} ${collapsed ? styles.collapsed : ''}`}
           >
-            <div style={{ padding: `0 ${leftSpace}rem` }}>
+            <div
+              key='field-indexes-title'
+              className={styles.bindToDataEditorFieldHeader}
+              style={{ padding: `0 ${padding + leftSpace}rem` }}
+              onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__indexes') }}
+            >
               <span
-                className={'fa fa-' + (this.state.fieldCollapse[key] ? 'plus-square' : 'minus-square')}
-                onClick={(ev) => { ev.stopPropagation(); this.collapse(key); }}
+                className={'fa fa-' + (this.state.fieldCollapse[key + '__indexes'] ? 'plus-square' : 'minus-square')}
               />
               {' '}
-              <span className={`${styles.bindToDataEditorFieldItemLabel} ${isFieldDisabled ? styles.disabled : ''}`}>
-                {`${expression.length === 0 ? '(Data input fields)' : ''} ${field.key != null ? field.key + ' ' : ''}(${field.type})`}
+              <span style={{ color: '#1f87d6' }}>
+                {'> Indexes'}
               </span>
             </div>
-          </li>
-          {/* for now, selecting indexes is disabled, until we figure out a simple way (less technical) for users to select these fields */}
-          {false && Array.isArray(field.indexes) && (
             <div
-              key="field-indexes"
-              className={`${bindToDataEditorFieldIndexes} ${collapsed ? styles.collapsed : ''}`}
+              key='field-indexes-content'
+              className={`${styles.bindToDataEditorFieldIndexes} ${this.state.fieldCollapse[key + '__indexes'] ? styles.collapsed : ''}`}
             >
+              {field.indexes.map((indexItem) => {
+                let indexKey = `${key}--${indexItem[0]}--field`
+                let indexId = indexItem[0]
+                let indexType = indexItem[1]
+                let fieldType = 'index'
+
+                let indexIsSelected = (
+                  selectedFullExpression != null &&
+                  selectedFullExpression === getFullExpressionName(fullExpression, fieldType, indexId)
+                )
+
+                let indexIsDisabled
+
+                if (allowedTypes.indexOf('scalar') !== -1) {
+                  indexIsDisabled = (
+                    indexType !== 'string' &&
+                    indexType !== 'number' &&
+                    indexType !== 'boolean'
+                  )
+                } else {
+                  indexIsDisabled = allowedTypes.indexOf(indexType) === -1
+                }
+
+                return (
+                  <li key={indexKey}>
+                    <div
+                      className={`${styles.bindToDataEditorFieldItem} ${indexIsSelected ? styles.selected : ''}`}
+                      onClick={() => !indexIsDisabled && this.select({
+                        expression,
+                        fieldType,
+                        id: indexId
+                      })}
+                    >
+                      <span
+                        className={`${styles.bindToDataEditorFieldItemLabel} ${indexIsDisabled ? styles.disabled : ''}`}
+                        style={{ padding: `0 ${(padding * 3) + leftSpace}rem` }}
+                      >
+                        {`${indexItem[0]} (${indexType})`}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
+            </div>
+          </div>
+        )}
+        {Array.isArray(field.properties) && (
+          <div
+            key='field-properties'
+            className={`${styles.bindToDataEditorFieldProperties} ${collapsed ? styles.collapsed : ''}`}
+          >
+            {field.type === 'array' && (
               <div
-                key="field-indexes-title"
+                key='field-properties-title'
                 className={styles.bindToDataEditorFieldHeader}
                 style={{ padding: `0 ${padding + leftSpace}rem` }}
-                onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__indexes'); }}
+                onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__properties') }}
               >
                 <span
-                  className={'fa fa-' + (this.state.fieldCollapse[key + '__indexes'] ? 'plus-square' : 'minus-square')}
+                  className={'fa fa-' + (this.state.fieldCollapse[key + '__properties'] ? 'plus-square' : 'minus-square')}
                 />
                 {' '}
                 <span style={{ color: '#1f87d6' }}>
-                  {'> Indexes'}
+                  {'> Properties'}
                 </span>
               </div>
-              <div
-                key="field-indexes-content"
-                className={`${bindToDataEditorFieldIndexes} ${this.state.fieldCollapse[key + '__indexes'] ? styles.collapsed : ''}`}
-              >
-                {field.indexes.map((indexItem) => {
-                  let indexKey = `${key}--${indexItem[0]}--field`
-                  let indexId = indexItem[0]
-                  let indexType = indexItem[1]
-                  let fieldType = 'index'
+            )}
+            <div
+              key='field-properties-content'
+              className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__properties'] ? styles.collapsed : ''}`}
+            >
+              {field.properties.map((innerField) => {
+                const isSimpleField = Array.isArray(innerField)
+                const innerFieldKey = key + '--' + (isSimpleField ? innerField[0] : innerField.key) + '--field'
+                const innerFieldType = isSimpleField ? innerField[1] : innerField.type
+                const innerFieldId = isSimpleField ? innerField[0] : innerField.key
+                const fieldType = 'property'
 
-                  let indexIsSelected = (
-                    selectedFullExpression != null &&
-                    selectedFullExpression === getFullExpressionName(fullExpression, fieldType, indexId)
-                  )
+                const innerIsSelected = (
+                  selectedFullExpression != null &&
+                  selectedFullExpression === getFullExpressionName(fullExpression, fieldType, innerFieldId)
+                )
 
-                  let indexIsDisabled
+                let innerIsDisabled
 
+                if (field.type === 'array' && isFieldDisabled && !rootIsArray) {
+                  innerIsDisabled = true
+                } else {
                   if (allowedTypes.indexOf('scalar') !== -1) {
-                    indexIsDisabled = (
-                      indexType !== 'string' &&
-                      indexType !== 'number' &&
-                      indexType !== 'boolean'
+                    innerIsDisabled = (
+                      innerFieldType !== 'string' &&
+                      innerFieldType !== 'number' &&
+                      innerFieldType !== 'boolean'
                     )
                   } else {
-                    indexIsDisabled = allowedTypes.indexOf(indexType) === -1
+                    innerIsDisabled = allowedTypes.indexOf(innerFieldType) === -1
                   }
+                }
 
-                  return (
-                    <li key={indexKey}>
-                      <div
-                        className={`${bindToDataEditorFieldItem} ${indexIsSelected ? styles.selected : ''}`}
-                        onClick={() => !indexIsDisabled && this.select({
-                          expression,
-                          fieldType,
-                          id: indexId
-                        })}
-                      >
-                        <span
-                          className={`${bindToDataEditorFieldItemLabel} ${indexIsDisabled ? styles.disabled : ''}`}
-                          style={{ padding: `0 ${(padding * 3) + leftSpace}rem` }}
-                        >
-                          {`${indexItem[0]} (${indexType})`}
-                        </span>
-                      </div>
-                    </li>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-          {Array.isArray(field.properties) && (
-            <div
-              key="field-properties"
-              className={`${styles.bindToDataEditorFieldProperties} ${collapsed ? styles.collapsed : ''}`}
-            >
-              {field.type === 'array' && (
-                <div
-                  key="field-properties-title"
-                  className={styles.bindToDataEditorFieldHeader}
-                  style={{ padding: `0 ${padding  + leftSpace}rem` }}
-                  onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__properties'); }}
-                >
-                  <span
-                    className={'fa fa-' + (this.state.fieldCollapse[key + '__properties'] ? 'plus-square' : 'minus-square')}
-                  />
-                  {' '}
-                  <span style={{ color: '#1f87d6' }}>
-                    {'> Properties'}
-                  </span>
-                </div>
-              )}
-              <div
-                key="field-properties-content"
-                className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__properties'] ? styles.collapsed : ''}`}
-              >
-                {field.properties.map((innerField) => {
-                  const isSimpleField = Array.isArray(innerField)
-                  const innerFieldKey = key + '--' + (isSimpleField ? innerField[0] : innerField.key) + '--field'
-                  const innerFieldType = isSimpleField ? innerField[1] : innerField.type
-                  const innerFieldId = isSimpleField ? innerField[0] : innerField.key
-                  const fieldType = 'property'
-
-                  const innerIsSelected = (
-                    selectedFullExpression != null &&
-                    selectedFullExpression === getFullExpressionName(fullExpression, fieldType, innerFieldId)
-                  )
-
-                  let innerIsDisabled
-
-                  if (field.type === 'array' && isFieldDisabled && !rootIsArray) {
-                    innerIsDisabled = true
-                  } else {
-                    if (allowedTypes.indexOf('scalar') !== -1) {
-                      innerIsDisabled = (
-                        innerFieldType !== 'string' &&
-                        innerFieldType !== 'number' &&
-                        innerFieldType !== 'boolean'
-                      )
-                    } else {
-                      innerIsDisabled = allowedTypes.indexOf(innerFieldType) === -1
-                    }
-                  }
-
-                  return (
-                    <li key={innerFieldKey}>
-                      {isSimpleField ? (
-                        <div
-                          className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
-                          onClick={() => !innerIsDisabled && this.select({
-                            expression,
-                            fieldType,
-                            id: innerFieldId
-                          })}
-                        >
-                          <span
-                            className={`${styles.bindToDataEditorFieldItemLabel} ${innerIsDisabled ? styles.disabled : ''}`}
-                            style={{ padding: `0 ${(padding * (field.type === 'array' ? 3 : 2)) + leftSpace}rem` }}
-                          >
-                            {`${innerFieldId} (${innerFieldType})`}
-                          </span>
-                        </div>
-                      ) : (
-                        this.renderFieldCollection({
-                          rootType,
-                          key: innerFieldKey,
-                          expression: [...expression, getExpressionName(fieldType, innerFieldId)],
-                          field: innerField,
-                          leftSpace: padding + leftSpace,
-                          collapsed: this.state.fieldCollapse[innerFieldKey]
-                        })
-                      )}
-                    </li>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-        </ul>,
-        computedFields ? (
-          <ul key="computed-fields" className={styles.bindToDataEditorFieldContainer}>
-            <div
-              key="field-computed-fields"
-              className={styles.bindToDataEditorFieldProperties}
-            >
-              <div
-                key="field-computed-fields-title"
-                className={styles.bindToDataEditorFieldHeader}
-                style={{ padding: `0 ${leftSpace}rem` }}
-                onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__computed_fields'); }}
-              >
-                <span
-                  className={'fa fa-' + (this.state.fieldCollapse[key + '__computed_fields'] ? 'plus-square' : 'minus-square')}
-                />
-                {' '}
-                <span style={{ fontStyle: 'normal' }}>
-                  {'(Computed fields)'}
-                </span>
-              </div>
-              <div
-                key="field-computed-fields-content"
-                className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__computed_fields'] ? styles.collapsed : ''}`}
-              >
-                {computedFields.map((field) => {
-                  const computedName = field.name
-                  const innerFieldKey = `${key}--${computedName}--computed-value`
-                  const fieldType = 'computed'
-                  const innerFieldType = fieldType
-                  const innerFieldId = computedName
-
-                  const innerIsSelected = (
-                    selectedFullExpression != null &&
-                    selectedFullExpression === getFullExpressionName(fullExpression, fieldType, innerFieldId)
-                  )
-
-                  // computed fields are always enabled to select
-                  return (
-                    <li key={innerFieldKey}>
+                return (
+                  <li key={innerFieldKey}>
+                    {isSimpleField ? (
                       <div
                         className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
-                        onClick={() => this.select({
+                        onClick={() => !innerIsDisabled && this.select({
                           expression,
                           fieldType,
                           id: innerFieldId
                         })}
                       >
                         <span
-                          className={styles.bindToDataEditorFieldItemLabel}
-                          style={{ padding: `0 ${(padding * 2) + leftSpace}rem` }}
+                          className={`${styles.bindToDataEditorFieldItemLabel} ${innerIsDisabled ? styles.disabled : ''}`}
+                          style={{ padding: `0 ${(padding * (field.type === 'array' ? 3 : 2)) + leftSpace}rem` }}
                         >
-                          {`${innerFieldId}`}
+                          {`${innerFieldId} (${innerFieldType})`}
                         </span>
                       </div>
-                    </li>
-                  )
-                })}
-              </div>
+                    ) : (
+                      this.renderFieldCollection({
+                        rootType,
+                        key: innerFieldKey,
+                        expression: [...expression, getExpressionName(fieldType, innerFieldId)],
+                        field: innerField,
+                        leftSpace: padding + leftSpace,
+                        collapsed: this.state.fieldCollapse[innerFieldKey]
+                      })
+                    )}
+                  </li>
+                )
+              })}
             </div>
-          </ul>
-        ) : undefined
-      ]
-    )
+          </div>
+        )}
+      </ul>,
+      computedFields ? (
+        <ul key='computed-fields' className={styles.bindToDataEditorFieldContainer}>
+          <div
+            key='field-computed-fields'
+            className={styles.bindToDataEditorFieldProperties}
+          >
+            <div
+              key='field-computed-fields-title'
+              className={styles.bindToDataEditorFieldHeader}
+              style={{ padding: `0 ${leftSpace}rem` }}
+              onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__computed_fields') }}
+            >
+              <span
+                className={'fa fa-' + (this.state.fieldCollapse[key + '__computed_fields'] ? 'plus-square' : 'minus-square')}
+              />
+              {' '}
+              <span style={{ fontStyle: 'normal' }}>
+                {'(Computed fields)'}
+              </span>
+            </div>
+            <div
+              key='field-computed-fields-content'
+              className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__computed_fields'] ? styles.collapsed : ''}`}
+            >
+              {computedFields.map((field) => {
+                const computedName = field.name
+                const innerFieldKey = `${key}--${computedName}--computed-value`
+                const fieldType = 'computed'
+                const innerFieldType = fieldType
+                const innerFieldId = computedName
+
+                const innerIsSelected = (
+                  selectedFullExpression != null &&
+                  selectedFullExpression === getFullExpressionName(fullExpression, innerFieldType, innerFieldId)
+                )
+
+                // computed fields are always enabled to select
+                return (
+                  <li key={innerFieldKey}>
+                    <div
+                      className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
+                      onClick={() => this.select({
+                        expression,
+                        innerFieldType,
+                        id: innerFieldId
+                      })}
+                    >
+                      <span
+                        className={styles.bindToDataEditorFieldItemLabel}
+                        style={{ padding: `0 ${(padding * 2) + leftSpace}rem` }}
+                      >
+                        {`${innerFieldId}`}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
+            </div>
+          </div>
+        </ul>
+      ) : undefined
+    ])
   }
 
   renderDataInput () {
-    const { dataProperties, computedFields } = this.props
+    const { dataProperties, computedFields } = this.props
     let rootKey = '___root___'
 
     return this.renderFieldCollection({
@@ -478,13 +477,17 @@ class SelectDataFieldEditor extends Component {
   }
 }
 
-SelectDataFieldEditor.propTypes = {
+SelectDataFieldEditor.wrappedComponent.propTypes = {
   dataProperties: PropTypes.object,
+  computedFields: MobxPropTypes.observableArray,
+  fieldsMeta: PropTypes.object,
   componentType: PropTypes.string.isRequired,
   propName: PropTypes.string.isRequired,
   bindingName: PropTypes.string,
   defaultSelectedField: PropTypes.object,
   allowedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+  getExpressionName: PropTypes.func.isRequired,
+  getFullExpressionName: PropTypes.func.isRequired,
   onSave: PropTypes.func,
   onClose: PropTypes.func
 }

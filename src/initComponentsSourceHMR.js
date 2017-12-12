@@ -12,7 +12,6 @@ export default ({ getComponentsToLoad, render, mobxStoreExport }) => {
 
   // hot reload of component files
   window.__designer_components_hmr__.on('designerComponentFileHMR', (componentChanged) => {
-
     let compName = componentChanged.name
     let compModule = componentChanged.module
     let componentsToReload

@@ -27,7 +27,7 @@ class EmbedderApp {
     this.listener = listener
     this.sender = sender
 
-    return new Promise ((resolve) => {
+    return new Promise((resolve) => {
       listener.on('ready', (ev) => {
         resolve(ev.data)
       })
@@ -40,10 +40,10 @@ export default () => {
   let parentWindowDomain = window.location.search !== '' ? window.location.search.slice(1).split('&') : []
 
   parentWindowDomain = parentWindowDomain.reduce((result, param) => {
-    let parsedParam = param.split('=');
-    result[parsedParam[0]] = decodeURIComponent(parsedParam[1]);
-    return result;
-  }, {}).originDomain;
+    let parsedParam = param.split('=')
+    result[parsedParam[0]] = decodeURIComponent(parsedParam[1])
+    return result
+  }, {}).originDomain
 
   // only create embedder instance if we have origin domain and window present
   if (parentWindow != null && parentWindowDomain != null && parentWindowDomain !== '') {

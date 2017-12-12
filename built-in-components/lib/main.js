@@ -1,4 +1,3 @@
-const path = require('path')
 
 module.exports = (reporter, definition) => {
   reporter.initializeListeners.add('designer-built-in-components', () => {

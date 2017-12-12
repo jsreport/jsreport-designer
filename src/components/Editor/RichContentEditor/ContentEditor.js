@@ -44,7 +44,7 @@ class ContentEditor extends Component {
   }
 
   componentWillMount () {
-    const initialContent = this.props.initialContent != null ? this.props.initialContent : ''
+    const initialContent = this.props.initialContent != null ? this.props.initialContent : ''
     let contentState
 
     if (typeof initialContent === 'string') {
@@ -115,7 +115,7 @@ class ContentEditor extends Component {
     const newState = RichUtils.handleKeyCommand(editorState, command)
 
     if (newState) {
-      this.handleEditorChange(newState);
+      this.handleEditorChange(newState)
       return true
     }
 
@@ -164,7 +164,7 @@ class ContentEditor extends Component {
             editorState={editorState}
             handleKeyCommand={this.handleKeyCommand}
             onChange={this.handleEditorChange}
-            placeholder="Add some content..."
+            placeholder='Add some content...'
             plugins={plugins}
             ref={this.setEditorRef}
           />

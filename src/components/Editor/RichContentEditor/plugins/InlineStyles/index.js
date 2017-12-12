@@ -21,7 +21,7 @@ export default (config = {}) => {
     convertStyleFrom: (element, { Style, Entity }) => {
       if (element.tagName === 'SPAN') {
         const result = Object.keys(inlineStyleMap.STRIKE).every((cssKey) => {
-          return element.style[cssKey] = inlineStyleMap.STRIKE[cssKey]
+          return element.style[cssKey] === inlineStyleMap.STRIKE[cssKey]
         })
 
         if (result) {

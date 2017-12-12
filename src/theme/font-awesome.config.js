@@ -15,4 +15,4 @@ module.exports = {
     path: true,
     animated: true
   }
-};
+}

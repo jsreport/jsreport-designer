@@ -1,8 +1,10 @@
 {
-  "extends": "standard",
+  "extends": ["standard", "standard-react"],
+  "parser": "babel-eslint",
   "env": {
-      "node": true,
-      "mocha": true
+    "node": true,
+    "mocha": true,
+    "browser": true
   },
   "globals": {
     "define": true

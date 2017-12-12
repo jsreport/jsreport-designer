@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import Selection from './Selection'
@@ -66,7 +68,7 @@ class DesignItem extends Component {
 
   componentDidUpdate (prevProps) {
     // after resizing, focus again
-    if (prevProps.item.isResizing === true && this.props.isResizing === false) {
+    if (prevProps.item.isResizing === true && this.props.item.isResizing === false) {
       this.focusSelection()
     }
 
@@ -98,7 +100,7 @@ class DesignItem extends Component {
     let componentClone = componentNode.cloneNode(true)
 
     this.componentReplacementNode.style.display = 'block'
-    this.componentReplacementNode.style.top = `${top -  designItemDimensions.top}px`
+    this.componentReplacementNode.style.top = `${top - designItemDimensions.top}px`
     this.componentReplacementNode.style.left = `${left - designItemDimensions.left}px`
     this.componentReplacementNode.style.width = `${width}px`
     this.componentReplacementNode.style.height = `${height}px`
@@ -193,8 +195,8 @@ class DesignItem extends Component {
   handleResizeEnd (ev, direction) {
     const { design, item, endResizeElement } = this.props
 
-    ev.preventDefault();
-    ev.stopPropagation();
+    ev.preventDefault()
+    ev.stopPropagation()
 
     endResizeElement(design.id, item.id)
   }
@@ -316,7 +318,7 @@ class DesignItem extends Component {
       >
         {selected && (
           <Selection
-            key="selection"
+            key='selection'
             ref={this.setSelectionNode}
             element={item}
             onKeyDown={this.handleKeyDown}
@@ -338,8 +340,8 @@ class DesignItem extends Component {
         ))}
         {/* placeholder for the DesignComponent replacement while dragging */}
         <div
-          draggable="false"
-          key="DesignComponent-replacement"
+          draggable='false'
+          key='DesignComponent-replacement'
           ref={this.setComponentReplacementNode}
           style={{
             display: 'none',
@@ -353,11 +355,19 @@ class DesignItem extends Component {
 }
 
 DesignItem.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired,
   item: MobxPropTypes.observableObject.isRequired,
   layoutMode: PropTypes.string.isRequired,
   onComponentDragStart: PropTypes.func,
   connectDropTarget: PropTypes.func.isRequired,
-  isDraggingOver: PropTypes.bool.isRequired
+  isDraggingOver: PropTypes.bool.isRequired,
+  setSelection: PropTypes.func.isRequired,
+  clearSelection: PropTypes.func.isRequired,
+  removeComponent: PropTypes.func.isRequired,
+  resizeElement: PropTypes.func.isRequired,
+  startResizeElement: PropTypes.func.isRequired,
+  endResizeElement: PropTypes.func.isRequired,
+  getContainerDimensions: PropTypes.func.isRequired
 }
 
 export default inject((injected) => ({
@@ -373,6 +383,6 @@ export default inject((injected) => ({
 }))(
   DropTarget([
     ComponentDragTypes.COMPONENT_BAR,
-    ComponentDragTypes.COMPONENT,
+    ComponentDragTypes.COMPONENT
   ], itemTarget, collect)(DesignItem)
 )

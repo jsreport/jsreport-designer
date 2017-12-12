@@ -28,7 +28,7 @@ class BlockStylesButtons extends Component {
 
     store.setEditorState(
       RichUtils.toggleBlockType(editorState, blockType)
-    );
+    )
   }
 
   render () {
@@ -37,9 +37,9 @@ class BlockStylesButtons extends Component {
 
     const blockType = (
       editorState
-      .getCurrentContent()
-      .getBlockForKey(selection.getStartKey())
-      .getType()
+        .getCurrentContent()
+        .getBlockForKey(selection.getStartKey())
+        .getType()
     )
 
     return (

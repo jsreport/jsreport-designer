@@ -39,7 +39,7 @@ export default (config = {}) => {
       return {
         element: 'code',
         attributes: {
-          'data-jsreport-designer-expression-name': data.name,
+          'data-jsreport-designer-expression-name': data.name
         }
       }
     }

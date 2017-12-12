@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 import { EditorState, SelectionState } from 'draft-js'
 import entityType from './entityType'
 
@@ -23,7 +24,6 @@ class ExpressionPlaceholder extends Component {
     } = this.props
 
     const editorState = getEditorState()
-    const selection = editorState.getSelection()
 
     // hacky way to get the block key of the decorated component
     // we will avoid this when this is resolved:
@@ -81,6 +81,15 @@ class ExpressionPlaceholder extends Component {
       </span>
     )
   }
+}
+
+ExpressionPlaceholder.propTypes = {
+  children: PropTypes.element,
+  setEditorState: PropTypes.func.isRequired,
+  getEditorState: PropTypes.func.isRequired,
+  contentState: PropTypes.any.isRequired,
+  offsetKey: PropTypes.string.isRequired,
+  entityKey: PropTypes.string.isRequired
 }
 
 export default ExpressionPlaceholder

@@ -78,7 +78,6 @@ methods.forEach((m) => {
   })
 })
 
-
 let stubHandler = {}
 methods.forEach((m) => {
   stubHandler[m] = (stub) => (requestHandler[m] = stub)

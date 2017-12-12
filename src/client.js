@@ -1,7 +1,7 @@
-import React, { Component } from 'react'
+import React from 'react'
 import ReactDOM from 'react-dom'
-import { useStrict, toJS } from 'mobx';
-import { Provider } from 'mobx-react';
+import { useStrict, toJS } from 'mobx'
+import { Provider } from 'mobx-react'
 import zipObject from 'lodash/zipObject'
 import fetchExtensions from './lib/fetchExtensions'
 import componentRegistry from '../shared/componentRegistry'
@@ -37,6 +37,7 @@ const storesDefaults = {
   }
 }
 
+// eslint-disable-next-line no-undef
 if (__DEVELOPMENT__) {
   // expose utility for debugging observables
   window.observableToJS = toJS
@@ -95,7 +96,7 @@ async function start (initialData) {
   const extensionsArray = await Designer.api.get('/api/extensions')
   const extensions = zipObject(extensionsArray.map((e) => e.name), extensionsArray)
 
-  Object.keys(extensions).forEach(extName => configuration.extensions[extName] = extensions[extName])
+  Object.keys(extensions).forEach(extName => { configuration.extensions[extName] = extensions[extName] })
 
   await Promise.all([
     Designer.api.get('/api/componentTypes').then((compTypes) => {

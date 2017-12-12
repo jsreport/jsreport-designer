@@ -106,11 +106,11 @@ function findProjectedFilledArea ({
     let currentItem = currentGroup.items[i]
 
     if (conflict) {
-      break;
+      break
     }
 
     if (noConflictItem != null && i === noConflictItem) {
-      continue;
+      continue
     }
 
     // does the projected preview has some conflic with other item in the group?
@@ -301,7 +301,7 @@ function findProjectedFilledAreaWhenResizing ({
   }
 
   newHighlightedArea = {
-    ...highlightedArea,
+    ...highlightedArea
   }
 
   newHighlightedArea.areaBox = {
@@ -383,7 +383,7 @@ function addComponentToDesign ({
   } = design
 
   let layoutMode = groups[targetArea.group].layoutMode
-  let compProps = component.props || {}
+  let compProps = component.props || {}
   let newRecordForComponent = {}
   let componentMinSpace
   let newComponent
@@ -584,7 +584,7 @@ function addComponentToDesign ({
 
           itemEvaluated.components.forEach((comp) => {
             let currentRecord = canvasRegistry.get(comp.id)
-            currentRecord.itemIndex =  currentRecord.itemIndex + 1
+            currentRecord.itemIndex = currentRecord.itemIndex + 1
           })
         }
 

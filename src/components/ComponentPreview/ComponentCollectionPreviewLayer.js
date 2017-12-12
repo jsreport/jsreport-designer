@@ -1,4 +1,6 @@
 import React, { Component } from 'react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
 import componentRegistry from '../../../shared/componentRegistry'

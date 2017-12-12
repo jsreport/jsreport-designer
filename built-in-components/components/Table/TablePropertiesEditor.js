@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react'
+import PropTypes from 'prop-types'
 import Designer from 'jsreport-designer'
 
 const PropertyControl = Designer.PropertyControl
@@ -106,7 +107,7 @@ class TablePropertiesEditor extends PureComponent {
 
           return {
             name: typeof col.name === 'object' ? `column${idx + 1}` : col.name,
-            value: typeof col.value === 'object' ? `value${idx + 1}` : col.value,
+            value: typeof col.value === 'object' ? `value${idx + 1}` : col.value
           }
         })
       }
@@ -134,7 +135,7 @@ class TablePropertiesEditor extends PureComponent {
             ...current.props.columns[context.colIndex],
             [context.name]: propValue
           },
-          ...current.props.columns.slice(context.colIndex + 1),
+          ...current.props.columns.slice(context.colIndex + 1)
         ]
       }
 
@@ -171,7 +172,7 @@ class TablePropertiesEditor extends PureComponent {
     onSelectDataFieldClick({
       ...params,
       bindingName: params.context.targetBindingName,
-      dataProperties: params.context.name === 'name' ? undefined :  (
+      dataProperties: params.context.name === 'name' ? undefined : (
         getExpressionMeta(
           'data',
           bindings.data.expression,
@@ -190,7 +191,7 @@ class TablePropertiesEditor extends PureComponent {
         ...properties.columns,
         {
           name: `column${properties.columns.length + 1}`,
-          value: `value${properties.columns.length + 1}`,
+          value: `value${properties.columns.length + 1}`
         }
       ]
     })
@@ -206,7 +207,7 @@ class TablePropertiesEditor extends PureComponent {
       },
       value: [
         ...properties.columns.slice(0, colIndex),
-        ...properties.columns.slice(colIndex + 1),
+        ...properties.columns.slice(colIndex + 1)
       ]
     })
   }
@@ -223,10 +224,10 @@ class TablePropertiesEditor extends PureComponent {
 
     return (
       <input
-        className="propertiesEditor-prop-special-value"
-        type="text"
-        name="data"
-        readOnly={true}
+        className='propertiesEditor-prop-special-value'
+        type='text'
+        name='data'
+        readOnly
         value={currentValue}
       />
     )
@@ -243,7 +244,7 @@ class TablePropertiesEditor extends PureComponent {
           context.targetBindingName,
           bindings[value.binding].expression,
           'displayName',
-          { displayPrefix: '(data) '}
+          { displayPrefix: '(data) ' }
         )
       } else {
         currentValue = getExpressionMeta(bindings[value.binding].expression, 'displayName')
@@ -255,7 +256,7 @@ class TablePropertiesEditor extends PureComponent {
     return (
       <input
         className={valueRefToBinding ? 'propertiesEditor-prop-special-value' : ''}
-        type="text"
+        type='text'
         name={propName}
         readOnly={valueRefToBinding}
         value={currentValue}
@@ -276,20 +277,20 @@ class TablePropertiesEditor extends PureComponent {
     } = this.props
 
     return (
-      <div className="propertiesEditor">
+      <div className='propertiesEditor'>
         <PropertyControl
-          key="data"
+          key='data'
           componentType={componentType}
-          name="data"
+          name='data'
           binding={bindings ? bindings.data : null}
           value={properties.data}
-          bindToData={dataInput == null ? false : true}
+          bindToData={dataInput != null}
           getPropMeta={getPropMeta}
           getExpressionMeta={getExpressionMeta}
           renderValue={this.renderDataPropValue}
           onSelectDataFieldClick={onSelectDataFieldClick}
         />
-        <div className="propertiesEditor-prop">
+        <div className='propertiesEditor-prop'>
           <label>
             columns
           </label>
@@ -297,16 +298,16 @@ class TablePropertiesEditor extends PureComponent {
             return (
               <div
                 key={`col-${idx}`}
-                className="propertiesEditor-prop-group"
+                className='propertiesEditor-prop-group'
                 style={{ position: 'relative' }}
               >
                 <PropertyControl
-                  key="columns.name"
+                  key='columns.name'
                   componentType={componentType}
-                  name="columns.name"
-                  label="name"
+                  name='columns.name'
+                  label='name'
                   value={col.name}
-                  bindToData={dataInput != null ? true : false}
+                  bindToData={dataInput != null}
                   context={{ name: 'name', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'name') }}
                   getPropMeta={getPropMeta}
                   getExpressionMeta={getExpressionMeta}
@@ -315,12 +316,12 @@ class TablePropertiesEditor extends PureComponent {
                   onChange={this.handleColumnsChange}
                 />
                 <PropertyControl
-                  key="columns.value"
+                  key='columns.value'
                   componentType={componentType}
-                  name="columns.value"
-                  label="value"
+                  name='columns.value'
+                  label='value'
                   value={col.value}
-                  bindToData={dataInput != null && bindings && bindings.data ? true : false}
+                  bindToData={(dataInput != null && bindings != null && bindings.data != null)}
                   context={{ name: 'value', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'value') }}
                   getPropMeta={getPropMeta}
                   getExpressionMeta={getExpressionMeta}
@@ -328,9 +329,9 @@ class TablePropertiesEditor extends PureComponent {
                   onSelectDataFieldClick={this.handleColumnBindToDataClick}
                   onChange={this.handleColumnsChange}
                 />
-                <div key="remove-columns">
+                <div key='remove-columns'>
                   <span
-                    className="fa fa-times-circle"
+                    className='fa fa-times-circle'
                     style={{ cursor: 'pointer', position: 'absolute', right: 0, top: 0 }}
                     onClick={() => this.handleColumnRemove(idx)}
                   />
@@ -338,13 +339,25 @@ class TablePropertiesEditor extends PureComponent {
               </div>
             )
           })}
-          <div key="add-columns">
+          <div key='add-columns'>
             <button onClick={this.handleColumnAdd}>Add column</button>
           </div>
         </div>
       </div>
     )
   }
+}
+
+TablePropertiesEditor.propTypes = {
+  componentType: PropTypes.string.isRequired,
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
+  properties: PropTypes.object.isRequired,
+  bindings: PropTypes.object,
+  getPropMeta: PropTypes.func.isRequired,
+  getExpressionMeta: PropTypes.func.isRequired,
+  onSelectDataFieldClick: PropTypes.func,
+  onChange: PropTypes.func.isRequired,
+  connectToChangesInterceptor: PropTypes.func.isRequired
 }
 
 export default TablePropertiesEditor

@@ -1,4 +1,6 @@
 import React, { Component } from 'react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
 import PropTypes from 'prop-types'
 
@@ -21,6 +23,14 @@ const Box = ({ width, height, top, left, color }) => {
       {' '}
     </div>
   )
+}
+
+Box.propTypes = {
+  width: PropTypes.number,
+  height: PropTypes.number,
+  top: PropTypes.number,
+  left: PropTypes.number,
+  color: PropTypes.string
 }
 
 class HighlightedArea extends Component {
@@ -51,17 +61,17 @@ class HighlightedArea extends Component {
     return [
       highlightedArea.contextBox ? (
         <Box
-          key="contentBox"
+          key='contentBox'
           width={highlightedArea.contextBox.width}
           height={highlightedArea.contextBox.height}
           top={this.getRelativePositionInsideContainer(containerDimensions, highlightedArea.contextBox.top, 'top')}
           left={this.getRelativePositionInsideContainer(containerDimensions, highlightedArea.contextBox.left, 'left')}
           color={'rgba(0, 147, 255, 0.1)'}
         />
-      ): null,
+      ) : null,
       highlightedArea.areaBox ? (
         <Box
-          key="areaBox"
+          key='areaBox'
           width={highlightedArea.areaBox.width}
           height={highlightedArea.areaBox.height}
           top={this.getRelativePositionInsideContainer(containerDimensions, highlightedArea.areaBox.top, 'top')}

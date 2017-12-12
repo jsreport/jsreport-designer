@@ -4,7 +4,7 @@ import entityType, { entityMutability } from './entityType'
 export default (editorState, selection, expressionName) => {
   const contentState = editorState.getCurrentContent()
   const currentBlockKey = selection.getAnchorKey()
-  const currentBlockSize = contentState.getBlockForKey(currentBlockKey).getLength();
+  const currentBlockSize = contentState.getBlockForKey(currentBlockKey).getLength()
 
   let contentStateWithExpression = contentState.createEntity(
     entityType,
@@ -28,7 +28,7 @@ export default (editorState, selection, expressionName) => {
     contentStateWithExpression = Modifier.insertText(
       contentStateWithExpression,
       contentStateWithExpression.getSelectionAfter(),
-      ' ',
+      ' '
     )
   }
 

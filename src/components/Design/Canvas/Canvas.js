@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { Provider, observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import throttle from 'lodash/throttle'
@@ -28,7 +30,7 @@ const canvasTarget = {
 
     let dragOverContext = component.dragOverContext
 
-    if (monitor.isOver({ shallow: true }) || !onDragOver || !dragOverContext) {
+    if (monitor.isOver({ shallow: true }) || !onDragOver || !dragOverContext) {
       return
     }
 
@@ -66,7 +68,7 @@ const canvasTarget = {
 
   drop (props, monitor, component) {
     const { design } = props
-    const hasDroppedOnChild = monitor.didDrop();
+    const hasDroppedOnChild = monitor.didDrop()
 
     let dropResult = {
       dragType: monitor.getItemType(),
@@ -264,9 +266,12 @@ class Canvas extends Component {
 Canvas.propTypes = {
   nodeRef: PropTypes.func,
   design: MobxPropTypes.observableObject.isRequired,
+  draggedEl: PropTypes.any,
+  dragType: PropTypes.string,
   connectDropTarget: PropTypes.func.isRequired,
   canDrop: PropTypes.bool.isRequired,
   isDraggingOver: PropTypes.bool.isRequired,
+  updateDesign: PropTypes.func.isRequired,
   onClick: PropTypes.func,
   onDragEnter: PropTypes.func,
   onDragOver: PropTypes.func,
@@ -280,6 +285,6 @@ export default inject((injected) => ({
 }))(
   DropTarget([
     ComponentDragTypes.COMPONENT_BAR,
-    ComponentDragTypes.COMPONENT,
+    ComponentDragTypes.COMPONENT
   ], canvasTarget, collect)(Canvas)
 )

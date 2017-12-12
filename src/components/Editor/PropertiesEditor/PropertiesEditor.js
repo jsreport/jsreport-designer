@@ -17,7 +17,7 @@ class PropertiesEditor extends PureComponent {
     } = this.props
 
     return (
-      <div className="propertiesEditor">
+      <div className='propertiesEditor'>
         {Object.keys(properties).map((propName) => {
           return (
             <PropertyControl
@@ -26,7 +26,7 @@ class PropertiesEditor extends PureComponent {
               name={propName}
               binding={bindings ? bindings[propName] : null}
               value={properties[propName]}
-              bindToData={dataInput == null ? false : true}
+              bindToData={dataInput != null}
               getPropMeta={getPropMeta}
               getExpressionMeta={getExpressionMeta}
               onSelectDataFieldClick={onSelectDataFieldClick}
@@ -45,12 +45,11 @@ PropertiesEditor.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
-  expressions: PropTypes.object,
   getPropMeta: PropTypes.func.isRequired,
+  getExpressionMeta: PropTypes.func.isRequired,
   onSelectDataFieldClick: PropTypes.func,
   onEditRichContentClick: PropTypes.func,
-  onChange: PropTypes.func.isRequired,
-  connectToChangesInterceptor: PropTypes.func.isRequired
+  onChange: PropTypes.func.isRequired
 }
 
 export default PropertiesEditor

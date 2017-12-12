@@ -1,5 +1,4 @@
 import React, { PureComponent } from 'react'
-import PropTypes from 'prop-types'
 import { DataInputEditor } from '../../Editor'
 
 class DataInputCommand extends PureComponent {
@@ -32,9 +31,9 @@ class DataInputCommand extends PureComponent {
     const { showEditor } = this.state
 
     return (
-      <div className="commandBar-command">
-        <button className="commandBar-button" onClick={this.handleClick}>
-          <span className="fa fa-database"></span>
+      <div className='commandBar-command'>
+        <button className='commandBar-button' onClick={this.handleClick}>
+          <span className='fa fa-database' />
         </button>
         {showEditor && (
           <DataInputEditor
@@ -46,8 +45,6 @@ class DataInputCommand extends PureComponent {
   }
 }
 
-DataInputCommand.propTypes = {
-  onClose: PropTypes.func
-}
+DataInputCommand.propTypes = {}
 
 export default DataInputCommand

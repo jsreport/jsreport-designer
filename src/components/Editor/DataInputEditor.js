@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
 import omit from 'lodash/omit'
 import debounce from 'lodash/debounce'
@@ -83,7 +85,7 @@ class DataInputEditor extends Component {
   }
 
   canSave () {
-    const { editingData, editingComputedFields } = this.state
+    const { editingData, editingComputedFields } = this.state
 
     return (
       editingData != null &&
@@ -95,7 +97,7 @@ class DataInputEditor extends Component {
   checkData () {
     const { editingData } = this.state
     const { extractProperties } = this.props
-    let jsonText = editingData.json || ''
+    let jsonText = editingData.json || ''
     let invalidProperties = false
     let jsonObj
     let parsedProperties
@@ -331,7 +333,7 @@ class DataInputEditor extends Component {
         <textarea
           ref={this.setDataTextNode}
           style={{ overflow: 'auto', resize: 'none', width: '100%', height: '250px' }}
-          rows="25"
+          rows='25'
           value={currentValue}
           onChange={this.handleDataTextChange}
         />
@@ -343,7 +345,7 @@ class DataInputEditor extends Component {
         <div style={{ height: '25px' }}>
           {isCreatingComputed ? (
             <div>
-              <input ref={this.setNewComputedNameNode} type="text" placeholder="computed field name" autoFocus />
+              <input ref={this.setNewComputedNameNode} type='text' placeholder='computed field name' autoFocus />
               {' '}
               <button onClick={this.handleAddComputedField}>Ok</button>
               <button onClick={() => this.setState({ isCreatingComputed: false, newComputedError: null })}>Cancel</button>
@@ -352,13 +354,13 @@ class DataInputEditor extends Component {
             <button onClick={() => this.setState({ isCreatingComputed: true })} disabled={!editingData || editingData.properties == null}>Add computed field</button>
           )}
         </div>
-        <div style={{ color: 'red' }}>{newComputedError || ' '}</div>
-        <div style={{ color: 'red' }}>{computedValidationError || ' '}</div>
+        <div style={{ color: 'red' }}>{newComputedError || ' '}</div>
+        <div style={{ color: 'red' }}>{computedValidationError || ' '}</div>
         <br />
         <div>
           <div style={{ display: 'inline-block', verticalAlign: 'middle', width: '120px', height: '180px' }}>
             <select
-              multiple={true}
+              multiple
               style={{ width: '100%', height: '150px' }}
               value={[selectedComputedField != null ? selectedComputedField : undefined]}
               onChange={(ev) => this.setState({
@@ -393,7 +395,7 @@ class DataInputEditor extends Component {
                 key={selectedComputedField}
                 name={selectedComputedField}
                 style={{ overflow: 'auto', resize: 'none', width: '100%', height: '150px' }}
-                rows="25"
+                rows='25'
                 defaultValue={editingComputedFields.updatedSourceMap[selectedComputedField] != null ? editingComputedFields.updatedSourceMap[selectedComputedField] : editingComputedFields.sourceMap[selectedComputedField]}
                 onChange={this.handleComputedFieldChange}
               />
@@ -427,7 +429,17 @@ class DataInputEditor extends Component {
   }
 }
 
-DataInputEditor.propTypes = {
+DataInputEditor.wrappedComponent.propTypes = {
+  dataValue: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array
+  ]),
+  dataValueJSON: PropTypes.string,
+  dataProperties: PropTypes.object,
+  computedFields: PropTypes.array,
+  computedFieldsMap: PropTypes.object,
+  extractProperties: PropTypes.func.isRequired,
+  update: PropTypes.func.isRequired,
   onClose: PropTypes.func
 }
 

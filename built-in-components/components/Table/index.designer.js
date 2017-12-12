@@ -1,4 +1,3 @@
-import Designer from 'jsreport-designer'
 import Table from './shared'
 import TablePropertiesEditor from './TablePropertiesEditor'
 

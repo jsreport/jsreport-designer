@@ -157,13 +157,13 @@ module.exports = {
         // https://github.com/facebookincubator/create-react-app/issues/2376
         // Pending further investigation:
         // https://github.com/mishoo/UglifyJS2/issues/2011
-        comparisons: false,
+        comparisons: false
       },
       output: {
         comments: false,
         // Turned on because emoji and regex is not minified properly using default
         // https://github.com/facebookincubator/create-react-app/issues/2488
-        ascii_only: true,
+        ascii_only: true
       },
       sourceMap: true
     }),
@@ -171,7 +171,7 @@ module.exports = {
     new HtmlWebpackPlugin({
       hash: true,
       inject: true,
-      template: path.join(__dirname, '../static/index.html'),
+      template: path.join(__dirname, '../static/index.html')
     })
   ],
   // Some libraries import Node modules but don't use them in the browser.

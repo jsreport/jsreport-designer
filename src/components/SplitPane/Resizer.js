@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 
 class Resizer extends Component {
-  constructor(props) {
+  constructor (props) {
     super(props)
 
     this.onMouseDown = this.onMouseDown.bind(this)
@@ -28,12 +29,12 @@ class Resizer extends Component {
 
     return (
       <div className={classes.join(' ') + (collapsed ? ' collapsed' : '')} onMouseDown={this.onMouseDown}>
-        <div className='resizer-line'></div>
+        <div className='resizer-line' />
         {collapsed ? (
           <div className='pane-holder' onClick={(e) => collapse(false, undockeable, undocked ? false : null)}>
             {undockeable && undocked && (
               <span>
-                <i className={'fa fa-window-maximize'}></i>
+                <i className={'fa fa-window-maximize'} />
                 {' '}
               </span>
             )}
@@ -45,7 +46,7 @@ class Resizer extends Component {
             className={'docker ' + (collapsable === 'first' ? 'left' : '')}
             onClick={(e) => collapse(true, undockeable, null)}
           >
-            <i className={'fa ' + (collapsable === 'first' ? 'fa-long-arrow-left' : 'fa-long-arrow-right')}></i>
+            <i className={'fa ' + (collapsable === 'first' ? 'fa-long-arrow-left' : 'fa-long-arrow-right')} />
           </div>
         )}
         {!collapsed && undockeable && (
@@ -55,11 +56,23 @@ class Resizer extends Component {
             style={{ top: '35px' }}
             onClick={(e) => collapse(true, undockeable, true)}
           >
-            <i className={'fa fa-window-restore'}></i>
+            <i className={'fa fa-window-restore'} />
           </div>
         )}
       </div>)
   }
+}
+
+Resizer.propTypes = {
+  className: PropTypes.string,
+  split: PropTypes.string,
+  collapsed: PropTypes.bool,
+  collapsedText: PropTypes.string,
+  collapsable: PropTypes.string,
+  undocked: PropTypes.bool,
+  undockeable: PropTypes.bool,
+  collapse: PropTypes.func,
+  onMouseDown: PropTypes.func
 }
 
 export default Resizer

@@ -1,4 +1,6 @@
 import nanoid from 'nanoid'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observable, computed } from 'mobx'
 
 function setDefaults (instance, defaults) {
@@ -6,7 +8,7 @@ function setDefaults (instance, defaults) {
     return
   }
 
-  Object.keys(defaults).forEach((name) => instance[name] = defaults[name])
+  Object.keys(defaults).forEach((name) => { instance[name] = defaults[name] })
 }
 
 // filter elements and order them in ASC
@@ -25,37 +27,54 @@ function getSortedElementsByType (type, elements) {
 }
 
 class Designs {
+  // eslint-disable-next-line no-undef
   designs = observable.map({}, 'designs')
 }
 
 class Design {
+  // eslint-disable-next-line no-undef
   @observable id = null
+  // eslint-disable-next-line no-undef
   @observable baseWidth = null
+  // eslint-disable-next-line no-undef
   @observable defaultNumberOfRows = null
+  // eslint-disable-next-line no-undef
   @observable numberOfCols = null
+  // eslint-disable-next-line no-undef
   @observable rowHeight = null
+  // eslint-disable-next-line no-undef
   @observable groups = []
+  // eslint-disable-next-line no-undef
   @observable.ref selection = null
+  // eslint-disable-next-line no-undef
   @observable.ref highlightedArea = null
+  // eslint-disable-next-line no-undef
   canvasRegistry = observable.map({}, 'canvasRegistry')
+  // eslint-disable-next-line no-undef
   @observable isResizing = false
+  // eslint-disable-next-line no-undef
   @observable isCanvasReady = false
+  // eslint-disable-next-line no-undef
   @observable gridLinesRemarked = false
 
+  // eslint-disable-next-line no-undef
   @computed get colWidth () {
     return this.baseWidth / this.numberOfCols
   }
 
+  // eslint-disable-next-line no-undef
   // just for debugging
   @computed get groupsInCanvasRegistry () {
     return getSortedElementsByType('group', this.canvasRegistry.values())
   }
 
+  // eslint-disable-next-line no-undef
   // just for debugging
   @computed get itemsInCanvasRegistry () {
     return getSortedElementsByType('item', this.canvasRegistry.values())
   }
 
+  // eslint-disable-next-line no-undef
   // just for debugging
   @computed get componentsInCanvasRegistry () {
     return getSortedElementsByType('component', this.canvasRegistry.values())
@@ -86,13 +105,21 @@ class Design {
 }
 
 class DesignGroup {
+  // eslint-disable-next-line no-undef
   @observable id = null
+  // eslint-disable-next-line no-undef
   @observable layoutMode = null
+  // eslint-disable-next-line no-undef
   @observable topSpace = null
+  // eslint-disable-next-line no-undef
   @observable items = []
+  // eslint-disable-next-line no-undef
   @observable placeholder = null
+  // eslint-disable-next-line no-undef
   @observable parent = null
+  // eslint-disable-next-line no-undef
   @observable selected = false
+  // eslint-disable-next-line no-undef
   @observable itemsRemarked = false
 
   get elementType () {
@@ -125,17 +152,28 @@ class DesignGroup {
 }
 
 class DesignItem {
+  // eslint-disable-next-line no-undef
   @observable id = null
+  // eslint-disable-next-line no-undef
   @observable leftSpace = null
+  // eslint-disable-next-line no-undef
   @observable start = null
+  // eslint-disable-next-line no-undef
   @observable end = null
+  // eslint-disable-next-line no-undef
   @observable minSpace = null
+  // eslint-disable-next-line no-undef
   @observable space = null
+  // eslint-disable-next-line no-undef
   @observable components = []
+  // eslint-disable-next-line no-undef
   @observable parent = null
+  // eslint-disable-next-line no-undef
   @observable selected = false
+  // eslint-disable-next-line no-undef
   @observable.ref resizing = null
 
+  // eslint-disable-next-line no-undef
   @computed get isResizing () {
     return this.resizing != null
   }
@@ -174,13 +212,21 @@ class DesignItem {
 }
 
 class DesignComponent {
+  // eslint-disable-next-line no-undef
   @observable id = null
+  // eslint-disable-next-line no-undef
   @observable type = null
+  // eslint-disable-next-line no-undef
   @observable.ref props = null
+  // eslint-disable-next-line no-undef
   @observable.ref bindings = null
+  // eslint-disable-next-line no-undef
   @observable.ref expressions = null
+  // eslint-disable-next-line no-undef
   @observable template = null
+  // eslint-disable-next-line no-undef
   @observable parent = null
+  // eslint-disable-next-line no-undef
   @observable selected = false
 
   get elementType () {

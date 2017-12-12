@@ -14,7 +14,7 @@ class CommandBar extends PureComponent {
   render () {
     return (
       <div className={styles.commandBar}>
-        <CommandButton title="Data Input">
+        <CommandButton title='Data Input'>
           <DataInputCommand />
         </CommandButton>
         {/* TODO: render with this when i have Mobx store ready */}

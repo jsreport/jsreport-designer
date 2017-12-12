@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { createPortal } from 'react-dom'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import componentRegistry from '../../../shared/componentRegistry'
 import getConsumedColsFromWidth from '../../helpers/getConsumedColsFromWidth'
@@ -35,7 +37,7 @@ class SideBar extends Component {
       return {
         name: compName,
         icon: configuration.componentTypes[compName].icon,
-        group: configuration.componentTypesDefinition[compName].group,
+        group: configuration.componentTypesDefinition[compName].group
       }
     })
   }
@@ -90,7 +92,7 @@ class SideBar extends Component {
       width: item.size.width
     })
 
-    return item;
+    return item
   }
 
   handleComponentBarItemDragEnd (componentType) {
@@ -106,7 +108,7 @@ class SideBar extends Component {
   }
 
   handleChangesInEditor (componentId, changes) {
-    const { design, updateComponent } = this.props
+    const { design, updateComponent } = this.props
 
     updateComponent(design.id, componentId, changes)
   }
@@ -166,9 +168,10 @@ class SideBar extends Component {
   }
 }
 
-SideBar.propTypes = {
+SideBar.wrappedComponent.propTypes = {
   nodeRef: PropTypes.func,
-  design: MobxPropTypes.observableObject.isRequired
+  design: MobxPropTypes.observableObject.isRequired,
+  updateComponent: PropTypes.func.isRequired
 }
 
 export default SideBar

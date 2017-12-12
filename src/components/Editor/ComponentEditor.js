@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
 import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
@@ -20,7 +22,7 @@ import styles from './ComponentEditor.scss'
 }))
 @observer
 class ComponentEditor extends Component {
-  constructor (props) {
+  constructor (props) {
     super(props)
 
     this.state = {
@@ -128,8 +130,9 @@ class ComponentEditor extends Component {
       ) : undefined
 
       return `[${options.displayPrefix != null ? options.displayPrefix : ''}${
-        expressionDisplayName != null ? (expressionDisplayName === '' ?
-        '(root)' : expressionDisplayName) : '(binding)'
+        expressionDisplayName != null ? (
+          expressionDisplayName === '' ? '(root)' : expressionDisplayName
+        ) : '(binding)'
       }]`
     }
 
@@ -512,9 +515,9 @@ class ComponentEditor extends Component {
           <hr className={styles.componentEditorSeparator} />
           <div className={styles.componentEditorOptions}>
             <CommandButton
-              title="Edit component template"
-              titlePosition="bottom"
-              icon="code"
+              title='Edit component template'
+              titlePosition='bottom'
+              icon='code'
               onClick={this.handleEditComponentTemplateClick}
             />
           </div>
@@ -555,13 +558,20 @@ class ComponentEditor extends Component {
   }
 }
 
-ComponentEditor.propTypes = {
+ComponentEditor.wrappedComponent.propTypes = {
+  dataInput: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array
+  ]),
+  dataFieldsMeta: PropTypes.object,
   id: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
   template: PropTypes.string,
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
   expressions: PropTypes.object,
+  getFullExpressionName: PropTypes.func.isRequired,
+  getFullExpressionDisplayName: PropTypes.func.isRequired,
   onChange: PropTypes.func.isRequired
 }
 

@@ -201,14 +201,14 @@ function resolveBindingExpression (expressionsMap, expressionResolution, { conte
 
     if (currentExpression === '') {
       result = context
-      break;
+      break
     }
 
     keySeparatorAt = currentExpression.indexOf(':')
 
     if (keySeparatorAt === -1) {
       result = undefined
-      break;
+      break
     }
 
     fieldType = currentExpression.slice(0, keySeparatorAt)
@@ -216,12 +216,12 @@ function resolveBindingExpression (expressionsMap, expressionResolution, { conte
 
     if (key === '') {
       result = undefined
-      break;
+      break
     }
 
     if (Array.isArray(currentContext) && fieldType === FIELD_TYPE.property) {
       result = undefined
-      break;
+      break
     }
 
     if (fieldType === FIELD_TYPE.computedField) {
@@ -235,7 +235,7 @@ function resolveBindingExpression (expressionsMap, expressionResolution, { conte
     }
 
     if (result === undefined) {
-      break;
+      break
     }
 
     currentContext = result

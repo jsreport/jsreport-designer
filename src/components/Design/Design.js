@@ -1,4 +1,6 @@
 import React, { Component } from 'react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
 import memoize from 'lodash/memoize'
@@ -103,7 +105,7 @@ class Design extends Component {
   }
 
   render () {
-    const { design, canvasRef } = this.props
+    const { design, canvasRef } = this.props
 
     return (
       <div className={styles.design}>
@@ -121,9 +123,13 @@ class Design extends Component {
   }
 }
 
-Design.propTypes = {
+Design.wrappedComponent.propTypes = {
   canvasRef: PropTypes.func,
-  design: MobxPropTypes.observableObject.isRequired
+  design: MobxPropTypes.observableObject.isRequired,
+  clearSelection: PropTypes.func.isRequired,
+  highlightAreaFromDrag: PropTypes.func.isRequired,
+  clearHighlightArea: PropTypes.func.isRequired,
+  addOrRemoveComponentFromDrag: PropTypes.func.isRequired
 }
 
 export default Design

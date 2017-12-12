@@ -76,11 +76,11 @@ class Resizer extends PureComponent {
     // left click detection
     // https://stackoverflow.com/a/12737882/4111743
     if (event.buttons != null) {
-      isLeftClick = event.buttons === 1;
+      isLeftClick = event.buttons === 1
     } else if (event.which != null) {
-      isLeftClick = event.which === 1;
+      isLeftClick = event.which === 1
     } else {
-      isLeftClick = event.button === 1;
+      isLeftClick = event.button === 1
     }
 
     if (!isLeftClick) {

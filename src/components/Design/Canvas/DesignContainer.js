@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
-import { observer, inject } from 'mobx-react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import HighlightedArea from './HighlightedArea'
 import DesignGroup from './DesignGroup'
 import styles from '../../../../static/DesignElements.css'
@@ -29,6 +31,10 @@ class DesignContainer extends Component {
       </div>
     )
   }
+}
+
+DesignContainer.wrappedComponent.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired
 }
 
 export default DesignContainer

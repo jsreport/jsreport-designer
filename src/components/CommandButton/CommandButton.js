@@ -19,7 +19,7 @@ class CommandButton extends Component {
       <div className={styles.commandButton}>
         {!children ? (
           <button {...restProps}>
-            <span className={`fa fa-${icon != null ? icon : 'circle'}`}></span>
+            <span className={`fa fa-${icon != null ? icon : 'circle'}`} />
             {text != null && <span>{text}</span>}
           </button>
         ) : (
@@ -37,7 +37,8 @@ CommandButton.propTypes = {
   title: PropTypes.string,
   titlePosition: PropTypes.string,
   icon: PropTypes.string,
-  text: PropTypes.string
+  text: PropTypes.string,
+  children: PropTypes.element
 }
 
 export default CommandButton

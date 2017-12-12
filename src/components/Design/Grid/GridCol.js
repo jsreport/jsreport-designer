@@ -5,7 +5,7 @@ import styles from './GridCol.scss'
 class GridCol extends PureComponent {
   render () {
     const {
-      left,
+      left
     } = this.props
 
     let position = `translateX(${left}px)`
@@ -17,7 +17,7 @@ class GridCol extends PureComponent {
     }
 
     return (
-      <div className={styles.gridCol} data-design-grid-border="true" style={colStyles} />
+      <div className={styles.gridCol} data-design-grid-border='true' style={colStyles} />
     )
   }
 }

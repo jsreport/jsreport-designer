@@ -1,7 +1,9 @@
 import React, { Component } from 'react'
-import { observer, inject } from 'mobx-react'
+import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import MobxDevTools, { configureDevtool } from 'mobx-react-devtools'
-import { rootPath } from '../lib/configuration'
 import jsreportClient from 'jsreport-browser-client-dist'
 
 // full url
@@ -124,8 +126,8 @@ class DevTools extends Component {
               <b>Design groups</b>
               <br />
               <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
-              <br/>
-              <textarea rows="25" cols="40" defaultValue={inspectDesignGroups} />
+              <br />
+              <textarea rows='25' cols='40' defaultValue={inspectDesignGroups} />
               <br />
               <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
             </div>
@@ -137,8 +139,8 @@ class DevTools extends Component {
               <b>Design payload</b>
               <br />
               <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
-              <br/>
-              <textarea rows="25" cols="40" defaultValue={inspectDesignPayload} />
+              <br />
+              <textarea rows='25' cols='40' defaultValue={inspectDesignPayload} />
               <br />
               <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
             </div>
@@ -148,6 +150,15 @@ class DevTools extends Component {
       </div>
     )
   }
+}
+
+DevTools.wrappedComponent.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired,
+  computedFields: PropTypes.array,
+  data: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array
+  ])
 }
 
 export default DevTools

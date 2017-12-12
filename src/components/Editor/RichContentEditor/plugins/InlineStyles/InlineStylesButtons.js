@@ -8,7 +8,7 @@ const INLINE_STYLES = [
   { label: 'Bold', style: 'BOLD', icon: 'bold' },
   { label: 'Italic', style: 'ITALIC', icon: 'italic' },
   { label: 'Underline', style: 'UNDERLINE', icon: 'underline' },
-  { label: 'Strikethrough', style: 'STRIKE', icon: 'strikethrough'  }
+  { label: 'Strikethrough', style: 'STRIKE', icon: 'strikethrough' }
 ]
 
 class InlineStylesButtons extends Component {
@@ -31,7 +31,7 @@ class InlineStylesButtons extends Component {
     // from plugin's getEditorState to avoid getting a stale editorState
     // when the buttons are rendered before the Editor
     // more info: https://github.com/draft-js-plugins/draft-js-plugins/issues/834
-    const { editorState, store } = this.props
+    const { editorState } = this.props
     let currentStyle = editorState.getCurrentInlineStyle()
 
     return (

@@ -1,6 +1,7 @@
 import Promise from 'bluebird'
 
 export default function () {
+  // eslint-disable-next-line no-undef
   if (__DEVELOPMENT__) {
     require('../extensions_dev.js')
     return Promise.resolve()

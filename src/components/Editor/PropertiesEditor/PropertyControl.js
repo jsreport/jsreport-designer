@@ -68,28 +68,28 @@ class PropertyControl extends PureComponent {
     }
 
     return (
-      <div className="propertiesEditor-prop">
+      <div className='propertiesEditor-prop'>
         <div>
           <label>
             {label || name}
             {' '}
           </label>
-          <div className="propertiesEditor-prop-controls">
+          <div className='propertiesEditor-prop-controls'>
             {meta && meta.allowsBinding !== false && (
               <button
                 disabled={bindToData === false}
-                title="Bind to data"
+                title='Bind to data'
                 onClick={this.handleBindToDataClick}
               >
-                <span className="fa fa-bolt"></span>
+                <span className='fa fa-bolt' />
               </button>
             )}
             {meta && meta.allowsRichContent && (
               <button
-                title="Edit rich content"
+                title='Edit rich content'
                 onClick={this.handleEditRichContentClick}
               >
-                <span className="fa fa-book"></span>
+                <span className='fa fa-book' />
               </button>
             )}
           </div>
@@ -106,7 +106,7 @@ class PropertyControl extends PureComponent {
         ) : (
           <input
             className={isSpecialValue ? 'propertiesEditor-prop-special-value' : ''}
-            type="text"
+            type='text'
             name={name}
             readOnly={isSpecialValue}
             value={currentValue}
@@ -119,7 +119,6 @@ class PropertyControl extends PureComponent {
 }
 
 PropertyControl.propTypes = {
-  componentType: PropTypes.string.isRequired,
   label: PropTypes.string,
   name: PropTypes.string.isRequired,
   value: PropTypes.any,

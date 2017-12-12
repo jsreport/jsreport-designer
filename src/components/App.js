@@ -1,6 +1,9 @@
 import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
-import { observer, inject } from 'mobx-react'
+import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragDropContext } from 'react-dnd'
 import HTML5Backend from 'react-dnd-html5-backend'
 import SplitPane from './SplitPane'
@@ -73,20 +76,20 @@ class App extends Component {
     }
   }
 
-  render() {
+  render () {
     const { currentDesign } = this.props
 
     return (
       <div className={`${styles.app} container`}>
-        <div className="block">
+        <div className='block'>
           <SplitPane
             defaultSize={'175px'}
             minSize={150}
-            primary="first"
-            collapsable="first"
-            collapsedText="Sidebar"
-            split="vertical"
-            resizerClassName="resizer"
+            primary='first'
+            collapsable='first'
+            collapsedText='Sidebar'
+            split='vertical'
+            resizerClassName='resizer'
           >
             <SideBar
               nodeRef={this.setSideBarNode}
@@ -102,8 +105,14 @@ class App extends Component {
           />
         </div>
       </div>
-    );
+    )
   }
+}
+
+App.wrappedComponent.propTypes = {
+  currentDesign: MobxPropTypes.observableObject.isRequired,
+  updateDesign: PropTypes.func.isRequired,
+  clearSelectionInDesign: PropTypes.func.isRequired
 }
 
 export default DragDropContext(HTML5Backend)(App)

@@ -2,22 +2,22 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import styles from './Button.scss'
 
-class Button extends React.Component {
-  constructor(props) {
+class Button extends Component {
+  constructor (props) {
     super(props)
 
     this.onToggle = this.onToggle.bind(this)
   }
 
   onToggle (ev) {
-    ev.preventDefault();
+    ev.preventDefault()
 
     if (this.props.onToggle) {
-      this.props.onToggle(this.props.context);
+      this.props.onToggle(this.props.context)
     }
   }
 
-  render() {
+  render () {
     const { label, icon } = this.props
     let className = styles.button
 
@@ -28,12 +28,12 @@ class Button extends React.Component {
     return (
       <span className={className} onMouseDown={this.onToggle}>
         {icon ? (
-          <span className={`fa fa-${icon}`} title={label}></span>
+          <span className={`fa fa-${icon}`} title={label} />
         ) : (
           label
         )}
       </span>
-    );
+    )
   }
 }
 
@@ -42,7 +42,7 @@ Button.propTypes = {
   icon: PropTypes.string,
   context: PropTypes.string,
   active: PropTypes.bool,
-  onToggle: PropTypes.func,
+  onToggle: PropTypes.func
 }
 
 export default Button

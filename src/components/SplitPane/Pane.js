@@ -1,7 +1,8 @@
 import React, { Component } from 'react'
+import PropTypes from 'prop-types'
 
 class Pane extends Component {
-  constructor(props) {
+  constructor (props) {
     super(props)
     this.state = {}
   }
@@ -29,8 +30,18 @@ class Pane extends Component {
     style.minHeight = 0
     style.minWidth = 0
 
-    return (<div className={classes.join(' ')} style={style}>{this.props.children}</div>)
+    return (
+      <div className={classes.join(' ')} style={style}>
+        {this.props.children}
+      </div>
+    )
   }
+}
+
+Pane.propTypes = {
+  children: PropTypes.element,
+  className: PropTypes.string,
+  split: PropTypes.string
 }
 
 export default Pane

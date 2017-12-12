@@ -22,7 +22,7 @@ class ComponentDragPreviewBox extends PureComponent {
           componentProps={componentMeta.props}
           bindings={componentMeta.bindings}
           rawContent={componentMeta.rawContent}
-          selectedPreview={true}
+          selectedPreview
         />
       </div>
     )

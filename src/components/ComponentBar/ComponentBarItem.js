@@ -49,7 +49,7 @@ const componentTypeSource = {
       props.onDragEnd(props.componentType)
     }
   }
-};
+}
 
 function collect (connect, monitor) {
   return {
@@ -88,7 +88,7 @@ class ComponentBarItem extends PureComponent {
      */
     this.props.connectDragPreview(this.getEmptyPreview(), {
       captureDraggingState: true
-    });
+    })
   }
 
   setNode (el) {
@@ -112,7 +112,7 @@ class ComponentBarItem extends PureComponent {
        */
       return (
         <div
-          ref={(el) => this.emptyPreview = el}
+          ref={(el) => { this.emptyPreview = el }}
           style={{
             backgroundColor: 'transparent',
             color: 'transparent',
@@ -145,6 +145,7 @@ class ComponentBarItem extends PureComponent {
     if (this.props.isDragging) {
       // while dragging we change the drag source to a temporal node that it is not attached to the DOM,
       // this is needed to instruct react-dnd that it should cancel the default dragend's animation (snap back of item)
+      // eslint-disable-next-line no-useless-call
       connectDragSource.apply(undefined, [this.getTemporalNode(), ...args.slice(1)])
       element = args[0]
     } else {
@@ -243,6 +244,6 @@ ComponentBarItem.propTypes = {
   onDragStart: PropTypes.func,
   onDragEnd: PropTypes.func,
   componentType: PropTypes.object.isRequired
-};
+}
 
 export default DragSource(ComponentDragTypes.COMPONENT_BAR, componentTypeSource, collect)(ComponentBarItem)

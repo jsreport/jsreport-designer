@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { findDOMNode } from 'react-dom'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
 import { DragSource } from 'react-dnd'
 import componentRegistry from '../../../shared/componentRegistry'
@@ -9,7 +11,7 @@ import styles from '../../../static/DesignElements.css'
 import interactiveStyles from './DesignComponentInteractive.scss'
 
 const componentDragSource = {
-  beginDrag(props, monitor, originComponent) {
+  beginDrag (props, monitor, originComponent) {
     let component = originComponent.getInstance()
 
     if (props.onDragStart) {
@@ -178,6 +180,7 @@ class DesignComponent extends Component {
     if (this.props.isDragging) {
       // while dragging we change the drag source to a temporal node that it is not attached to the DOM,
       // this is needed to instruct react-dnd that it should cancel the default dragend's animation (snap back of item)
+      // eslint-disable-next-line no-useless-call
       connectDragSource.apply(undefined, [this.getTemporalNode(), ...args.slice(1)])
       element = args[0]
     } else {
@@ -283,8 +286,9 @@ DesignComponent.propTypes = {
   type: PropTypes.string.isRequired,
   dataInput: PropTypes.oneOfType([
     PropTypes.object,
-    PropTypes.array,
+    PropTypes.array
   ]),
+  computedFieldsInput: PropTypes.object,
   template: PropTypes.string,
   componentProps: PropTypes.object.isRequired,
   bindings: PropTypes.object,
@@ -311,7 +315,7 @@ class ObservableDesignComponent extends Component {
   }
 
   setInstance (el) {
-    return this.instance = el
+    this.instance = el
   }
 
   getInstance () {

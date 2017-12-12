@@ -1,5 +1,5 @@
 import { action } from 'mobx'
-import { store as editorStore, actions as editorActions }  from './editor'
+import { store as editorStore, actions as editorActions } from './editor'
 import { store as designsStore, actions as designsActions } from './designs'
 import { store as dataInputStore, actions as dataInputActions } from './dataInput'
 
@@ -23,7 +23,7 @@ const setDefaultsForStores = action((stores, defaults) => {
   })
 })
 
-export default function createStores(defaults) {
+export default function createStores (defaults) {
   const stores = {
     editorStore,
     designsStore,

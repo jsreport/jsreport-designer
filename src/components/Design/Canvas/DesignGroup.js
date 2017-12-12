@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import { ComponentDragTypes } from '../../../Constants'
@@ -40,7 +42,7 @@ const groupTarget = {
   },
 
   drop (props, monitor, component) {
-    const { group } = props
+    const { group } = props
 
     if (monitor.didDrop()) {
       return undefined
@@ -130,10 +132,12 @@ class DesignGroup extends Component {
 }
 
 DesignGroup.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired,
   group: MobxPropTypes.observableObject.isRequired,
   showTopBorder: PropTypes.bool,
   connectDropTarget: PropTypes.func.isRequired,
-  isDraggingOver: PropTypes.bool.isRequired
+  isDraggingOver: PropTypes.bool.isRequired,
+  updateElement: PropTypes.func.isRequired
 }
 
 export default inject((injected) => ({
@@ -143,6 +147,6 @@ export default inject((injected) => ({
 }))(
   DropTarget([
     ComponentDragTypes.COMPONENT_BAR,
-    ComponentDragTypes.COMPONENT,
+    ComponentDragTypes.COMPONENT
   ], groupTarget, collect)(DesignGroup)
 )

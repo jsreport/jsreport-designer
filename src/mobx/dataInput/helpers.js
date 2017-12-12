@@ -20,7 +20,7 @@ function getProperties (json, _blackList = [], parentType) {
 
   for (let key in json) {
     if (!json.hasOwnProperty(key) || (type === 'object' && blackList.indexOf(key) !== -1)) {
-      continue;
+      continue
     }
 
     if (parentType === 'object' && type !== 'array') {
@@ -33,7 +33,7 @@ function getProperties (json, _blackList = [], parentType) {
       let item
 
       if (!innerProperties) {
-        continue;
+        continue
       }
 
       item = {
@@ -211,7 +211,7 @@ function getFullExpressionDisplayName (expression) {
   }, '')
 }
 
-function getFieldsMeta ({ 
+function getFieldsMeta ({
   dataFields,
   computedFields,
   parentType,

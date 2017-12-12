@@ -36,7 +36,7 @@ module.exports = (appDir, extensions, componentTypes) => {
         // load font-awesome based on configuration
         'font-awesome-webpack!./src/theme/font-awesome.config.js',
         // Finally, the designer entry point code
-        './src/client.js',
+        './src/client.js'
         // We include the app code last so that if there is a runtime error during
         // initialization, it doesn't blow up the webpack entry client, and
         // changing JS code would still trigger a refresh.
@@ -233,7 +233,7 @@ module.exports = (appDir, extensions, componentTypes) => {
       new HtmlWebpackPlugin({
         hash: true,
         inject: true,
-        template: path.join(__dirname, '../static/index.html'),
+        template: path.join(__dirname, '../static/index.html')
       })
     ],
     // Some libraries import Node modules but don't use them in the browser.

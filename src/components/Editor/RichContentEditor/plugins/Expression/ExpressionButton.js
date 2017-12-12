@@ -1,4 +1,4 @@
-import React, { Fragment, Component } from 'react'
+import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import addExpressionModifier from './addExpressionModifier'
 import Button from '../../Button'
@@ -48,7 +48,7 @@ class ExpressionButton extends Component {
       <div style={{ display: 'inline-block', position: 'relative' }}>
         <Button
           active={showExpressionInput || false}
-          label="Expression"
+          label='Expression'
           onToggle={this.handleToogle}
           icon={'flask'}
         />
@@ -65,9 +65,9 @@ class ExpressionButton extends Component {
             }}
           >
             <input
-              ref={(el) => this.expressionNameNode = el}
+              ref={(el) => { this.expressionNameNode = el }}
               autoFocus
-              placeholder="Expression name"
+              placeholder='Expression name'
             />
             {' '}
             <button onClick={this.handleNewExpression}>Ok</button>

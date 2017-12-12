@@ -10,7 +10,7 @@ import {
   addComponentToDesign,
   removeComponentInDesign,
   updateComponentInDesign,
-  updateItemSize,
+  updateItemSize
 } from './helpers'
 
 const ACTION = 'DESIGNS'
@@ -66,7 +66,7 @@ export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
       }
 
       const newGroup = generateGroup({
-        layoutMode: group.layoutMode,
+        layoutMode: group.layoutMode
         // NOTE: for now we intentionally don't add "topSpace"
         // to the group because this field is not being kept in sync
         // while using the designer, it is calculted in the end when the design
@@ -202,7 +202,7 @@ export const update = action(`${ACTION}_UPDATE`, (designId, changes) => {
   }
 
   // TODO: check here to only update observable properties?
-  Object.keys(changes).forEach((key) => design[key] = changes[key])
+  Object.keys(changes).forEach((key) => { design[key] = changes[key] })
 })
 
 export const updateElement = action(`${ACTION}_UPDATE_ELEMENT`, (designId, elementId, changes) => {
@@ -221,7 +221,7 @@ export const updateElement = action(`${ACTION}_UPDATE_ELEMENT`, (designId, eleme
   element = element.element
 
   // TODO: check here to only update observable properties?
-  Object.keys(changes).forEach((key) => element[key] = changes[key])
+  Object.keys(changes).forEach((key) => { element[key] = changes[key] })
 })
 
 export const clearSelection = action(`${ACTION}_CLEAR_SELECTION`, (designId) => {
@@ -283,7 +283,7 @@ export const setSelection = action(`${ACTION}_SET_SELECTION`, (designId, compone
 export const highlightArea = action(`${ACTION}_HIGHLIGHT_AREA`, (designId, highlightedArea) => {
   const design = store.designs.get(designId)
 
-  if (!design || highlightedArea == null) {
+  if (!design || highlightedArea == null) {
     return
   }
 
@@ -366,7 +366,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
       top: highlightedArea.areaBox.top,
       left: left + (targetItem.start * colWidth),
       width: ((targetItem.end - targetItem.start) + 1) * colWidth,
-      height: highlightedArea.areaBox.height,
+      height: highlightedArea.areaBox.height
     }
   } else {
     highlightedArea.context = null
@@ -469,8 +469,8 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
   if (dragType === ComponentDragTypes.COMPONENT) {
     componentToProcess = (
       originItem
-      .components[draggedEl.canvas.component]
-      .toJS(true)
+        .components[draggedEl.canvas.component]
+        .toJS(true)
     )
 
     if (targetItem == null) {
@@ -614,7 +614,7 @@ export const resizeElement = action(`${ACTION}_RESIZE_ELEMENT`, (designId, eleme
 
   element = element.element
 
-  if (!element.isResizing) {
+  if (!element.isResizing) {
     return
   }
 
@@ -708,7 +708,7 @@ export const endResizeElement = action(`${ACTION}_END_RESIZE_ELEMENT`, (designId
 
   element = element.element
 
-  if (!element.isResizing) {
+  if (!element.isResizing) {
     return
   }
 

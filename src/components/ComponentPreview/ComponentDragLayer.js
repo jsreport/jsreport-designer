@@ -1,5 +1,7 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragLayer } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
@@ -80,7 +82,7 @@ class ComponentDragLayer extends Component {
           />
         )
       default:
-        return
+        return undefined
     }
   }
 
@@ -114,20 +116,24 @@ class ComponentDragLayer extends Component {
 }
 
 ComponentDragLayer.propTypes = {
+  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   design: MobxPropTypes.observableObject.isRequired,
   componentMeta: PropTypes.object,
   dragItemType: PropTypes.string,
+  // eslint-disable-next-line react/no-unused-prop-types
   initialSourceOffset: PropTypes.shape({
     x: PropTypes.number.isRequired,
-    y: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired
   }),
+  // eslint-disable-next-line react/no-unused-prop-types
   initialPointerOffset: PropTypes.shape({
     x: PropTypes.number.isRequired,
-    y: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired
   }),
+  // eslint-disable-next-line react/no-unused-prop-types
   currentSourceOffset: PropTypes.shape({
     x: PropTypes.number.isRequired,
-    y: PropTypes.number.isRequired,
+    y: PropTypes.number.isRequired
   }),
   isDragging: PropTypes.bool.isRequired
 }

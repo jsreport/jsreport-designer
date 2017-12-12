@@ -1,5 +1,7 @@
 import React, { Component, PureComponent } from 'react'
-import { observer, inject } from 'mobx-react'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
 import GridCol from './GridCol'
 import styles from './Grid.scss'
@@ -29,6 +31,11 @@ class GridContent extends PureComponent {
   }
 }
 
+GridContent.propTypes = {
+  colWidth: PropTypes.number.isRequired,
+  numberOfCols: PropTypes.number.isRequired
+}
+
 @inject((injected) => ({
   design: injected.design
 }))
@@ -39,7 +46,7 @@ class Grid extends Component {
     const { colWidth, numberOfCols } = design
 
     return (
-      <div className={styles.grid} data-design-grid="true">
+      <div className={styles.grid} data-design-grid='true'>
         {showTopBorder && (
           <div className={styles.gridTop} data-design-grid-border />
         )}
@@ -52,7 +59,8 @@ class Grid extends Component {
   }
 }
 
-Grid.propTypes = {
+Grid.wrappedComponent.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired,
   showTopBorder: PropTypes.bool.isRequired
 }
 

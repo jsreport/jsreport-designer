@@ -89,8 +89,8 @@ class TemplateEditor extends PureComponent {
         <br />
         <div>
           <CommandButton
-            title="Get original template"
-            icon="refresh"
+            title='Get original template'
+            icon='refresh'
             onClick={this.handleGetOriginalTemplateClick}
           />
         </div>
@@ -108,7 +108,7 @@ class TemplateEditor extends PureComponent {
           <textarea
             ref={this.setTextAreaNode}
             style={{ overflow: 'auto', resize: 'none', width: '100%', marginTop: '1rem' }}
-            rows="25"
+            rows='25'
             value={editedTemplate}
             onChange={this.handleInputChange}
           />

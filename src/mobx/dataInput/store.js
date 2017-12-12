@@ -1,3 +1,5 @@
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
 import { observable, computed } from 'mobx'
 import {
   getProperties,
@@ -11,9 +13,13 @@ import {
 } from './helpers'
 
 class DataInput {
+  // eslint-disable-next-line no-undef
   @observable.ref value = undefined
+
+  // eslint-disable-next-line no-undef
   @observable.ref computedFields = undefined
 
+  // eslint-disable-next-line no-undef
   @computed get valueJSON () {
     if (this.value == null) {
       return
@@ -26,22 +32,27 @@ class DataInput {
     this.value = JSON.parse(value)
   }
 
+  // eslint-disable-next-line no-undef
   @computed get valueProperties () {
     return getProperties(this.value)
   }
 
+  // eslint-disable-next-line no-undef
   @computed get computedFieldsMap () {
     return getComputedFieldsMap(this.computedFields)
   }
 
+  // eslint-disable-next-line no-undef
   @computed get computedFieldsFunctions () {
     return getComputedFunctions(this.computedFieldsMap)
   }
 
+  // eslint-disable-next-line no-undef
   @computed get computedFieldsValues () {
     return getComputedResults(this.computedFieldsFunctions, this.value)
   }
 
+  // eslint-disable-next-line no-undef
   @computed get fieldsMeta () {
     return getFieldsMeta({
       dataFields: this.valueProperties,

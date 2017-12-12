@@ -1,12 +1,12 @@
 import Promise from 'bluebird'
-import React, {Component} from 'react'
+import React, { Component } from 'react'
 import ReactDOM from 'react-dom'
 import PropTypes from 'prop-types'
 import assign from 'lodash/assign'
 import Pane from './Pane'
 import Resizer from './Resizer'
 
-export default class SplitPane extends Component {
+class SplitPane extends Component {
   constructor () {
     super()
     this.state = {
@@ -18,32 +18,6 @@ export default class SplitPane extends Component {
     this.onMouseDown = this.onMouseDown.bind(this)
     this.onMouseMove = this.onMouseMove.bind(this)
     this.onMouseUp = this.onMouseUp.bind(this)
-  }
-
-  static propTypes = {
-    primary: PropTypes.oneOf(['first', 'second']),
-    minSize: PropTypes.number,
-    defaultSize: PropTypes.string,
-    size: PropTypes.number,
-    allowResize: PropTypes.bool,
-    resizerClassName: PropTypes.string,
-    split: PropTypes.oneOf(['vertical', 'horizontal']),
-    onDragStarted: PropTypes.func,
-    onDragFinished: PropTypes.func,
-    onCollapsing: PropTypes.func,
-    onDocking: PropTypes.func,
-    onUndocking: PropTypes.func,
-    onUndocked: PropTypes.func
-  }
-
-  static defaultProps = {
-    split: 'vertical',
-    minSize: 50,
-    allowResize: true,
-    rimary: 'first',
-    collapsable: 'second',
-    undockeable: false,
-    defaultSize: '50%'
   }
 
   componentDidMount () {
@@ -190,8 +164,8 @@ export default class SplitPane extends Component {
 
       windowOptsStr = (
         Object.keys(windowOpts)
-        .map((opt) => `${opt}=${typeof windowOpts[opt] === 'boolean' ? (windowOpts[opt] ? 'yes' : 'no') : windowOpts[opt]}`)
-        .join(',')
+          .map((opt) => `${opt}=${typeof windowOpts[opt] === 'boolean' ? (windowOpts[opt] ? 'yes' : 'no') : windowOpts[opt]}`)
+          .join(',')
       )
     }
 
@@ -214,101 +188,101 @@ export default class SplitPane extends Component {
     shouldCollapseAsync = (this.props.onCollapsing != null) ? this.props.onCollapsing(v) : true
 
     Promise.resolve(shouldCollapseAsync)
-    .then((shouldCollapse) => {
-      let ref1 = this.props.collapsable === 'first' ? this.refs.pane2 : this.refs.pane1
-      const ref2 = this.props.collapsable === 'first' ? this.refs.pane1 : this.refs.pane2
+      .then((shouldCollapse) => {
+        let ref1 = this.props.collapsable === 'first' ? this.refs.pane2 : this.refs.pane1
+        const ref2 = this.props.collapsable === 'first' ? this.refs.pane1 : this.refs.pane2
 
-      let stateToUpdate
+        let stateToUpdate
 
-      if (!shouldCollapse) {
-        return
-      }
-
-      if (!v) {
-        if (ref1) {
-          ref1.setState({
-            size: this.lastSize
-          })
+        if (!shouldCollapse) {
+          return
         }
 
-        if (ref2) {
-          ref2.setState({
-            size: this.lastSize2
-          })
-        }
-
-        stateToUpdate = {
-          resized: true,
-          collapsed: v,
-          draggedSize: this.lastSize,
-          position: this.lastSize,
-          undocked: undocked
-        }
-
-        if (undockeable && undocked === false) {
-          this.props.onDocking && this.props.onDocking()
-        }
-
-        this.setState(stateToUpdate)
-      } else {
-        this.lastSize = ref1.state.size
-        this.lastSize2 = ref2.state.size
-
-        stateToUpdate = {
-          collapsed: v,
-          resized: true,
-          draggedSize: undefined,
-          position: undefined,
-          undocked: undocked
-        }
-
-        if (undockeable && undocked === true) {
-          let windowOpts = (this.props.onUndocking != null) ? this.props.onUndocking() : null
-
-          if (!windowOpts) {
-            return
-          }
-
+        if (!v) {
           if (ref1) {
             ref1.setState({
-              size: undefined
+              size: this.lastSize
             })
           }
 
           if (ref2) {
             ref2.setState({
-              size: 0
+              size: this.lastSize2
             })
           }
 
-          this.setState(stateToUpdate, () => {
-            // opening the window when setState is done..
-            // giving it the chance to clear the previous iframe
-            const nWindow = this.openWindow(windowOpts)
-
-            this.props.onUndocked && this.props.onUndocked(windowOpts.id, nWindow)
-          })
-        } else {
-          if (ref1) {
-            ref1.setState({
-              size: undefined
-            })
+          stateToUpdate = {
+            resized: true,
+            collapsed: v,
+            draggedSize: this.lastSize,
+            position: this.lastSize,
+            undocked: undocked
           }
 
-          if (ref2) {
-            ref2.setState({
-              size: 0
-            })
+          if (undockeable && undocked === false) {
+            this.props.onDocking && this.props.onDocking()
           }
 
           this.setState(stateToUpdate)
-        }
-      }
+        } else {
+          this.lastSize = ref1.state.size
+          this.lastSize2 = ref2.state.size
 
-      if (typeof this.props.onDragFinished === 'function') {
-        this.props.onDragFinished()
-      }
-    })
+          stateToUpdate = {
+            collapsed: v,
+            resized: true,
+            draggedSize: undefined,
+            position: undefined,
+            undocked: undocked
+          }
+
+          if (undockeable && undocked === true) {
+            let windowOpts = (this.props.onUndocking != null) ? this.props.onUndocking() : null
+
+            if (!windowOpts) {
+              return
+            }
+
+            if (ref1) {
+              ref1.setState({
+                size: undefined
+              })
+            }
+
+            if (ref2) {
+              ref2.setState({
+                size: 0
+              })
+            }
+
+            this.setState(stateToUpdate, () => {
+              // opening the window when setState is done..
+              // giving it the chance to clear the previous iframe
+              const nWindow = this.openWindow(windowOpts)
+
+              this.props.onUndocked && this.props.onUndocked(windowOpts.id, nWindow)
+            })
+          } else {
+            if (ref1) {
+              ref1.setState({
+                size: undefined
+              })
+            }
+
+            if (ref2) {
+              ref2.setState({
+                size: 0
+              })
+            }
+
+            this.setState(stateToUpdate)
+          }
+        }
+
+        if (typeof this.props.onDragFinished === 'function') {
+          this.props.onDragFinished()
+        }
+      })
   }
 
   renderPane (type, undockeable, pane) {
@@ -397,3 +371,38 @@ export default class SplitPane extends Component {
     )
   }
 }
+
+SplitPane.defaultProps = {
+  split: 'vertical',
+  minSize: 50,
+  allowResize: true,
+  rimary: 'first',
+  collapsable: 'second',
+  undockeable: false,
+  defaultSize: '50%'
+}
+
+SplitPane.propTypes = {
+  className: PropTypes.string,
+  children: PropTypes.arrayOf(PropTypes.element),
+  primary: PropTypes.oneOf(['first', 'second']),
+  minSize: PropTypes.number,
+  // eslint-disable-next-line react/no-unused-prop-types
+  defaultSize: PropTypes.string,
+  size: PropTypes.number,
+  allowResize: PropTypes.bool,
+  resizerClassName: PropTypes.string,
+  split: PropTypes.oneOf(['vertical', 'horizontal']),
+  collapsable: PropTypes.string,
+  collapsedText: PropTypes.string,
+  undockeable: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
+  onChange: PropTypes.func,
+  onDragStarted: PropTypes.func,
+  onDragFinished: PropTypes.func,
+  onCollapsing: PropTypes.func,
+  onDocking: PropTypes.func,
+  onUndocking: PropTypes.func,
+  onUndocked: PropTypes.func
+}
+
+export default SplitPane

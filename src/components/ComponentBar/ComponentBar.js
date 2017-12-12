@@ -140,7 +140,7 @@ class ComponentBar extends PureComponent {
     }
   }
 
-  renderComponentCollection({ collection, components }) {
+  renderComponentCollection ({ collection, components }) {
     let collectionId
 
     if (collection == null) {
@@ -208,7 +208,7 @@ class ComponentBar extends PureComponent {
 
     return (
       <div
-        ref={(el) => this.componentBar = el}
+        ref={(el) => { this.componentBar = el }}
         className={styles.componentBar}
         onScroll={this.keepComponentBarItemCloneAspect}
       >
@@ -217,9 +217,9 @@ class ComponentBar extends PureComponent {
         })}
         {/* placeholder for the ComponentBarItem replacement while dragging */}
         <div
-          draggable="false"
-          key="ComponentBarItem-replacement"
-          ref={(el) => this.componentBarItemReplacement = el}
+          draggable='false'
+          key='ComponentBarItem-replacement'
+          ref={(el) => { this.componentBarItemReplacement = el }}
           style={{
             display: 'none',
             pointerEvents: 'none',
