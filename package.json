@@ -43,6 +43,8 @@
     "lodash": "4.17.4",
     "nanoid": "1.0.1",
     "object-assign": "4.1.1",
+    "posthtml-parser": "0.3.0",
+    "posthtml-render": "1.0.6",
     "serve-favicon": "2.4.5",
     "serve-static": "1.13.1"
   },

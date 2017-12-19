@@ -2,91 +2,44 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 // (we disable the rule because eslint can recognize decorator usage in our setup)
 // eslint-disable-next-line no-unused-vars
-import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
-import styles from './SelectDataFieldEditor.scss'
+import { observer, inject } from 'mobx-react'
+import styles from './DataFieldsViewer.scss'
 
 @inject((injected, props) => {
-  let dataProperties
-  let fieldsMeta = injected.dataInputStore.fieldsMeta
+  let dataFields
+  let fieldsMeta
 
-  if (props.dataProperties != null) {
-    // if custom dataProperties are specified take it from it
-    dataProperties = props.dataProperties
-    fieldsMeta = injected.dataInputStore.getFieldsMeta({ dataFields: props.dataProperties })
+  if (props.dataFields != null) {
+    // if custom dataFields are specified take it from it
+    dataFields = props.dataFields
+    fieldsMeta = props.fieldsMeta ? props.fieldsMeta : injected.dataInputStore.getFieldsMeta({ dataFields: props.dataFields })
   } else {
     // otherwise take it from the global store
-    dataProperties = injected.dataInputStore.valueProperties ? injected.dataInputStore.valueProperties : null
+    dataFields = injected.dataInputStore.valueProperties ? injected.dataInputStore.valueProperties : null
+    fieldsMeta = injected.dataInputStore.fieldsMeta
   }
 
   return {
-    dataProperties,
+    dataFields,
     computedFields: injected.dataInputStore.computedFields,
     fieldsMeta,
-    getExpressionName: injected.dataInputStore.getExpressionName,
-    getFullExpressionName: injected.dataInputStore.getFullExpressionName
+    getDataExpressionName: injected.dataInputStore.getExpressionName,
+    getFullDataExpressionName: injected.dataInputStore.getFullExpressionName,
+    onSelect: props.onSelect
   }
 })
 @observer
-class SelectDataFieldEditor extends Component {
+class DataFieldsViewer extends Component {
   constructor (props) {
     super(props)
 
-    let initialState = {
-      isDirty: false,
-      selectedField: props.defaultSelectedField != null ? props.defaultSelectedField : null,
+    this.state = {
       fieldCollapse: {}
     }
 
-    // TODO: detect also when the selectedField expression is not available
-    // (probably because main dataProperties has changed), in that case the editor is dirty
-    if (
-      initialState.selectedField != null &&
-      props.dataProperties == null
-    ) {
-      initialState.isDirty = true
-      initialState.selectedField = null
-    }
-
-    this.state = initialState
-
     this.select = this.select.bind(this)
     this.collapse = this.collapse.bind(this)
-    this.handleUnselect = this.handleUnselect.bind(this)
-    this.handleSave = this.handleSave.bind(this)
-  }
-
-  componentWillReceiveProps (nextProps) {
-    // TODO: detect also when the selectedField expression is not available
-    // (probably because main dataProperties has changed), in that case the editor is dirty
-    if (
-      this.props.dataProperties !== nextProps.dataProperties &&
-      this.state.selectedField != null &&
-      nextProps.dataProperties == null
-    ) {
-      this.setState({
-        isDirty: true,
-        selectedField: null
-      })
-    }
-  }
-
-  select ({ expression, fieldType, id }) {
-    const { getExpressionName } = this.props
-
-    let selection = {
-      expression: [
-        ...expression
-      ]
-    }
-
-    if (id != null || fieldType === 'root') {
-      selection.expression.push(getExpressionName(fieldType, id))
-    }
-
-    this.setState({
-      isDirty: true,
-      selectedField: selection
-    })
+    this.renderFieldCollection = this.renderFieldCollection.bind(this)
   }
 
   collapse (key) {
@@ -98,20 +51,25 @@ class SelectDataFieldEditor extends Component {
     })
   }
 
-  handleUnselect () {
-    this.setState({
-      isDirty: true,
-      selectedField: null
-    })
-  }
+  select ({ expression, fieldType, id }) {
+    const { onSelect, getDataExpressionName, disabled } = this.props
 
-  handleSave () {
-    if (this.props.onSave) {
-      this.props.onSave({
-        propName: this.props.propName,
-        bindingName: this.props.bindingName,
-        selectedField: this.state.selectedField
-      })
+    if (disabled === true) {
+      return
+    }
+
+    let selectedField = {
+      dataExpression: [
+        ...expression
+      ]
+    }
+
+    if (id != null || fieldType === 'root') {
+      selectedField.dataExpression.push(getDataExpressionName(fieldType, id))
+    }
+
+    if (onSelect) {
+      onSelect(selectedField)
     }
   }
 
@@ -124,9 +82,10 @@ class SelectDataFieldEditor extends Component {
     leftSpace,
     collapsed
   }) {
-    const { getExpressionName, getFullExpressionName } = this.props
+    const { title, disabled, selectedField, getDataExpressionName, getFullDataExpressionName } = this.props
+    const { fieldCollapse } = this.state
     let allowedTypes = this.props.allowedTypes
-    let fullExpression = getFullExpressionName(expression)
+    let fullExpression = getFullDataExpressionName(expression)
     let padding = 1
     let rootIsArray = rootType === 'array'
 
@@ -152,17 +111,17 @@ class SelectDataFieldEditor extends Component {
     let selectedFullExpression
     let isFieldSelected
 
-    if (this.state.selectedField) {
-      selectedFullExpression = getFullExpressionName(this.state.selectedField.expression)
+    if (selectedField) {
+      selectedFullExpression = getFullDataExpressionName(selectedField.dataExpression)
     }
 
     isFieldSelected = (selectedFullExpression != null && selectedFullExpression === fullExpression)
 
     return ([
-      <ul key='data-input-fields' className={styles.bindToDataEditorFieldContainer}>
+      <ul key='data-input-fields' className={styles.dataFieldsViewerContainer}>
         <li
           key='field-name'
-          className={`${styles.bindToDataEditorFieldHeader} ${styles.bindToDataEditorFieldItem} ${isFieldSelected ? styles.selected : ''}`}
+          className={`${styles.dataFieldsViewerHeader} ${disabled === true ? '' : styles.dataFieldsViewerItem} ${isFieldSelected ? styles.selected : ''}`}
           onClick={() => !isFieldDisabled && this.select({
             expression,
             fieldType: expression.length > 0 ? 'property' : 'root'
@@ -170,12 +129,12 @@ class SelectDataFieldEditor extends Component {
         >
           <div style={{ padding: `0 ${leftSpace}rem` }}>
             <span
-              className={'fa fa-' + (this.state.fieldCollapse[key] ? 'plus-square' : 'minus-square')}
+              className={'fa fa-' + (fieldCollapse[key] ? 'plus-square' : 'minus-square')}
               onClick={(ev) => { ev.stopPropagation(); this.collapse(key) }}
             />
             {' '}
-            <span className={`${styles.bindToDataEditorFieldItemLabel} ${isFieldDisabled ? styles.disabled : ''}`}>
-              {`${expression.length === 0 ? '(Data input fields)' : ''} ${field.key != null ? field.key + ' ' : ''}(${field.type})`}
+            <span className={`${styles.dataFieldsViewerItemLabel} ${isFieldDisabled ? styles.disabled : ''}`}>
+              {`${expression.length === 0 ? `(${title != null ? title : 'Data input fields'})` : ''} ${field.key != null ? field.key + ' ' : ''}(${field.type})`}
             </span>
           </div>
         </li>
@@ -183,16 +142,16 @@ class SelectDataFieldEditor extends Component {
         {false && Array.isArray(field.indexes) && (
           <div
             key='field-indexes'
-            className={`${styles.bindToDataEditorFieldIndexes} ${collapsed ? styles.collapsed : ''}`}
+            className={`${styles.dataFieldsViewerIndexes} ${collapsed ? styles.collapsed : ''}`}
           >
             <div
               key='field-indexes-title'
-              className={styles.bindToDataEditorFieldHeader}
+              className={styles.dataFieldsViewerHeader}
               style={{ padding: `0 ${padding + leftSpace}rem` }}
               onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__indexes') }}
             >
               <span
-                className={'fa fa-' + (this.state.fieldCollapse[key + '__indexes'] ? 'plus-square' : 'minus-square')}
+                className={'fa fa-' + (fieldCollapse[key + '__indexes'] ? 'plus-square' : 'minus-square')}
               />
               {' '}
               <span style={{ color: '#1f87d6' }}>
@@ -201,7 +160,7 @@ class SelectDataFieldEditor extends Component {
             </div>
             <div
               key='field-indexes-content'
-              className={`${styles.bindToDataEditorFieldIndexes} ${this.state.fieldCollapse[key + '__indexes'] ? styles.collapsed : ''}`}
+              className={`${styles.dataFieldsViewerIndexes} ${fieldCollapse[key + '__indexes'] ? styles.collapsed : ''}`}
             >
               {field.indexes.map((indexItem) => {
                 let indexKey = `${key}--${indexItem[0]}--field`
@@ -211,7 +170,7 @@ class SelectDataFieldEditor extends Component {
 
                 let indexIsSelected = (
                   selectedFullExpression != null &&
-                  selectedFullExpression === getFullExpressionName(fullExpression, fieldType, indexId)
+                  selectedFullExpression === getFullDataExpressionName(fullExpression, fieldType, indexId)
                 )
 
                 let indexIsDisabled
@@ -229,7 +188,7 @@ class SelectDataFieldEditor extends Component {
                 return (
                   <li key={indexKey}>
                     <div
-                      className={`${styles.bindToDataEditorFieldItem} ${indexIsSelected ? styles.selected : ''}`}
+                      className={`${disabled === true ? '' : styles.dataFieldsViewerItem} ${indexIsSelected ? styles.selected : ''}`}
                       onClick={() => !indexIsDisabled && this.select({
                         expression,
                         fieldType,
@@ -237,7 +196,7 @@ class SelectDataFieldEditor extends Component {
                       })}
                     >
                       <span
-                        className={`${styles.bindToDataEditorFieldItemLabel} ${indexIsDisabled ? styles.disabled : ''}`}
+                        className={`${styles.dataFieldsViewerItemLabel} ${indexIsDisabled ? styles.disabled : ''}`}
                         style={{ padding: `0 ${(padding * 3) + leftSpace}rem` }}
                       >
                         {`${indexItem[0]} (${indexType})`}
@@ -252,17 +211,17 @@ class SelectDataFieldEditor extends Component {
         {Array.isArray(field.properties) && (
           <div
             key='field-properties'
-            className={`${styles.bindToDataEditorFieldProperties} ${collapsed ? styles.collapsed : ''}`}
+            className={`${styles.dataFieldsViewerProperties} ${collapsed ? styles.collapsed : ''}`}
           >
             {field.type === 'array' && (
               <div
                 key='field-properties-title'
-                className={styles.bindToDataEditorFieldHeader}
+                className={styles.dataFieldsViewerHeader}
                 style={{ padding: `0 ${padding + leftSpace}rem` }}
                 onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__properties') }}
               >
                 <span
-                  className={'fa fa-' + (this.state.fieldCollapse[key + '__properties'] ? 'plus-square' : 'minus-square')}
+                  className={'fa fa-' + (fieldCollapse[key + '__properties'] ? 'plus-square' : 'minus-square')}
                 />
                 {' '}
                 <span style={{ color: '#1f87d6' }}>
@@ -272,7 +231,7 @@ class SelectDataFieldEditor extends Component {
             )}
             <div
               key='field-properties-content'
-              className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__properties'] ? styles.collapsed : ''}`}
+              className={`${styles.dataFieldsViewerProperties} ${fieldCollapse[key + '__properties'] ? styles.collapsed : ''}`}
             >
               {field.properties.map((innerField) => {
                 const isSimpleField = Array.isArray(innerField)
@@ -283,7 +242,7 @@ class SelectDataFieldEditor extends Component {
 
                 const innerIsSelected = (
                   selectedFullExpression != null &&
-                  selectedFullExpression === getFullExpressionName(fullExpression, fieldType, innerFieldId)
+                  selectedFullExpression === getFullDataExpressionName(fullExpression, fieldType, innerFieldId)
                 )
 
                 let innerIsDisabled
@@ -306,7 +265,7 @@ class SelectDataFieldEditor extends Component {
                   <li key={innerFieldKey}>
                     {isSimpleField ? (
                       <div
-                        className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
+                        className={`${disabled === true ? '' : styles.dataFieldsViewerItem} ${innerIsSelected ? styles.selected : ''}`}
                         onClick={() => !innerIsDisabled && this.select({
                           expression,
                           fieldType,
@@ -314,7 +273,7 @@ class SelectDataFieldEditor extends Component {
                         })}
                       >
                         <span
-                          className={`${styles.bindToDataEditorFieldItemLabel} ${innerIsDisabled ? styles.disabled : ''}`}
+                          className={`${styles.dataFieldsViewerItemLabel} ${innerIsDisabled ? styles.disabled : ''}`}
                           style={{ padding: `0 ${(padding * (field.type === 'array' ? 3 : 2)) + leftSpace}rem` }}
                         >
                           {`${innerFieldId} (${innerFieldType})`}
@@ -324,10 +283,10 @@ class SelectDataFieldEditor extends Component {
                       this.renderFieldCollection({
                         rootType,
                         key: innerFieldKey,
-                        expression: [...expression, getExpressionName(fieldType, innerFieldId)],
+                        expression: [...expression, getDataExpressionName(fieldType, innerFieldId)],
                         field: innerField,
                         leftSpace: padding + leftSpace,
-                        collapsed: this.state.fieldCollapse[innerFieldKey]
+                        collapsed: fieldCollapse[innerFieldKey]
                       })
                     )}
                   </li>
@@ -338,19 +297,19 @@ class SelectDataFieldEditor extends Component {
         )}
       </ul>,
       computedFields ? (
-        <ul key='computed-fields' className={styles.bindToDataEditorFieldContainer}>
+        <ul key='computed-fields' className={styles.dataFieldsViewerContainer}>
           <div
             key='field-computed-fields'
-            className={styles.bindToDataEditorFieldProperties}
+            className={styles.dataFieldsViewerProperties}
           >
             <div
               key='field-computed-fields-title'
-              className={styles.bindToDataEditorFieldHeader}
+              className={styles.dataFieldsViewerHeader}
               style={{ padding: `0 ${leftSpace}rem` }}
               onClick={(ev) => { ev.stopPropagation(); this.collapse(key + '__computed_fields') }}
             >
               <span
-                className={'fa fa-' + (this.state.fieldCollapse[key + '__computed_fields'] ? 'plus-square' : 'minus-square')}
+                className={'fa fa-' + (fieldCollapse[key + '__computed_fields'] ? 'plus-square' : 'minus-square')}
               />
               {' '}
               <span style={{ fontStyle: 'normal' }}>
@@ -359,7 +318,7 @@ class SelectDataFieldEditor extends Component {
             </div>
             <div
               key='field-computed-fields-content'
-              className={`${styles.bindToDataEditorFieldProperties} ${this.state.fieldCollapse[key + '__computed_fields'] ? styles.collapsed : ''}`}
+              className={`${styles.dataFieldsViewerProperties} ${fieldCollapse[key + '__computed_fields'] ? styles.collapsed : ''}`}
             >
               {computedFields.map((field) => {
                 const computedName = field.name
@@ -370,22 +329,22 @@ class SelectDataFieldEditor extends Component {
 
                 const innerIsSelected = (
                   selectedFullExpression != null &&
-                  selectedFullExpression === getFullExpressionName(fullExpression, innerFieldType, innerFieldId)
+                  selectedFullExpression === getFullDataExpressionName(fullExpression, innerFieldType, innerFieldId)
                 )
 
                 // computed fields are always enabled to select
                 return (
                   <li key={innerFieldKey}>
                     <div
-                      className={`${styles.bindToDataEditorFieldItem} ${innerIsSelected ? styles.selected : ''}`}
+                      className={`${disabled === true ? '' : styles.dataFieldsViewerItem} ${innerIsSelected ? styles.selected : ''}`}
                       onClick={() => this.select({
                         expression,
-                        innerFieldType,
+                        fieldType: innerFieldType,
                         id: innerFieldId
                       })}
                     >
                       <span
-                        className={styles.bindToDataEditorFieldItemLabel}
+                        className={styles.dataFieldsViewerItemLabel}
                         style={{ padding: `0 ${(padding * 2) + leftSpace}rem` }}
                       >
                         {`${innerFieldId}`}
@@ -401,95 +360,78 @@ class SelectDataFieldEditor extends Component {
     ])
   }
 
-  renderDataInput () {
-    const { dataProperties, computedFields } = this.props
-    let rootKey = '___root___'
-
-    return this.renderFieldCollection({
-      rootType: dataProperties.type,
-      key: rootKey,
-      expression: [],
-      field: dataProperties,
-      computedFields: computedFields,
-      leftSpace: 0,
-      collapsed: this.state.fieldCollapse[rootKey]
-    })
-  }
-
   render () {
-    const { isDirty, selectedField } = this.state
-    const { componentType, propName, fieldsMeta, getFullExpressionName, onClose } = this.props
+    const rootKey = '___root___'
+    const renderFieldCollection = this.renderFieldCollection
+    const { fieldCollapse } = this.state
+
+    const {
+      dataFields,
+      computedFields,
+      fieldsMeta,
+      selectedField,
+      getFullDataExpressionName
+    } = this.props
+
     let selectedFieldMeta
 
     if (selectedField && fieldsMeta) {
-      selectedFieldMeta = fieldsMeta[getFullExpressionName(selectedField.expression)]
+      selectedFieldMeta = fieldsMeta[getFullDataExpressionName(selectedField.dataExpression)]
     }
 
     return (
-      <div
-        style={{
-          position: 'fixed',
-          top: '50px',
-          left: '200px',
-          zIndex: 100,
-          color: '#000',
-          backgroundColor: 'yellow',
-          padding: '8px',
-          width: '350px'
-        }}
-      >
-        <h3 style={{ marginTop: '0.3rem', marginBottom: '0.3rem' }}>
-          Select Data field Editor - {`${componentType} (property: ${propName}${isDirty ? '*' : ''})`}
-        </h3>
-        <br />
-        <div style={{ fontSize: '0.7rem' }}>
-          Select a field to bind
-        </div>
-        <div style={{
-          marginTop: '0.6rem',
-          marginBottom: '0.6rem',
-          border: '1px solid black',
-          overflow: 'auto'
-        }}
-        >
-          {this.renderDataInput()}
+      <div>
+        <div>
+          {renderFieldCollection({
+            rootType: dataFields.type,
+            key: rootKey,
+            expression: [],
+            field: dataFields,
+            computedFields,
+            leftSpace: 0,
+            collapsed: fieldCollapse[rootKey]
+          })}
         </div>
         <br />
-        {selectedFieldMeta && (
-          <div>
-            <b>Selected field:</b>
-            {' '}
-            <i>
-              {selectedFieldMeta.fullId}
+        <div>
+          {selectedFieldMeta && (
+            <div>
+              <b>Selected field:</b>
               {' '}
-              {selectedFieldMeta.dataProperties ? `(${selectedFieldMeta.dataProperties.type})` : `(${selectedFieldMeta.fieldType})`}
-            </i>
-          </div>
-        )}
-        <br />
-        <button onClick={this.handleSave}>Save</button>
-        {' '}
-        <button disabled={selectedField == null} onClick={this.handleUnselect}>Unbind</button>
-        {' '}
-        <button onClick={onClose}>Close</button>
+              <i>
+                {selectedFieldMeta.fullId}
+                {' '}
+                {selectedFieldMeta.dataProperties ? `(${selectedFieldMeta.dataProperties.type})` : `(${selectedFieldMeta.fieldType})`}
+              </i>
+            </div>
+          )}
+        </div>
       </div>
     )
   }
 }
 
-SelectDataFieldEditor.wrappedComponent.propTypes = {
-  dataProperties: PropTypes.object,
-  computedFields: MobxPropTypes.observableArray,
+DataFieldsViewer.propTypes = {
+  title: PropTypes.string,
+  disabled: PropTypes.bool,
+  dataFields: PropTypes.object,
   fieldsMeta: PropTypes.object,
-  componentType: PropTypes.string.isRequired,
-  propName: PropTypes.string.isRequired,
-  bindingName: PropTypes.string,
-  defaultSelectedField: PropTypes.object,
+  selectedField: PropTypes.object,
   allowedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
-  getExpressionName: PropTypes.func.isRequired,
-  getFullExpressionName: PropTypes.func.isRequired,
-  onSave: PropTypes.func,
-  onClose: PropTypes.func
+  onSelect: PropTypes.func
 }
 
-export default SelectDataFieldEditor
+DataFieldsViewer.wrappedComponent.propTypes = {
+  title: PropTypes.string,
+  disabled: PropTypes.bool,
+  dataFields: PropTypes.object,
+  fieldsMeta: PropTypes.object,
+  computedFields: PropTypes.array,
+  selectedField: PropTypes.object,
+  allowedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+  getDataExpressionName: PropTypes.func,
+  getFullDataExpressionName: PropTypes.func,
+  onSelect: PropTypes.func
+}
+
+export default DataFieldsViewer

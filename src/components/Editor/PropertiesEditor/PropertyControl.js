@@ -5,27 +5,15 @@ class PropertyControl extends PureComponent {
   constructor (props) {
     super(props)
 
-    this.handleBindToDataClick = this.handleBindToDataClick.bind(this)
-    this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
+    this.handleBindingEditorOpen = this.handleBindingEditorOpen.bind(this)
     this.handleChange = this.handleChange.bind(this)
   }
 
-  handleBindToDataClick (ev) {
+  handleBindingEditorOpen (ev) {
     ev.preventDefault()
 
-    if (this.props.onSelectDataFieldClick) {
-      this.props.onSelectDataFieldClick({
-        propName: this.props.name,
-        context: this.props.context
-      })
-    }
-  }
-
-  handleEditRichContentClick (ev) {
-    ev.preventDefault()
-
-    if (this.props.onEditRichContentClick) {
-      this.props.onEditRichContentClick({
+    if (this.props.onBindingEditorOpen) {
+      this.props.onBindingEditorOpen({
         propName: this.props.name,
         context: this.props.context
       })
@@ -41,26 +29,15 @@ class PropertyControl extends PureComponent {
   }
 
   render () {
-    const { label, name, value, binding, context, bindToData, renderValue } = this.props
-    const getExpressionMeta = this.props.getExpressionMeta
+    const { label, name, value, binding, context, bindingEnabled, renderValue } = this.props
+    const getBindingMeta = this.props.getBindingMeta
     const meta = this.props.getPropMeta(name)
 
     let isSpecialValue = binding != null
-    let isValueBinded = false
-    let isValueRich = false
     let currentValue
 
     if (isSpecialValue) {
-      isValueBinded = binding.expression != null
-      isValueRich = binding.richContent != null
-    }
-
-    if (isValueBinded) {
-      currentValue = getExpressionMeta(name, binding.expression, 'displayName')
-    }
-
-    if (isValueRich) {
-      currentValue = '[rich content]'
+      currentValue = getBindingMeta(name, 'displayName')
     }
 
     if (!isSpecialValue) {
@@ -77,19 +54,11 @@ class PropertyControl extends PureComponent {
           <div className='propertiesEditor-prop-controls'>
             {meta && meta.allowsBinding !== false && (
               <button
-                disabled={bindToData === false}
-                title='Bind to data'
-                onClick={this.handleBindToDataClick}
+                disabled={bindingEnabled === false}
+                title='Edit Binding'
+                onClick={this.handleBindingEditorOpen}
               >
                 <span className='fa fa-bolt' />
-              </button>
-            )}
-            {meta && meta.allowsRichContent && (
-              <button
-                title='Edit rich content'
-                onClick={this.handleEditRichContentClick}
-              >
-                <span className='fa fa-book' />
               </button>
             )}
           </div>
@@ -123,13 +92,12 @@ PropertyControl.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.any,
   binding: PropTypes.object,
-  bindToData: PropTypes.bool.isRequired,
+  bindingEnabled: PropTypes.bool.isRequired,
   context: PropTypes.any,
   getPropMeta: PropTypes.func.isRequired,
-  getExpressionMeta: PropTypes.func.isRequired,
+  getBindingMeta: PropTypes.func.isRequired,
   renderValue: PropTypes.func,
-  onSelectDataFieldClick: PropTypes.func,
-  onEditRichContentClick: PropTypes.func,
+  onBindingEditorOpen: PropTypes.func,
   onChange: PropTypes.func
 }
 

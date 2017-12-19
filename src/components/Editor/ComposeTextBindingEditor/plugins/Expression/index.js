@@ -6,12 +6,16 @@ import entityType, { entityMutability } from './entityType'
 
 export default (config = {}) => {
   const store = {
-    setEditorState: undefined
+    setEditorState: undefined,
+    setEditorReadOnly: undefined,
+    getEditorReadOnly: undefined
   }
 
   return {
-    initialize: ({ setEditorState }) => {
+    initialize: ({ setEditorState, setReadOnly, getReadOnly }) => {
       store.setEditorState = setEditorState
+      store.setEditorReadOnly = setReadOnly
+      store.getEditorReadOnly = getReadOnly
     },
     decorators: [
       {

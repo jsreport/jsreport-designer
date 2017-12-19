@@ -1,0 +1,41 @@
+@import '../../theme/common.scss';
+
+.dataFieldsViewerContainer {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+  user-select: none;
+}
+
+.dataFieldsViewerProperties,
+.dataFieldsViewerIndexes {
+  font-style: italic;
+}
+
+.dataFieldsViewerProperties.collapsed,
+.dataFieldsViewerIndexes.collapsed {
+  max-height: 0;
+  overflow: hidden;
+  transition: .15s;
+}
+
+.dataFieldsViewerHeader,
+.dataFieldsViewerItem {
+  cursor: pointer;
+}
+
+.dataFieldsViewerItem.selected {
+  background: $primarySelectionBackgroundColor;
+  color: $primarySelectionColor;
+}
+
+.dataFieldsViewerItem:hover,
+.dataFieldsViewerItem.selected:hover {
+  background: $primaryHoverBackgroundColor;
+  color: $primarySelectionColor;
+}
+
+.dataFieldsViewerItemLabel.disabled,
+.dataFieldsViewerItemLabel.disabled:hover {
+  color: $tertiarySelectionColor;
+}

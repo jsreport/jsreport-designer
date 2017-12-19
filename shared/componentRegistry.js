@@ -1,10 +1,18 @@
 
 const get = require('lodash/get')
+const inlineTemplate = require('lodash/template')
+const htmlParser = require('posthtml-parser')
+const htmlRender = require('posthtml-render')
 const Handlebars = require('handlebars')
+const evaluateScript = require('./evaluateScript')
 const expressionUtils = require('./expressionUtils')
 
 const componentsDefinition = {}
 const components = {}
+
+const interpolateExpressionInHtmlRegExp = (
+  /\[([\S]+?)\]/g
+)
 
 function isObject (value) {
   return value != null && typeof value === 'object' && !Array.isArray(value)
@@ -87,30 +95,28 @@ function loadComponents (componentsToLoad, reload = false) {
           Object.keys(bindings).forEach((propName) => {
             const isLazyBinding = propName[0] === '@'
             let currentBinding
-            let expressionsMap
+            let resolvedValue
 
             if (isLazyBinding) {
               return
             }
 
             currentBinding = bindings[propName]
-            expressionsMap = expressions != null ? expressions[propName] : undefined
 
             if (!isObject(currentBinding)) {
               return
             }
 
-            if (isObject(currentBinding.richContent)) {
-              // resolving rich content
-              newProps[propName] = new Handlebars.SafeString(currentBinding.richContent.html)
-            } else if (currentBinding.expression != null) {
-              // resolving direct data binding
-              newProps[propName] = resolveBindingExpression(expressionsMap, currentBinding.expression, {
-                context: data,
-                rootContext: data,
-                computedFields
-              })
-            }
+            resolvedValue = resolveBinding({
+              binding: currentBinding,
+              bindingName: propName,
+              expressions: expressions,
+              context: data,
+              rootContext: data,
+              computedFields
+            })
+
+            newProps[propName] = resolvedValue
           })
         }
 
@@ -118,8 +124,6 @@ function loadComponents (componentsToLoad, reload = false) {
 
         componentHelpers = Object.assign({
           resolveBinding: (bindingName, context, options) => {
-            let expressionsMap
-            let expressionResolution
             let currentContext
 
             if (context == null || options == null) {
@@ -132,17 +136,13 @@ function loadComponents (componentsToLoad, reload = false) {
               currentContext = context
             }
 
-            expressionsMap = expressions != null ? expressions[bindingName] : undefined
-
-            if (isObject(bindings) && bindings[bindingName] != null) {
-              expressionResolution = bindings[bindingName].expression
-            }
-
-            if (!expressionResolution) {
-              return undefined
-            }
-
-            return resolveBindingExpression(expressionsMap, expressionResolution, {
+            return resolveBinding({
+              binding: (
+                isObject(bindings) &&
+                bindings[bindingName] != null
+              ) ? bindings[bindingName] : undefined,
+              bindingName,
+              expressions: expressions,
               context: currentContext,
               rootContext: data,
               computedFields
@@ -173,8 +173,87 @@ function loadComponents (componentsToLoad, reload = false) {
   return componentRequires
 }
 
-function resolveBindingExpression (expressionsMap, expressionResolution, { context, rootContext, computedFields }) {
-  let expression = expressionUtils.getExpression(expressionsMap, expressionResolution)
+function resolveBinding ({
+  binding,
+  bindingName,
+  expressions,
+  context,
+  rootContext,
+  computedFields
+}) {
+  if (binding == null || bindingName == null || context == null || rootContext == null) {
+    return undefined
+  }
+
+  let expressionsMap = expressions != null ? expressions[bindingName] : undefined
+  let resolvedContent
+  let expressionInput = {
+    context,
+    rootContext,
+    computedFields
+  }
+
+  if (isObject(binding.compose)) {
+    // resolving rich content
+    if (binding.expression != null) {
+      const resolvedExpression = resolveBindingExpression(
+        expressionsMap,
+        binding.expression,
+        expressionInput,
+        { ensureMap: true }
+      )
+
+      resolvedContent = replaceExpressionsInHTML(
+        binding.compose.content,
+        resolvedExpression.value
+      )
+
+      resolvedContent = new Handlebars.SafeString(resolvedContent)
+    } else {
+      resolvedContent = new Handlebars.SafeString(binding.compose.content)
+    }
+  } else if (binding.expression != null) {
+    // resolving direct value
+    const resolvedExpression = resolveBindingExpression(
+      expressionsMap,
+      binding.expression,
+      expressionInput
+    )
+
+    if (resolvedExpression.isMap) {
+      // if multiple values are returned just resolve to undefined
+      // because there is no way to know which value should be used
+      resolvedContent = undefined
+    } else {
+      resolvedContent = resolvedExpression.value
+    }
+  }
+
+  return resolvedContent
+}
+
+function resolveBindingExpression (
+  expressionsMap,
+  expressionResolution,
+  { context, rootContext, computedFields },
+  { ensureMap = false } = {}
+) {
+  let expressions = expressionUtils.getExpression(expressionsMap, expressionResolution)
+  let isMap
+
+  if (expressions == null) {
+    return {
+      value: undefined,
+      map: false
+    }
+  }
+
+  if (Array.isArray(expressions)) {
+    isMap = true
+  } else {
+    isMap = false
+    expressions = [expressions]
+  }
 
   const FIELD_TYPE = {
     property: 'p',
@@ -184,64 +263,175 @@ function resolveBindingExpression (expressionsMap, expressionResolution, { conte
 
   let i
 
-  let currentContext = context
-  let result
+  if (context == null) {
+    return {
+      value: undefined,
+      map: isMap
+    }
+  }
 
-  if (context == null || expression == null) {
+  let resolved = expressions.reduce((acu, expression) => {
+    let currentContext = context
+
+    if (expression.info == null) {
+      return acu
+    }
+
+    if (expression.info.type === 'function') {
+      let result
+
+      try {
+        const expressionFn = evaluateScript.getSingleExport(expression.info.value)
+
+        if (typeof expressionFn !== 'function') {
+          throw new Error('expression should export a function')
+        }
+
+        result = expressionFn(context, rootContext)
+      } catch (e) {
+        result = undefined
+      }
+
+      acu.push({
+        name: expression.name,
+        result
+      })
+    } else if (expression.info.type === 'data') {
+      let dataExpressionValue = expression.info.value
+      let result
+
+      for (i = 0; i < dataExpressionValue.length; i++) {
+        const currentExpression = dataExpressionValue[i]
+        let keySeparatorAt
+        let fieldType
+        let key
+
+        if (currentExpression === '') {
+          result = context
+          break
+        }
+
+        keySeparatorAt = currentExpression.indexOf(':')
+
+        if (keySeparatorAt === -1) {
+          result = undefined
+          break
+        }
+
+        fieldType = currentExpression.slice(0, keySeparatorAt)
+        key = currentExpression.slice(keySeparatorAt + 1)
+
+        if (key === '') {
+          result = undefined
+          break
+        }
+
+        if (Array.isArray(currentContext) && fieldType === FIELD_TYPE.property) {
+          result = undefined
+          break
+        }
+
+        if (fieldType === FIELD_TYPE.computedField) {
+          if (computedFields && computedFields[key]) {
+            result = computedFields[key]
+          } else {
+            result = undefined
+          }
+        } else {
+          result = get(currentContext, key, undefined)
+        }
+
+        if (result === undefined) {
+          break
+        }
+
+        currentContext = result
+      }
+
+      acu.push({ name: expression.name, result })
+    }
+
+    return acu
+  }, [])
+
+  if (isMap) {
+    const value = resolved.reduce((acu, resolvedItem) => {
+      acu[resolvedItem.name] = resolvedItem.result
+
+      return acu
+    }, {})
+
+    return {
+      value,
+      map: isMap
+    }
+  }
+
+  return {
+    value: ensureMap === true ? {
+      [resolved[0].name]: resolved[0].result
+    } : resolved[0].result,
+    map: ensureMap === true ? true : isMap
+  }
+}
+
+function replaceExpressionsInHTML (html, expressionsValues) {
+  const parsedHTML = htmlParser(html)
+  const expressionsHolders = findExpressionInHTMLNode(parsedHTML)
+
+  if (expressionsHolders == null) {
+    // return without modification
+    return htmlRender(parsedHTML)
+  }
+
+  expressionsHolders.forEach((exprHolder) => {
+    let exprHolderContent = htmlRender(exprHolder.node.content)
+
+    // replacing dynamic values in compose content
+    exprHolderContent = inlineTemplate(exprHolderContent, {
+      // interpolate but with html escape for the dynamic values
+      escape: interpolateExpressionInHtmlRegExp
+    })(expressionsValues)
+
+    // eliminating code tag and replacing it with just the resolved value
+    exprHolder.parent[exprHolder.nodeIndex] = htmlParser(exprHolderContent)[0]
+  })
+
+  return htmlRender(parsedHTML)
+}
+
+function findExpressionInHTMLNode (node, nodeIndexInParent, parent) {
+  let expressionsHolders = []
+
+  if (
+    isObject(node) &&
+    node.tag === 'code' &&
+    node.attrs != null && node.attrs['data-jsreport-designer-expression-name'] != null
+  ) {
+    expressionsHolders.push({ node, nodeIndex: nodeIndexInParent, parent })
+  } else if (Array.isArray(node)) {
+    node.forEach((innerNode, innerNodeIdx) => {
+      const innerResult = findExpressionInHTMLNode(innerNode, innerNodeIdx, node)
+
+      if (innerResult != null) {
+        expressionsHolders = expressionsHolders.concat(innerResult)
+      }
+    })
+  } else if (!isObject(node)) {
+    return undefined
+  } else if (isObject(node) && node.content != null) {
+    const result = findExpressionInHTMLNode(node.content)
+
+    if (result != null) {
+      expressionsHolders = expressionsHolders.concat(result)
+    }
+  }
+
+  if (expressionsHolders.length === 0) {
     return undefined
   }
 
-  expression = expression.value
-
-  for (i = 0; i < expression.length; i++) {
-    const currentExpression = expression[i]
-    let keySeparatorAt
-    let fieldType
-    let key
-
-    if (currentExpression === '') {
-      result = context
-      break
-    }
-
-    keySeparatorAt = currentExpression.indexOf(':')
-
-    if (keySeparatorAt === -1) {
-      result = undefined
-      break
-    }
-
-    fieldType = currentExpression.slice(0, keySeparatorAt)
-    key = currentExpression.slice(keySeparatorAt + 1)
-
-    if (key === '') {
-      result = undefined
-      break
-    }
-
-    if (Array.isArray(currentContext) && fieldType === FIELD_TYPE.property) {
-      result = undefined
-      break
-    }
-
-    if (fieldType === FIELD_TYPE.computedField) {
-      if (computedFields && computedFields[key]) {
-        result = computedFields[key]
-      } else {
-        result = undefined
-      }
-    } else {
-      result = get(currentContext, key, undefined)
-    }
-
-    if (result === undefined) {
-      break
-    }
-
-    currentContext = result
-  }
-
-  return result
+  return expressionsHolders
 }
 
 function callInterop (context, fn) {

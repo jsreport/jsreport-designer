@@ -1,4 +1,5 @@
 import bluebird from 'bluebird'
+import _ from 'lodash'
 import React from 'react'
 import ReactDom from 'react-dom'
 import superagent from 'superagent'
@@ -6,6 +7,8 @@ import handlebars from 'handlebars'
 import babelRuntime from './lib/babelRuntime.js'
 import * as configuration from './lib/configuration.js'
 import api, { methods } from './helpers/api.js'
+import expressionUtils from '../shared/expressionUtils'
+import DataFieldsViewer from './components/DataFieldsViewer'
 import PropertiesEditor, { PropertyControl } from './components/Editor/PropertiesEditor'
 
 /**
@@ -124,11 +127,20 @@ class Designer {
     return PropertyControl
   }
 
+  /**
+   * Component used to visualise data input fields and computed fields
+   *
+   * @returns {DataFieldsViewer}
+   */
+  get DataFieldsViewer () {
+    return DataFieldsViewer
+  }
+
   /** /react components **/
 
   constructor (stores) {
     this.stores = stores
-
+    this.expressionUtils = expressionUtils
     this.API = {}
 
     methods.forEach((m) => {
@@ -152,6 +164,7 @@ class Designer {
       'react-dom': ReactDom,
       superagent: superagent,
       bluebird: bluebird,
+      lodash: _,
       handlebars: handlebars
     }
   }

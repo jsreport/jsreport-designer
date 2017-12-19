@@ -3,14 +3,12 @@ import PropTypes from 'prop-types'
 // (we disable the rule because eslint can recognize decorator usage in our setup)
 // eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
-import omit from 'lodash/omit'
+import pick from 'lodash/pick'
 import componentRegistry from '../../../shared/componentRegistry'
 import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
-import { componentTypes } from '../../lib/configuration'
+import { componentTypes, defaultBindingEditorComponents } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
-import RichContentEditor from './RichContentEditor'
-import SelectDataFieldEditor from './SelectDataFieldEditor'
 import styles from './ComponentEditor.scss'
 
 @inject((injected) => ({
@@ -26,9 +24,10 @@ class ComponentEditor extends Component {
     super(props)
 
     this.state = {
-      editComponentTemplate: null,
+      templateEditor: null,
       selectedDataFieldEditor: null,
-      richContentEditor: null
+      composeTextEditor: null,
+      bindingEditor: null
     }
 
     this.changesInterceptor = null
@@ -37,19 +36,17 @@ class ComponentEditor extends Component {
     this.getMeta = this.getMeta.bind(this)
     this.getValue = this.getValue.bind(this)
     this.getPropMeta = this.getPropMeta.bind(this)
-    this.getExpressionMeta = this.getExpressionMeta.bind(this)
-    this.handleEditComponentTemplateClick = this.handleEditComponentTemplateClick.bind(this)
-    this.handleSelectDataFieldClick = this.handleSelectDataFieldClick.bind(this)
-    this.handleEditRichContentClick = this.handleEditRichContentClick.bind(this)
+    this.getBindingMeta = this.getBindingMeta.bind(this)
+    this.handleTemplateEditorOpen = this.handleTemplateEditorOpen.bind(this)
+    this.handleBindingEditorOpen = this.handleBindingEditorOpen.bind(this)
     this.handleTemplateEditorSave = this.handleTemplateEditorSave.bind(this)
-    this.handleSelectDataFieldEditorSave = this.handleSelectDataFieldEditorSave.bind(this)
-    this.handleEditRichContentSave = this.handleEditRichContentSave.bind(this)
+    this.handleBindingEditorSave = this.handleBindingEditorSave.bind(this)
     this.handleTemplateEditorClose = this.handleTemplateEditorClose.bind(this)
-    this.handleSelectDataFieldEditorClose = this.handleSelectDataFieldEditorClose.bind(this)
-    this.handleEditRichContentClose = this.handleEditRichContentClose.bind(this)
+    this.handleBindingEditorClose = this.handleBindingEditorClose.bind(this)
     this.handleChanges = this.handleChanges.bind(this)
     this.handlePropChange = this.handlePropChange.bind(this)
     this.renderPropertiesEditor = this.renderPropertiesEditor.bind(this)
+    this.renderBindingEditor = this.renderBindingEditor.bind(this)
   }
 
   componentWillUnmount () {
@@ -61,7 +58,13 @@ class ComponentEditor extends Component {
   }
 
   getPropertiesEditor (type) {
-    return componentTypes[type].propertiesEditor
+    const editorInfo = componentTypes[type].propertiesEditor
+
+    if (typeof editorInfo !== 'object') {
+      return { editor: editorInfo, options: {} }
+    }
+
+    return editorInfo
   }
 
   getMeta () {
@@ -113,20 +116,43 @@ class ComponentEditor extends Component {
     return result
   }
 
-  getExpressionMeta (bindingName, expressionResolution, keyValue, options = {}) {
+  getBindingMeta (bindingName, keyValue, options = {}) {
+    const bindings = this.props.bindings || {}
     const expressions = this.props.expressions || {}
     const { dataFieldsMeta, getFullExpressionName, getFullExpressionDisplayName } = this.props
-    const expression = expressionUtils.getExpression(expressions[bindingName], expressionResolution)
-    const expressionName = expression != null ? getFullExpressionName(expression.value) : undefined
-    const expressionMeta = expressionName != null ? dataFieldsMeta[expressionName] : undefined
+
+    const expression = expressionUtils.getExpression(
+      expressions[bindingName],
+      bindings[bindingName] != null ? bindings[bindingName].expression : undefined
+    )
+
+    let expressionName
+    let expressionMeta
+
+    const isSingleDataExpression = (expr) => {
+      return (
+        expr != null &&
+        !Array.isArray(expr) &&
+        expr.info != null &&
+        expr.info.type === 'data'
+      )
+    }
+
+    if (isSingleDataExpression(expression)) {
+      expressionName = getFullExpressionName(expression.info.value)
+    }
+
+    if (expressionName != null) {
+      expressionMeta = dataFieldsMeta[expressionName]
+    }
 
     if (keyValue == null) {
       return expressionMeta
     }
 
     if (keyValue === 'displayName') {
-      const expressionDisplayName = expression != null ? (
-        getFullExpressionDisplayName(expression.value)
+      const expressionDisplayName = isSingleDataExpression(expression) ? (
+        getFullExpressionDisplayName(expression.info.value)
       ) : undefined
 
       return `[${options.displayPrefix != null ? options.displayPrefix : ''}${
@@ -139,85 +165,33 @@ class ComponentEditor extends Component {
     return expressionMeta ? expressionMeta[keyValue] : undefined
   }
 
-  handleEditComponentTemplateClick () {
-    if (!this.state.editComponentTemplate) {
+  handleTemplateEditorOpen () {
+    if (!this.state.templateEditor) {
       this.setState({
-        editComponentTemplate: true
+        templateEditor: true
       })
     } else {
       this.setState({
-        editComponentTemplate: null
+        templateEditor: null
       })
     }
   }
 
-  handleSelectDataFieldClick ({ propName, bindingName, context, dataProperties }) {
-    let bindings = this.props.bindings || {}
-    let expressions = this.props.expressions || {}
-    let propMeta = this.getPropMeta(propName) || {}
+  handleBindingEditorOpen ({ propName, bindingName, context, options = {} }) {
     let targetBindingName = bindingName != null ? bindingName : propName
 
-    if (!this.state.selectedDataFieldEditor) {
-      let stateToUpdate = {
-        selectedDataFieldEditor: {
-          propName,
-          context
-        }
-      }
-
-      stateToUpdate.selectedDataFieldEditor.bindingName = targetBindingName
-
-      if (dataProperties != null) {
-        stateToUpdate.selectedDataFieldEditor.dataProperties = dataProperties
-      }
-
-      if (bindings[targetBindingName] && expressionUtils.isDefault(bindings[targetBindingName].expression)) {
-        stateToUpdate.selectedDataFieldEditor.selectedField = {
-          expression: expressions[targetBindingName].$default.value
-        }
-      }
-
-      if (propMeta == null) {
-        stateToUpdate.selectedDataFieldEditor.allowedTypes = ['scalar']
-      } else if (Array.isArray(propMeta.allowedBindingValueTypes) || typeof propMeta.allowedBindingValueTypes === 'string') {
-        stateToUpdate.selectedDataFieldEditor.allowedTypes = !Array.isArray(propMeta.allowedBindingValueTypes) ? [propMeta.allowedBindingValueTypes] : propMeta.allowedBindingValueTypes
-      } else {
-        stateToUpdate.selectedDataFieldEditor.allowedTypes = []
-      }
-
-      this.setState(stateToUpdate)
-    } else {
+    if (!this.state.bindingEditor) {
       this.setState({
-        selectedDataFieldEditor: null
-      })
-    }
-  }
-
-  handleEditRichContentClick ({ propName, bindingName, context }) {
-    let properties = this.props.properties
-    let bindings = this.props.bindings || {}
-    let targetBindingName = bindingName != null ? bindingName : propName
-
-    if (!this.state.richContentEditor) {
-      let currentBinding = bindings[targetBindingName]
-      let currentContent
-
-      if (currentBinding && currentBinding.richContent != null) {
-        currentContent = currentBinding.richContent
-      } else if (typeof properties[propName] === 'string') {
-        currentContent = properties[propName]
-      }
-
-      this.setState({
-        richContentEditor: {
+        bindingEditor: {
           propName,
+          bindingName: targetBindingName,
           context,
-          content: currentContent
+          options
         }
       })
     } else {
       this.setState({
-        richContentEditor: null
+        bindingEditor: null
       })
     }
   }
@@ -232,184 +206,37 @@ class ComponentEditor extends Component {
     })
 
     this.setState({
-      editComponentTemplate: null
+      templateEditor: null
     })
   }
 
-  handleEditRichContentSave ({ propName, bindingName, html }) {
-    const { richContentEditor } = this.state
+  handleBindingEditorSave (changes) {
+    const { bindingEditor } = this.state
     const handleChanges = this.handleChanges
-    let bindings = this.props.bindings || {}
-    let targetBindingName = bindingName != null ? bindingName : propName
-    let currentBinding = bindings[targetBindingName]
-    let newBinding
-    let newBindings
 
-    if (currentBinding) {
-      newBinding = {
-        ...currentBinding
-      }
-    } else {
-      newBinding = {}
-    }
-
-    if (html == null) {
-      // editor has removed rich content
-      delete newBinding.richContent
-
-      if (Object.keys(newBinding).length === 0) {
-        newBinding = null
-      }
-    } else {
-      newBinding.richContent = {
-        html: html
-      }
-    }
-
-    if (newBinding) {
-      newBindings = {
-        ...bindings,
-        [targetBindingName]: newBinding
-      }
-    } else {
-      newBindings = omit(bindings, [propName, targetBindingName])
-
-      if (Object.keys(newBindings).length === 0) {
-        newBindings = null
-      }
-    }
-
-    handleChanges({
-      origin: 'bindings',
-      propName,
-      context: richContentEditor.context,
-      changes: { bindings: newBindings }
-    })
-
-    this.setState({
-      richContentEditor: null
-    })
-  }
-
-  handleSelectDataFieldEditorSave ({ propName, bindingName, selectedField }) {
-    const { selectedDataFieldEditor } = this.state
-    const handleChanges = this.handleChanges
-    let bindings = this.props.bindings || {}
-    let expressions = this.props.expressions || {}
-    let targetBindingName = bindingName != null ? bindingName : propName
-    let currentBinding = bindings[targetBindingName]
-    let currentExpression = expressions[targetBindingName]
-    let currentFieldHasDataBindedValue = false
-    let newBinding
-    let newBindings
-    let newExpression
-    let newExpressions
-
-    if (currentBinding) {
-      newBinding = { ...currentBinding }
-    } else {
-      newBinding = {}
-    }
-
-    if (currentExpression) {
-      newExpression = { ...currentExpression }
-    } else {
-      newExpression = {}
-    }
-
-    if (
-      bindings &&
-      currentBinding &&
-      expressionUtils.isDefault(currentBinding.expression)
-    ) {
-      currentFieldHasDataBindedValue = true
-    }
-
-    if (selectedField != null) {
-      newBinding.expression = '$default'
-
-      newExpression.$default = {
-        type: 'data',
-        value: selectedField.expression
-      }
-
-      newBindings = {
-        ...bindings,
-        [targetBindingName]: newBinding
-      }
-
-      newExpressions = {
-        ...expressions,
-        [targetBindingName]: newExpression
-      }
-    } else if (selectedField == null && currentFieldHasDataBindedValue) {
-      delete newBinding.expression
-      delete newExpression.$default
-
-      if (Object.keys(newBinding).length === 0) {
-        newBinding = null
-      }
-
-      if (Object.keys(newExpression).length === 0) {
-        newExpression = null
-      }
-
-      if (newBinding) {
-        newBindings = {
-          ...bindings,
-          [targetBindingName]: newBinding
-        }
-      } else {
-        newBindings = omit(bindings, [propName, targetBindingName])
-
-        if (Object.keys(newBindings).length === 0) {
-          newBindings = null
-        }
-      }
-
-      if (newExpression) {
-        newExpressions = {
-          ...expressions,
-          [targetBindingName]: newExpression
-        }
-      } else {
-        newExpressions = omit(expressions, [propName, targetBindingName])
-
-        if (Object.keys(newExpressions).length === 0) {
-          newExpressions = null
-        }
-      }
-    }
-
-    if (newBindings !== undefined || newExpressions !== undefined) {
+    if (changes != null) {
       handleChanges({
         origin: 'bindings',
-        propName,
-        context: selectedDataFieldEditor.context,
-        changes: { bindings: newBindings, expressions: newExpressions }
+        propName: bindingEditor.propName,
+        context: bindingEditor.context,
+        changes
       })
     }
 
     this.setState({
-      selectedDataFieldEditor: null
+      bindingEditor: null
     })
   }
 
-  handleSelectDataFieldEditorClose () {
+  handleBindingEditorClose () {
     this.setState({
-      selectedDataFieldEditor: null
+      bindingEditor: null
     })
   }
 
   handleTemplateEditorClose () {
     this.setState({
-      editComponentTemplate: null
-    })
-  }
-
-  handleEditRichContentClose () {
-    this.setState({
-      richContentEditor: null
+      templateEditor: null
     })
   }
 
@@ -481,28 +308,158 @@ class ComponentEditor extends Component {
       properties,
       bindings,
       expressions,
+      options: {},
       getPropMeta: this.getPropMeta,
-      getExpressionMeta: this.getExpressionMeta,
-      onSelectDataFieldClick: this.handleSelectDataFieldClick,
-      onEditRichContentClick: this.handleEditRichContentClick,
+      getBindingMeta: this.getBindingMeta,
+      onBindingEditorOpen: this.handleBindingEditorOpen,
       onChange: this.handlePropChange,
       connectToChangesInterceptor: this.connectToChangesInterceptor
     }
 
-    let propertiesEditor = this.getPropertiesEditor(type)
+    const editorInfo = this.getPropertiesEditor(type)
+
+    if (editorInfo.options) {
+      props.options = editorInfo.options
+    }
 
     return (
-      React.createElement(propertiesEditor, { ...props })
+      React.createElement(editorInfo.editor, { ...props })
+    )
+  }
+
+  renderBindingEditor () {
+    const { bindingEditor } = this.state
+    const { type, template, properties, expressions } = this.props
+    const bindings = this.props.bindings || {}
+
+    let editorInfo
+    let bindingEditorProps
+
+    if (!bindingEditor) {
+      return null
+    }
+
+    bindingEditorProps = {
+      componentType: type,
+      propName: bindingEditor.propName,
+      bindingName: bindingEditor.bindingName,
+      binding: bindings[bindingEditor.bindingName],
+      component: {
+        template,
+        properties,
+        bindings,
+        expressions
+      },
+      options: bindingEditor.options,
+      getPropMeta: this.getPropMeta,
+      onSave: this.handleBindingEditorSave,
+      onClose: this.handleBindingEditorClose
+    }
+
+    editorInfo = componentTypes[type]
+
+    if (editorInfo == null) {
+      return null
+    }
+
+    const renderResolvedEditor = (resolvedEditor, props) => {
+      let newProps
+      let options
+
+      if (typeof resolvedEditor.getOptions === 'function') {
+        options = resolvedEditor.getOptions(
+          pick(props, [
+            'componentType',
+            'propName',
+            'bindingName',
+            'binding',
+            'component',
+            'getPropMeta'
+          ])
+        )
+
+        options = Object.assign({}, props.options, options)
+      }
+
+      if (options != null) {
+        newProps = { ...props, options }
+      } else {
+        newProps = props
+      }
+
+      return React.createElement(
+        resolvedEditor,
+        newProps
+      )
+    }
+
+    if (!editorInfo.bindingEditorResolver) {
+      return renderResolvedEditor(
+        defaultBindingEditorComponents.default,
+        bindingEditorProps
+      )
+    }
+
+    editorInfo = editorInfo.bindingEditorResolver({
+      componentType: type,
+      propName: bindingEditor.propName,
+      bindingName: bindingEditor.bindingName
+    })
+
+    if (editorInfo == null) {
+      return renderResolvedEditor(
+        defaultBindingEditorComponents.default,
+        bindingEditorProps
+      )
+    } else if (
+      editorInfo.editor != null &&
+      typeof editorInfo.editor === 'string' &&
+      defaultBindingEditorComponents[editorInfo.editor] != null
+    ) {
+      bindingEditorProps.options = Object.assign({}, editorInfo.options, bindingEditorProps.options)
+
+      return renderResolvedEditor(
+        defaultBindingEditorComponents[editorInfo.editor],
+        bindingEditorProps
+      )
+    } else if (
+      editorInfo.editor != null &&
+      typeof editorInfo.editor === 'function'
+    ) {
+      bindingEditorProps.options = Object.assign({}, editorInfo.options, bindingEditorProps.options)
+
+      return renderResolvedEditor(
+        editorInfo.editor,
+        bindingEditorProps
+      )
+    }
+
+    return renderResolvedEditor(
+      defaultBindingEditorComponents.default,
+      bindingEditorProps
+    )
+  }
+
+  renderTemplateEditor () {
+    const { type, template } = this.props
+    const { templateEditor } = this.state
+
+    if (!templateEditor) {
+      return null
+    }
+
+    return (
+      <TemplateEditor
+        componentType={type}
+        template={template}
+        onSave={this.handleTemplateEditorSave}
+        onClose={this.handleTemplateEditorClose}
+      />
     )
   }
 
   render () {
-    const { selectedDataFieldEditor, richContentEditor, editComponentTemplate } = this.state
-
-    const {
-      type,
-      template
-    } = this.props
+    const { type } = this.props
 
     return (
       <div className={styles.componentEditor}>
@@ -518,41 +475,13 @@ class ComponentEditor extends Component {
               title='Edit component template'
               titlePosition='bottom'
               icon='code'
-              onClick={this.handleEditComponentTemplateClick}
+              onClick={this.handleTemplateEditorOpen}
             />
           </div>
           {this.renderPropertiesEditor()}
         </div>
-        {selectedDataFieldEditor && (
-          <SelectDataFieldEditor
-            dataProperties={selectedDataFieldEditor.dataProperties}
-            componentType={type}
-            propName={selectedDataFieldEditor.propName}
-            bindingName={selectedDataFieldEditor.bindingName}
-            defaultSelectedField={selectedDataFieldEditor.selectedField}
-            allowedTypes={selectedDataFieldEditor.allowedTypes}
-            onSave={this.handleSelectDataFieldEditorSave}
-            onClose={this.handleSelectDataFieldEditorClose}
-          />
-        )}
-        {richContentEditor && (
-          <RichContentEditor
-            componentType={type}
-            propName={richContentEditor.propName}
-            initialContent={richContentEditor.content}
-            onSave={this.handleEditRichContentSave}
-            onRemove={this.handleEditRichContentSave}
-            onClose={this.handleEditRichContentClose}
-          />
-        )}
-        {editComponentTemplate && (
-          <TemplateEditor
-            componentType={type}
-            template={template}
-            onSave={this.handleTemplateEditorSave}
-            onClose={this.handleTemplateEditorClose}
-          />
-        )}
+        {this.renderBindingEditor()}
+        {this.renderTemplateEditor()}
       </div>
     )
   }

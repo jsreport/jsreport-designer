@@ -86,7 +86,7 @@ class ComponentBarItem extends PureComponent {
      * we also use the `captureDraggingState` for our preview element to receive the
      * isDragging state as fast as possible
      */
-    this.props.connectDragPreview(this.getEmptyPreview(), {
+    this.props.connectDragPreview(this.node, {
       captureDraggingState: true
     })
   }

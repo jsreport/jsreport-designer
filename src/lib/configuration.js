@@ -9,6 +9,8 @@ export let readyListeners = []
 export let componentTypes = {}
 export let componentTypesDefinition = {}
 
+export let defaultBindingEditorComponents = {}
+
 export let toolbarComponents = {
   generalCommands: []
 }

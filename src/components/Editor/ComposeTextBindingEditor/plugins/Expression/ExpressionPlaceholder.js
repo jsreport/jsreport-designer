@@ -1,8 +1,10 @@
 import React, { Component } from 'react'
 import PropTypes from 'prop-types'
-import { EditorState, SelectionState } from 'draft-js'
-import entityType from './entityType'
+import { EditorState } from 'draft-js'
+import findEntityRangeInBlock from './findEntityRangeInBlock'
 
+// TODO: add or remove expressions when placeholder are deleted
+// or created by pasting text in the input
 class ExpressionPlaceholder extends Component {
   constructor (props) {
     super(props)
@@ -29,39 +31,14 @@ class ExpressionPlaceholder extends Component {
     // we will avoid this when this is resolved:
     // https://github.com/facebook/draft-js/issues/1394
     const currentBlockKey = offsetKey.split('-')[0]
-    const currentBlock = contentState.getBlockForKey(currentBlockKey)
-    let expressionStart
-    let expressionEnd
 
-    if (!currentBlock) {
-      return
-    }
+    const expressionSelectionRange = findEntityRangeInBlock(
+      contentState,
+      currentBlockKey,
+      currentEntityKey
+    )
 
-    currentBlock.findEntityRanges((character) => {
-      const entityKey = character.getEntity()
-
-      return (
-        entityKey !== null &&
-        entityKey === currentEntityKey &&
-        contentState.getEntity(entityKey).getType() === entityType
-      )
-    }, (start, end) => {
-      expressionStart = start
-      expressionEnd = end
-    })
-
-    if (expressionStart == null || expressionEnd == null) {
-      return
-    }
-
-    let newSelection = SelectionState.createEmpty(currentBlockKey)
-
-    newSelection = newSelection.merge({
-      anchorOffset: expressionStart,
-      focusOffset: expressionEnd
-    })
-
-    setEditorState(EditorState.forceSelection(editorState, newSelection))
+    setEditorState(EditorState.forceSelection(editorState, expressionSelectionRange))
   }
 
   render () {
@@ -84,7 +61,7 @@ class ExpressionPlaceholder extends Component {
 }
 
 ExpressionPlaceholder.propTypes = {
-  children: PropTypes.element,
+  children: PropTypes.oneOfType([PropTypes.element, PropTypes.array]),
   setEditorState: PropTypes.func.isRequired,
   getEditorState: PropTypes.func.isRequired,
   contentState: PropTypes.any.isRequired,

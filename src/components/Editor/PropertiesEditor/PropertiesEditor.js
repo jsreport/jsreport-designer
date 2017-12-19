@@ -8,13 +8,31 @@ class PropertiesEditor extends PureComponent {
       componentType,
       properties,
       bindings,
-      dataInput,
+      expressions,
+      options,
       getPropMeta,
-      getExpressionMeta,
-      onSelectDataFieldClick,
-      onEditRichContentClick,
+      getBindingMeta,
+      onBindingEditorOpen,
       onChange
     } = this.props
+
+    let isBindingEnabled
+
+    if (typeof options.bindingEnabled === 'function') {
+      isBindingEnabled = options.bindingEnabled({
+        componentType,
+        properties,
+        bindings,
+        expressions,
+        getPropMeta
+      })
+
+      if (isBindingEnabled == null) {
+        isBindingEnabled = true
+      }
+    } else {
+      isBindingEnabled = true
+    }
 
     return (
       <div className='propertiesEditor'>
@@ -26,11 +44,10 @@ class PropertiesEditor extends PureComponent {
               name={propName}
               binding={bindings ? bindings[propName] : null}
               value={properties[propName]}
-              bindToData={dataInput != null}
+              bindingEnabled={isBindingEnabled}
               getPropMeta={getPropMeta}
-              getExpressionMeta={getExpressionMeta}
-              onSelectDataFieldClick={onSelectDataFieldClick}
-              onEditRichContentClick={onEditRichContentClick}
+              getBindingMeta={getBindingMeta}
+              onBindingEditorOpen={onBindingEditorOpen}
               onChange={onChange}
             />
           )
@@ -42,13 +59,13 @@ class PropertiesEditor extends PureComponent {
 
 PropertiesEditor.propTypes = {
   componentType: PropTypes.string.isRequired,
-  dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
+  expressions: PropTypes.object,
+  options: PropTypes.object,
   getPropMeta: PropTypes.func.isRequired,
-  getExpressionMeta: PropTypes.func.isRequired,
-  onSelectDataFieldClick: PropTypes.func,
-  onEditRichContentClick: PropTypes.func,
+  getBindingMeta: PropTypes.func.isRequired,
+  onBindingEditorOpen: PropTypes.func,
   onChange: PropTypes.func.isRequired
 }
 

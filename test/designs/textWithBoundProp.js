@@ -10,12 +10,12 @@ module.exports = () => ({
       },
       'bindings': {
         'text': {
-          'expression': '$default'
+          'expression': '$dataSelect'
         }
       },
       'expressions': {
         'text': {
-          '$default': {
+          '$dataSelect': {
             'type': 'data',
             'value': [
               'p:foo'

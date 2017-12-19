@@ -27,7 +27,8 @@ class ContentEditor extends Component {
     super(props)
 
     let initialState = {
-      editorState: null
+      editorState: null,
+      editingExpressions: null
     }
 
     this.state = initialState
@@ -36,21 +37,19 @@ class ContentEditor extends Component {
     this.focus = this.focus.bind(this)
     this.getContentRepresentation = this.getContentRepresentation.bind(this)
     this.handleKeyCommand = this.handleKeyCommand.bind(this)
+    this.handleExpressionEdit = this.handleExpressionEdit.bind(this)
     this.handleEditorChange = this.handleEditorChange.bind(this)
-
-    if (props.onContentChange) {
-      props.onContentChange(initialState.editorState.getCurrentContent())
-    }
   }
 
   componentWillMount () {
     const initialContent = this.props.initialContent != null ? this.props.initialContent : ''
+    const initialExpressions = this.props.expressions
     let contentState
 
     if (typeof initialContent === 'string') {
       contentState = ContentState.createFromText(initialContent)
     } else {
-      contentState = stateFromHTML(initialContent.html, {
+      contentState = stateFromHTML(initialContent.content, {
         customInlineFn: (element, { Style, Entity }) => {
           const inlineResolvers = [
             inlineStylesPlugin.convertStyleFrom,
@@ -70,7 +69,8 @@ class ContentEditor extends Component {
     }
 
     this.setState({
-      editorState: EditorState.createWithContent(contentState)
+      editorState: EditorState.createWithContent(contentState),
+      editingExpressions: initialExpressions
     })
   }
 
@@ -87,26 +87,29 @@ class ContentEditor extends Component {
   }
 
   getContentRepresentation () {
-    const { editorState } = this.state
+    const { editorState, editingExpressions } = this.state
 
-    return stateToHTML(editorState.getCurrentContent(), {
-      defaultBlockTag: 'div',
-      inlineStyles: inlineStylesPlugin.convertStyleTo(),
-      entityStyleFn: (entity) => {
-        const entityResolvers = [
-          expressionPlugin.convertEntityTo
-        ]
+    return {
+      content: stateToHTML(editorState.getCurrentContent(), {
+        defaultBlockTag: 'div',
+        inlineStyles: inlineStylesPlugin.convertStyleTo(),
+        entityStyleFn: (entity) => {
+          const entityResolvers = [
+            expressionPlugin.convertEntityTo
+          ]
 
-        let result
+          let result
 
-        entityResolvers.some((resolver) => {
-          result = resolver(entity)
-          return result != null
-        })
+          entityResolvers.some((resolver) => {
+            result = resolver(entity)
+            return result != null
+          })
 
-        return result
-      }
-    })
+          return result
+        }
+      }),
+      expressions: editingExpressions
+    }
   }
 
   handleKeyCommand (command, editorState) {
@@ -123,15 +126,48 @@ class ContentEditor extends Component {
   }
 
   handleEditorChange (editorState) {
-    if (this.props.onContentChange) {
+    if (
+      this.props.onContentChange &&
+      this.state.editorState.getCurrentContent() !== editorState.getCurrentContent()
+    ) {
       this.props.onContentChange(editorState.getCurrentContent())
     }
 
     this.setState({ editorState })
   }
 
+  handleExpressionEdit ({ prevExpressionName, expression: expressionEdited }) {
+    const { editingExpressions } = this.state
+
+    let expressionsToSave = editingExpressions == null ? {} : editingExpressions
+
+    if (!expressionEdited) {
+      return
+    }
+
+    expressionsToSave = {
+      ...expressionsToSave
+    }
+
+    if (prevExpressionName != null) {
+      delete expressionsToSave[prevExpressionName]
+    }
+
+    expressionsToSave[expressionEdited.name] = {
+      type: expressionEdited.type,
+      value: expressionEdited.value
+    }
+
+    this.setState({
+      editingExpressions: expressionsToSave
+    }, () => {
+      this.focus()
+    })
+  }
+
   render () {
-    const { editorState } = this.state
+    const { dataFields, allowedDataExpressionTypes } = this.props
+    const { editorState, editingExpressions } = this.state
 
     // If the user changes block type before entering any text, we can
     // either style the placeholder or hide it. Let's just hide it now.
@@ -157,7 +193,13 @@ class ContentEditor extends Component {
         <div className={styles.contentEditorButtonsContainer}>
           <InlineStylesButtons editorState={editorState} />
           <Separator />
-          <ExpressionButton editorState={editorState} />
+          <ExpressionButton
+            editorState={editorState}
+            dataFields={dataFields}
+            allowedDataExpressionTypes={allowedDataExpressionTypes}
+            expressions={editingExpressions}
+            onExpressionEdit={this.handleExpressionEdit}
+          />
         </div>
         <div className={className} onClick={this.focus}>
           <Editor
@@ -176,6 +218,9 @@ class ContentEditor extends Component {
 
 ContentEditor.propTypes = {
   initialContent: PropTypes.any,
+  dataFields: PropTypes.object,
+  allowedDataExpressionTypes: PropTypes.arrayOf(PropTypes.string),
+  expressions: PropTypes.object,
   onContentChange: PropTypes.func
 }
 
