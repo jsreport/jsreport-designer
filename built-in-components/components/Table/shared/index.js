@@ -24,28 +24,30 @@ module.exports = {
           border: 1px solid black;
         }
       </style>
-      <table class="Table">
-        <tr>
-          {{#each columns}}
-            {{#if (isObject name)}}
-              <th>{{resolveBinding name.binding "/"}}</th>
-            {{else}}
-              <th>{{name}}</th>
-            {{/if}}
-          {{/each}}
-        </tr>
-        {{#each data}}
+      <div>
+        <table class="Table">
           <tr>
-            {{#each @root.columns}}
-              {{#if (isObject value)}}
-                <td>{{resolveBinding value.binding ../this}}</td>
+            {{#each columns}}
+              {{#if (isObject name)}}
+                <th>{{resolveBinding name.binding "/"}}</th>
               {{else}}
-                <td>{{value}}</td>
+                <th>{{name}}</th>
               {{/if}}
             {{/each}}
           </tr>
-        {{/each}}
-      </table>
+          {{#each data}}
+            <tr>
+              {{#each @root.columns}}
+                {{#if (isObject value)}}
+                  <td>{{resolveBinding value.binding ../this}}</td>
+                {{else}}
+                  <td>{{value}}</td>
+                {{/if}}
+              {{/each}}
+            </tr>
+          {{/each}}
+        </table>
+      </div>
       `
     )
   }

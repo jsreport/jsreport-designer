@@ -49,6 +49,40 @@
   margin-right: 0.3rem;
 }
 
+.propertiesEditor-button,
+.propertiesEditor-button-toogle {
+  border-color: #30416d;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.propertiesEditor-button:not([disabled]),
+.propertiesEditor-button-toogle {
+  background-color: #fff;
+}
+
+.propertiesEditor-button[disabled],
+.propertiesEditor-button-toogle[disabled]
+{
+  background-color: #c4c5c5;
+}
+
+.propertiesEditor-button[disabled]:active,
+.propertiesEditor-button-toogle[disabled]:active {
+  border-style: solid;
+}
+
+.propertiesEditor-button:active:not([disabled]) {
+  background-color: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.propertiesEditor-button-toogle-active {
+  background-color: #1c6fb7;
+  border-color: rgba(0, 0, 0, 0.42);
+  color: #fff;
+}
+
 .propertiesEditor-prop {
   display: block;
   margin-bottom: 0.5rem;
@@ -59,20 +93,73 @@
   display: inline-block;
 }
 
+.propertiesEditor-group {
+  border: 1px solid rgba(0,0,0,0.45);
+  border-radius: 0.25rem;
+}
+
+.propertiesEditor-group-header {
+  border-top-left-radius: 0.15rem;
+  border-top-right-radius: 0.15rem;
+  background-color: #2b3038;
+  border-bottom: 1px solid rgba(0,0,0,0.25);
+  color: #fff;
+  cursor: pointer;
+  font-style: italic;
+  font-size: 0.95rem;
+  position: relative;
+  padding-top: 0.4rem;
+  padding-bottom: 0.4rem;
+  padding-left: 0.3rem;
+  padding-right: 0.9rem;
+}
+
+.propertiesEditor-group-header:hover {
+  background-color: #2f3640;
+}
+
 .propertiesEditor-prop > *,
-.propertiesEditor-prop-group > * {
+.propertiesEditor-group > * {
   display: block;
   width: 100%;
   margin-top: 0.3rem;
 }
 
-.propertiesEditor-prop-group {
-  border: 2px solid $primarySelectionColor;
+.propertiesEditor-group > .propertiesEditor-group-header {
+  margin-top: 0;
+}
+
+.propertiesEditor-group-content {
+  display: none;
+}
+
+.propertiesEditor-group-content[data-expanded] {
   display: block;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+.propertiesEditor-group > .propertiesEditor-group-content {
+  margin-top: 0;
+}
+
+.propertiesEditor-group-content,
+.propertiesEditor-box {
   width: 100%;
-  margin-top: 0.6rem;
   padding-left: 0.3rem;
   padding-right: 0.3rem;
+}
+
+.propertiesEditor-group-content > *:first-child {
+  margin-top: 0;
+}
+
+.propertiesEditor-group-content > .propertiesEditor-prop:first-child > *:first-child {
+  margin-top: 0;
+}
+
+.propertiesEditor-group-content > *:last-child {
+  margin-bottom: 0;
 }
 
 .propertiesEditor-prop input {

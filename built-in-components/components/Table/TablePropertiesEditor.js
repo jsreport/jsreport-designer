@@ -234,7 +234,7 @@ class TablePropertiesEditor extends PureComponent {
     )
   }
 
-  renderColumnPropValue ({ propName, value, context, onChange }) {
+  renderColumnPropValue ({ name, value, context, onChange }) {
     const { getBindingMeta } = this.props
     let valueRefToBinding = typeof value === 'object' && value.binding != null
     let currentValue
@@ -257,7 +257,7 @@ class TablePropertiesEditor extends PureComponent {
       <input
         className={valueRefToBinding ? 'propertiesEditor-prop-special-value' : ''}
         type='text'
-        name={propName}
+        name={name}
         readOnly={valueRefToBinding}
         value={currentValue}
         onChange={(ev) => onChange(ev.target.value)}
@@ -291,15 +291,17 @@ class TablePropertiesEditor extends PureComponent {
           onBindingEditorOpen={onBindingEditorOpen}
         />
         <div className='propertiesEditor-prop'>
-          <label>
-            columns
-          </label>
+          <div className='propertiesEditor-prop'>
+            <label>
+              columns
+            </label>
+          </div>
           {Array.isArray(properties.columns) && properties.columns.map((col, idx) => {
             return (
               <div
                 key={`col-${idx}`}
-                className='propertiesEditor-prop-group'
-                style={{ position: 'relative' }}
+                className='propertiesEditor-box'
+                style={{ position: 'relative', border: '2px solid #fff' }}
               >
                 <PropertyControl
                   key='columns.name'

@@ -8,6 +8,8 @@ export let readyListeners = []
 
 export let componentTypes = {}
 export let componentTypesDefinition = {}
+export let generalStyles = []
+export let generalStylesDefinition = {}
 
 export let defaultBindingEditorComponents = {}
 

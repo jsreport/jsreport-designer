@@ -9,7 +9,7 @@ import * as configuration from './lib/configuration.js'
 import api, { methods } from './helpers/api.js'
 import expressionUtils from '../shared/expressionUtils'
 import DataFieldsViewer from './components/DataFieldsViewer'
-import PropertiesEditor, { PropertyControl } from './components/Editor/PropertiesEditor'
+import PropertiesEditor, { PropertiesGroup, PropertyControl } from './components/Editor/PropertiesEditor'
 
 /**
  * Main facade and API for extensions. Exposed as global variable Designer.
@@ -116,6 +116,15 @@ class Designer {
    */
   get PropertiesEditor () {
     return PropertiesEditor
+  }
+
+  /**
+   * Component used to visualise (show/hide) a group of properties
+   *
+   * @returns {PropertiesGroup}
+   */
+  get PropertiesGroup () {
+    return PropertiesGroup
   }
 
   /**

@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 // eslint-disable-next-line no-unused-vars
 import { observer, inject } from 'mobx-react'
 import pick from 'lodash/pick'
+import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
 import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
@@ -68,7 +69,9 @@ class ComponentEditor extends Component {
   }
 
   getMeta () {
-    return componentRegistry.getComponentDefinition(this.props.type) || {}
+    const meta = componentRegistry.getComponentDefinition(this.props.type) || {}
+
+    return omit(meta, ['module'])
   }
 
   getValue (collection, name) {
@@ -309,6 +312,7 @@ class ComponentEditor extends Component {
       bindings,
       expressions,
       options: {},
+      getComponentMeta: this.getMeta,
       getPropMeta: this.getPropMeta,
       getBindingMeta: this.getBindingMeta,
       onBindingEditorOpen: this.handleBindingEditorOpen,

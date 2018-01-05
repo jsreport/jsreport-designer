@@ -14,7 +14,24 @@ import {
 
 class DataInput {
   // eslint-disable-next-line no-undef
-  @observable.ref value = undefined
+  @observable.ref value = {
+    "name": "Boris",
+    "lastName": "Matos",
+    "company": {
+      "name": "Star Labs",
+      "business": "Technology"
+    },
+    "data": [{
+      "product": "TV",
+      "price": 540.99
+    }, {
+      "product": "Watch",
+      "price": 23.45
+    }, {
+      "product": "Smarthpone",
+      "price": 99.99
+    }]
+  }
 
   // eslint-disable-next-line no-undef
   @observable.ref computedFields = undefined

@@ -18,7 +18,7 @@ class CommandButton extends Component {
     return (
       <div className={styles.commandButton}>
         {!children ? (
-          <button {...restProps}>
+          <button className='propertiesEditor-button' {...restProps}>
             <span className={`fa fa-${icon != null ? icon : 'circle'}`} />
             {text != null && <span>{text}</span>}
           </button>

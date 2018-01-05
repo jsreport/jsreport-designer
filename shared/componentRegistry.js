@@ -6,6 +6,8 @@ const htmlRender = require('posthtml-render')
 const Handlebars = require('handlebars')
 const evaluateScript = require('./evaluateScript')
 const expressionUtils = require('./expressionUtils')
+const generalStyles = require('./generalStyles')
+const isStyleProp = require('./isStyleProp')
 
 const componentsDefinition = {}
 const components = {}
@@ -40,6 +42,7 @@ function compileTemplate (template) {
 
 function loadComponents (componentsToLoad, reload = false) {
   const componentRequires = componentsToLoad.map((componentDef) => {
+    const styleProps = []
     let originalComponentModule
     let componentTemplate
     let compiledTemplate
@@ -48,6 +51,15 @@ function loadComponents (componentsToLoad, reload = false) {
     if (!reload && getComponent(componentDef.name) != null) {
       // component type is already registered don't try to load it again
       return undefined
+    }
+
+    // identifying style props
+    if (componentDef.propsMeta) {
+      Object.keys(componentDef.propsMeta).forEach((propName) => {
+        if (isStyleProp(componentDef.propsMeta[propName])) {
+          styleProps.push(propName)
+        }
+      })
     }
 
     originalComponentModule = componentDef.module
@@ -59,6 +71,7 @@ function loadComponents (componentsToLoad, reload = false) {
         getDefaultProps: () => {
           return {}
         },
+        getStyleProps: () => styleProps,
         template: () => {
           return '<div>Default empty component</div>'
         },
@@ -75,6 +88,7 @@ function loadComponents (componentsToLoad, reload = false) {
       getDefaultProps: () => {
         return callInterop(originalComponentModule, originalComponentModule.getDefaultProps)
       },
+      getStyleProps: () => styleProps,
       template: () => {
         return callInterop(originalComponentModule, originalComponentModule.template)
       },
@@ -120,6 +134,9 @@ function loadComponents (componentsToLoad, reload = false) {
           })
         }
 
+        // TODO: use styleProps var here to filter allowed or
+        // disallowed style props when we support such configuration (if it makes sense)
+
         result.props = newProps
 
         componentHelpers = Object.assign({
@@ -147,6 +164,19 @@ function loadComponents (componentsToLoad, reload = false) {
               rootContext: data,
               computedFields
             })
+          },
+          resolveStyle: (styleValues) => {
+            let style = generalStyles.resolver(
+              generalStyles.styles,
+              generalStyles.stylesMap,
+              styleValues
+            )
+
+            if (style == null) {
+              return ''
+            }
+
+            return style
           }
         }, componentModule.helpers())
 

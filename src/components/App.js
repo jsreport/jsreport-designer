@@ -66,8 +66,15 @@ class App extends Component {
     }
 
     clickOutsideCanvas = !canvasNode.contains(ev.target)
-
     if (this.sideBarNode.contains(ev.target) && currentDesign.selection != null) {
+      clickOutsideCanvas = false
+    }
+
+    // don't clear selection if we are resizing from controls
+    if (
+      ev.target === document.body &&
+      document.body.classList.contains('resizing-control-y')
+    ) {
       clickOutsideCanvas = false
     }
 

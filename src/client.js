@@ -103,6 +103,9 @@ async function start (initialData) {
       Object.keys(compTypes).forEach((compName) => {
         configuration.componentTypesDefinition[compName] = compTypes[compName]
       })
+    }),
+    Designer.api.get('/api/componentGeneralStyles').then((stylesCollection) => {
+      stylesCollection.forEach((style) => configuration.generalStyles.push(style))
     })
   ])
 
