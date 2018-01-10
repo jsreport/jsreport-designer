@@ -165,15 +165,74 @@ function loadComponents (componentsToLoad, reload = false) {
               computedFields
             })
           },
-          resolveStyle: (styleValues) => {
-            let style = generalStyles.resolver(
-              generalStyles.styles,
-              generalStyles.stylesMap,
-              styleValues
-            )
+          resolveStyle: (stylePropName) => {
+            let styleValues
+            let style
+
+            if (bindings != null && expressions != null) {
+              const bindingNames = Object.keys(bindings)
+              // eslint-disable-next-line no-useless-escape
+              const styleKeysReg = new RegExp(`^@${stylePropName}\.([^\s\n\r]+)`)
+              let stylesToResolve = []
+
+              styleValues = {}
+
+              bindingNames.forEach((bName) => {
+                const result = styleKeysReg.exec(bName)
+                let value
+
+                if (result == null) {
+                  return
+                }
+
+                const styleKey = result[1]
+                const styleBinding = bindings[bName]
+
+                stylesToResolve.push(styleKey)
+
+                if (
+                  !Array.isArray(styleBinding.expression) ||
+                  styleBinding.expression.length === 0
+                ) {
+                  return
+                }
+
+                value = resolveBinding({
+                  binding: styleBinding,
+                  bindingName: bName,
+                  expressions,
+                  context: data,
+                  rootContext: data,
+                  computedFields
+                })
+
+                styleValues[styleKey] = value
+              })
+
+              if (stylesToResolve.length === 0) {
+                // resolve from props when there is no
+                // style bindings to resolve
+                stylesToResolve = generalStyles.styles
+                styleValues = newProps[stylePropName]
+              }
+
+              style = generalStyles.resolver(
+                stylesToResolve,
+                generalStyles.stylesMap,
+                styleValues
+              )
+            } else {
+              styleValues = newProps[stylePropName]
+
+              style = generalStyles.resolver(
+                generalStyles.styles,
+                generalStyles.stylesMap,
+                styleValues
+              )
+            }
 
             if (style == null) {
-              return ''
+              style = ''
             }
 
             return style
@@ -224,8 +283,30 @@ function resolveBinding ({
   }
 
   if (isObject(binding.compose)) {
-    // resolving rich content
-    if (binding.expression != null) {
+    if (binding.compose.conditional === true || isObject(binding.compose.conditional)) {
+      // resolving conditional compose
+      const resolvedExpression = resolveBindingExpression(
+        expressionsMap,
+        binding.expression,
+        expressionInput,
+        {
+          conditional: true
+        }
+      )
+
+      if (resolvedExpression.map) {
+        if (isObject(binding.compose.content)) {
+          resolvedContent = binding.compose.content[Object.keys(resolvedExpression.value)[0]]
+        } else {
+          resolvedContent = undefined
+        }
+      } else {
+        // TODO: here goes the code and logic to apply the
+        // default case if it exists
+        resolvedContent = undefined
+      }
+    } else if (binding.expression != null) {
+      // resolving rich content
       const resolvedExpression = resolveBindingExpression(
         expressionsMap,
         binding.expression,
@@ -266,10 +347,11 @@ function resolveBindingExpression (
   expressionsMap,
   expressionResolution,
   { context, rootContext, computedFields },
-  { ensureMap = false } = {}
+  { ensureMap = false, conditional = false } = {}
 ) {
   let expressions = expressionUtils.getExpression(expressionsMap, expressionResolution)
   let isMap
+  let resolved
 
   if (expressions == null) {
     return {
@@ -300,91 +382,130 @@ function resolveBindingExpression (
     }
   }
 
-  let resolved = expressions.reduce((acu, expression) => {
-    let currentContext = context
+  if (conditional === true) {
+    expressions.some((expression) => {
+      let returnedTrue = false
 
-    if (expression.info == null) {
-      return acu
-    }
+      if (expression.info.type === 'function') {
+        let result
 
-    if (expression.info.type === 'function') {
-      let result
+        try {
+          const expressionFn = evaluateScript.getSingleExport(expression.info.value)
 
-      try {
-        const expressionFn = evaluateScript.getSingleExport(expression.info.value)
-
-        if (typeof expressionFn !== 'function') {
-          throw new Error('expression should export a function')
-        }
-
-        result = expressionFn(context, rootContext)
-      } catch (e) {
-        result = undefined
-      }
-
-      acu.push({
-        name: expression.name,
-        result
-      })
-    } else if (expression.info.type === 'data') {
-      let dataExpressionValue = expression.info.value
-      let result
-
-      for (i = 0; i < dataExpressionValue.length; i++) {
-        const currentExpression = dataExpressionValue[i]
-        let keySeparatorAt
-        let fieldType
-        let key
-
-        if (currentExpression === '') {
-          result = context
-          break
-        }
-
-        keySeparatorAt = currentExpression.indexOf(':')
-
-        if (keySeparatorAt === -1) {
-          result = undefined
-          break
-        }
-
-        fieldType = currentExpression.slice(0, keySeparatorAt)
-        key = currentExpression.slice(keySeparatorAt + 1)
-
-        if (key === '') {
-          result = undefined
-          break
-        }
-
-        if (Array.isArray(currentContext) && fieldType === FIELD_TYPE.property) {
-          result = undefined
-          break
-        }
-
-        if (fieldType === FIELD_TYPE.computedField) {
-          if (computedFields && computedFields[key]) {
-            result = computedFields[key]
-          } else {
-            result = undefined
+          if (typeof expressionFn !== 'function') {
+            throw new Error('expression should export a function')
           }
-        } else {
-          result = get(currentContext, key, undefined)
-        }
 
-        if (result === undefined) {
-          break
-        }
+          result = expressionFn(context, rootContext)
+          returnedTrue = result === true
 
-        currentContext = result
+          if (returnedTrue === true) {
+            resolved = [{
+              name: expression.name,
+              result: result
+            }]
+          }
+        } catch (e) {
+          result = undefined
+        }
       }
 
-      acu.push({ name: expression.name, result })
+      return returnedTrue === true
+    })
+  } else {
+    resolved = expressions.reduce((acu, expression) => {
+      let currentContext = context
+
+      if (expression.info == null) {
+        return acu
+      }
+
+      if (expression.info.type === 'function') {
+        let result
+
+        try {
+          const expressionFn = evaluateScript.getSingleExport(expression.info.value)
+
+          if (typeof expressionFn !== 'function') {
+            throw new Error('expression should export a function')
+          }
+
+          result = expressionFn(context, rootContext)
+        } catch (e) {
+          result = undefined
+        }
+
+        acu.push({
+          name: expression.name,
+          result
+        })
+      } else if (expression.info.type === 'data') {
+        let dataExpressionValue = expression.info.value
+        let result
+
+        for (i = 0; i < dataExpressionValue.length; i++) {
+          const currentExpression = dataExpressionValue[i]
+          let keySeparatorAt
+          let fieldType
+          let key
+
+          if (currentExpression === '') {
+            result = context
+            break
+          }
+
+          keySeparatorAt = currentExpression.indexOf(':')
+
+          if (keySeparatorAt === -1) {
+            result = undefined
+            break
+          }
+
+          fieldType = currentExpression.slice(0, keySeparatorAt)
+          key = currentExpression.slice(keySeparatorAt + 1)
+
+          if (key === '') {
+            result = undefined
+            break
+          }
+
+          if (Array.isArray(currentContext) && fieldType === FIELD_TYPE.property) {
+            result = undefined
+            break
+          }
+
+          if (fieldType === FIELD_TYPE.computedField) {
+            if (computedFields && computedFields[key]) {
+              result = computedFields[key]
+            } else {
+              result = undefined
+            }
+          } else {
+            result = get(currentContext, key, undefined)
+          }
+
+          if (result === undefined) {
+            break
+          }
+
+          currentContext = result
+        }
+
+        acu.push({ name: expression.name, result })
+      }
+
+      return acu
+    }, [])
+  }
+
+  if (conditional && !resolved) {
+    return {
+      value: undefined,
+      isMap: false
     }
+  }
 
-    return acu
-  }, [])
-
-  if (isMap) {
+  if (isMap || conditional) {
     const value = resolved.reduce((acu, resolvedItem) => {
       acu[resolvedItem.name] = resolvedItem.result
 
@@ -393,7 +514,7 @@ function resolveBindingExpression (
 
     return {
       value,
-      map: isMap
+      map: true
     }
   }
 

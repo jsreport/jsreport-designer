@@ -8,7 +8,7 @@ import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
 import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
-import { componentTypes, defaultBindingEditorComponents } from '../../lib/configuration'
+import { componentTypes, bindingEditor as bindingEditorConf, defaultBindingEditorResolver } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import styles from './ComponentEditor.scss'
 
@@ -36,6 +36,7 @@ class ComponentEditor extends Component {
     this.connectToChangesInterceptor = this.connectToChangesInterceptor.bind(this)
     this.getMeta = this.getMeta.bind(this)
     this.getValue = this.getValue.bind(this)
+    this.getComponent = this.getComponent.bind(this)
     this.getPropMeta = this.getPropMeta.bind(this)
     this.getBindingMeta = this.getBindingMeta.bind(this)
     this.handleTemplateEditorOpen = this.handleTemplateEditorOpen.bind(this)
@@ -84,6 +85,23 @@ class ComponentEditor extends Component {
     }
 
     return collection
+  }
+
+  getComponent () {
+    const {
+      template,
+      properties,
+      expressions
+    } = this.props
+
+    const bindings = this.props.bindings || {}
+
+    return {
+      template,
+      properties,
+      bindings,
+      expressions
+    }
   }
 
   getPropMeta (propName) {
@@ -312,6 +330,7 @@ class ComponentEditor extends Component {
       bindings,
       expressions,
       options: {},
+      getComponent: this.getComponent,
       getComponentMeta: this.getMeta,
       getPropMeta: this.getPropMeta,
       getBindingMeta: this.getBindingMeta,
@@ -333,7 +352,7 @@ class ComponentEditor extends Component {
 
   renderBindingEditor () {
     const { bindingEditor } = this.state
-    const { type, template, properties, expressions } = this.props
+    const { type } = this.props
     const bindings = this.props.bindings || {}
 
     let editorInfo
@@ -348,12 +367,7 @@ class ComponentEditor extends Component {
       propName: bindingEditor.propName,
       bindingName: bindingEditor.bindingName,
       binding: bindings[bindingEditor.bindingName],
-      component: {
-        template,
-        properties,
-        bindings,
-        expressions
-      },
+      component: this.getComponent(),
       options: bindingEditor.options,
       getPropMeta: this.getPropMeta,
       onSave: this.handleBindingEditorSave,
@@ -397,50 +411,73 @@ class ComponentEditor extends Component {
       )
     }
 
-    if (!editorInfo.bindingEditorResolver) {
-      return renderResolvedEditor(
-        defaultBindingEditorComponents.default,
-        bindingEditorProps
-      )
+    const runResolver = (resolver, props) => {
+      const defaultBindingEditorComponents = bindingEditorConf.defaultComponents
+      const defaultBindingEditorResolver = bindingEditorConf.defaultResolver
+      const editorProps = { ...props }
+      let editorOutput
+      let result
+
+      if (!resolver) {
+        result = runResolver(defaultBindingEditorResolver, editorProps)
+      } else {
+        editorOutput = resolver({
+          componentType: type,
+          propName: bindingEditor.propName,
+          bindingName: bindingEditor.bindingName,
+          getPropMeta: this.getPropMeta
+        })
+      }
+
+      if (result != null) {
+        return result
+      }
+
+      if (editorOutput == null) {
+        if (resolver && resolver !== defaultBindingEditorResolver) {
+          result = runResolver(defaultBindingEditorResolver, editorProps)
+        } else {
+          result = {
+            editor: defaultBindingEditorComponents.default,
+            props: editorProps
+          }
+        }
+      } else if (
+        editorOutput.editor != null &&
+        typeof editorOutput.editor === 'string' &&
+        defaultBindingEditorComponents[editorOutput.editor] != null
+      ) {
+        editorProps.options = Object.assign({}, editorOutput.options, editorProps.options)
+
+        result = {
+          editor: defaultBindingEditorComponents[editorOutput.editor],
+          props: editorProps
+        }
+      } else if (
+        editorOutput.editor != null &&
+        typeof editorOutput.editor === 'function'
+      ) {
+        editorProps.options = Object.assign({}, editorOutput.options, editorProps.options)
+
+        result = {
+          editor: editorOutput.editor,
+          props: editorProps
+        }
+      } else {
+        result = {
+          editor: defaultBindingEditorComponents.default,
+          props: editorProps
+        }
+      }
+
+      return result
     }
 
-    editorInfo = editorInfo.bindingEditorResolver({
-      componentType: type,
-      propName: bindingEditor.propName,
-      bindingName: bindingEditor.bindingName
-    })
-
-    if (editorInfo == null) {
-      return renderResolvedEditor(
-        defaultBindingEditorComponents.default,
-        bindingEditorProps
-      )
-    } else if (
-      editorInfo.editor != null &&
-      typeof editorInfo.editor === 'string' &&
-      defaultBindingEditorComponents[editorInfo.editor] != null
-    ) {
-      bindingEditorProps.options = Object.assign({}, editorInfo.options, bindingEditorProps.options)
-
-      return renderResolvedEditor(
-        defaultBindingEditorComponents[editorInfo.editor],
-        bindingEditorProps
-      )
-    } else if (
-      editorInfo.editor != null &&
-      typeof editorInfo.editor === 'function'
-    ) {
-      bindingEditorProps.options = Object.assign({}, editorInfo.options, bindingEditorProps.options)
-
-      return renderResolvedEditor(
-        editorInfo.editor,
-        bindingEditorProps
-      )
-    }
+    editorInfo = runResolver(editorInfo.bindingEditorResolver || undefined, bindingEditorProps)
 
     return renderResolvedEditor(
-      defaultBindingEditorComponents.default,
-      bindingEditorProps
+      editorInfo.editor,
+      editorInfo.props
     )
   }
 

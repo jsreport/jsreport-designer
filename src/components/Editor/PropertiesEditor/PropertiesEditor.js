@@ -34,10 +34,12 @@ class PropertiesEditor extends PureComponent {
   renderPropertyControl (propName) {
     const {
       componentType,
+      dataInput,
       properties,
       bindings,
       expressions,
       options,
+      getComponent,
       getPropMeta,
       getBindingMeta,
       onBindingEditorOpen,
@@ -59,7 +61,7 @@ class PropertiesEditor extends PureComponent {
         isBindingEnabled = true
       }
     } else {
-      isBindingEnabled = true
+      isBindingEnabled = dataInput != null
     }
 
     let propsForControl = {
@@ -68,6 +70,7 @@ class PropertiesEditor extends PureComponent {
       binding: bindings ? bindings[propName] : null,
       value: properties[propName],
       bindingEnabled: isBindingEnabled,
+      getComponent,
       getPropMeta,
       getBindingMeta,
       onBindingEditorOpen,
@@ -158,6 +161,7 @@ PropertiesEditor.propTypes = {
   bindings: PropTypes.object,
   expressions: PropTypes.object,
   options: PropTypes.object,
+  getComponent: PropTypes.func.isRequired,
   getComponentMeta: PropTypes.func.isRequired,
   getPropMeta: PropTypes.func.isRequired,
   getBindingMeta: PropTypes.func.isRequired,

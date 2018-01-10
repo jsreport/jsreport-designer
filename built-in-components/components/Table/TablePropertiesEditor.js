@@ -3,6 +3,7 @@ import PropTypes from 'prop-types'
 import Designer from 'jsreport-designer'
 
 const PropertyControl = Designer.PropertyControl
+const PropertiesGroup = Designer.PropertiesGroup
 
 function getBindingNameForColumn (colIndex, property) {
   if (colIndex == null || property == null) {
@@ -271,8 +272,10 @@ class TablePropertiesEditor extends PureComponent {
       properties,
       bindings,
       dataInput,
+      getComponent,
       getPropMeta,
       getBindingMeta,
+      onChange,
       onBindingEditorOpen
     } = this.props
 
@@ -285,6 +288,7 @@ class TablePropertiesEditor extends PureComponent {
           binding={bindings ? bindings.data : null}
           value={properties.data}
           bindingEnabled={dataInput != null}
+          getComponent={getComponent}
           getPropMeta={getPropMeta}
           getBindingMeta={getBindingMeta}
           renderValue={this.renderDataPropValue}
@@ -311,6 +315,7 @@ class TablePropertiesEditor extends PureComponent {
                   value={col.name}
                   bindingEnabled
                   context={{ name: 'name', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'name') }}
+                  getComponent={getComponent}
                   getPropMeta={getPropMeta}
                   getBindingMeta={getBindingMeta}
                   renderValue={this.renderColumnPropValue}
@@ -325,6 +330,7 @@ class TablePropertiesEditor extends PureComponent {
                   value={col.value}
                   bindingEnabled={(bindings != null && bindings.data != null)}
                   context={{ name: 'value', colIndex: idx, targetBindingName: getBindingNameForColumn(idx, 'value') }}
+                  getComponent={getComponent}
                   getPropMeta={getPropMeta}
                   getBindingMeta={getBindingMeta}
                   renderValue={this.renderColumnPropValue}
@@ -345,6 +351,24 @@ class TablePropertiesEditor extends PureComponent {
             <button onClick={this.handleColumnAdd}>Add column</button>
           </div>
         </div>
+        <PropertiesGroup
+          key={`group-style`}
+          name='style'
+        >
+          <PropertyControl
+            key='style'
+            componentType={componentType}
+            name='style'
+            binding={null}
+            value={properties.style}
+            bindingEnabled={dataInput != null}
+            getComponent={getComponent}
+            getPropMeta={getPropMeta}
+            getBindingMeta={getBindingMeta}
+            onBindingEditorOpen={onBindingEditorOpen}
+            onChange={(styleChanges) => onChange(styleChanges)}
+          />
+        </PropertiesGroup>
       </div>
     )
   }
@@ -355,6 +379,7 @@ TablePropertiesEditor.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
+  getComponent: PropTypes.func.isRequired,
   getPropMeta: PropTypes.func.isRequired,
   getBindingMeta: PropTypes.func.isRequired,
   onBindingEditorOpen: PropTypes.func,

@@ -1,6 +1,8 @@
 import * as configuration from './lib/configuration.js'
+import isStyleProp from '../shared/isStyleProp'
 import ComposeTextBindingEditor from './components/Editor/ComposeTextBindingEditor'
 import DataSelectBindingEditor from './components/Editor/DataSelectBindingEditor'
+import StylesBindingEditor from './components/Editor/StylesBindingEditor'
 import PaddingStyleControl from './components/Editor/StylesControl/PaddingControl'
 import BackgroundStyleControl from './components/Editor/StylesControl/BackgroundControl'
 import FontSizeStyleControl from './components/Editor/StylesControl/FontSizeControl'
@@ -10,9 +12,18 @@ import ColorStyleControl from './components/Editor/StylesControl/ColorControl'
 // import DataInputCommand from './components/CommandBar/DataInputCommand'
 
 export default () => {
-  configuration.defaultBindingEditorComponents.composeText = ComposeTextBindingEditor
-  configuration.defaultBindingEditorComponents.dataSelect = DataSelectBindingEditor
-  configuration.defaultBindingEditorComponents.default = ComposeTextBindingEditor
+  configuration.bindingEditor.defaultComponents.composeText = ComposeTextBindingEditor
+  configuration.bindingEditor.defaultComponents.dataSelect = DataSelectBindingEditor
+  configuration.bindingEditor.defaultComponents.style = StylesBindingEditor
+  configuration.bindingEditor.defaultComponents.default = ComposeTextBindingEditor
+
+  configuration.bindingEditor.defaultResolver = ({ propName, getPropMeta }) => {
+    const meta = getPropMeta(propName)
+
+    if (isStyleProp(meta)) {
+      return { editor: StylesBindingEditor }
+    }
+  }
 
   configuration.generalStylesDefinition.padding = {
     control: PaddingStyleControl

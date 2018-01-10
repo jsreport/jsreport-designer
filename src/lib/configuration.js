@@ -11,7 +11,10 @@ export let componentTypesDefinition = {}
 export let generalStyles = []
 export let generalStylesDefinition = {}
 
-export let defaultBindingEditorComponents = {}
+export let bindingEditor = {
+  defaultComponents: {},
+  defaultResolver: undefined
+}
 
 export let toolbarComponents = {
   generalCommands: []

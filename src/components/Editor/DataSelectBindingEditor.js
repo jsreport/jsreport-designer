@@ -191,12 +191,13 @@ class DataSelectBindingEditor extends Component {
         <div style={{ fontSize: '0.7rem' }}>
           Select a field to bind
         </div>
-        <div style={{
-          marginTop: '0.6rem',
-          marginBottom: '0.6rem',
-          border: '1px solid black',
-          overflow: 'auto'
-        }}
+        <div
+          style={{
+            marginTop: '0.6rem',
+            marginBottom: '0.6rem',
+            border: '1px solid black',
+            overflow: 'auto'
+          }}
         >
           <DataFieldsViewer
             selectedField={selectedField}

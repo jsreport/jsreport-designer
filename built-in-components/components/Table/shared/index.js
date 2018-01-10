@@ -25,7 +25,7 @@ module.exports = {
         }
       </style>
       <div>
-        <table class="Table">
+        <table class="Table" style="{{resolveStyle "style"}}">
           <tr>
             {{#each columns}}
               {{#if (isObject name)}}

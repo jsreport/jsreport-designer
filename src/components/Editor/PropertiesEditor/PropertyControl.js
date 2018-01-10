@@ -19,12 +19,20 @@ class PropertyControl extends PureComponent {
     return isStyleProp(propMeta)
   }
 
-  handleBindingEditorOpen () {
+  handleBindingEditorOpen ({ bindingName, options } = {}) {
     if (this.props.onBindingEditorOpen) {
-      this.props.onBindingEditorOpen({
+      const editorData = {
         propName: this.props.name,
         context: this.props.context
-      })
+      }
+
+      if (bindingName != null) {
+        editorData.bindingName = bindingName
+      } else {
+        editorData.options = options
+      }
+
+      this.props.onBindingEditorOpen(editorData)
     }
   }
 
@@ -41,7 +49,6 @@ class PropertyControl extends PureComponent {
     const stylePropCheck = this.stylePropCheck
     const getBindingMeta = this.props.getBindingMeta
     const meta = this.props.getPropMeta(name)
-
     const propsForCustomControl = {
       ...this.props,
       componentType,
@@ -114,6 +121,7 @@ PropertyControl.propTypes = {
   binding: PropTypes.object,
   bindingEnabled: PropTypes.bool.isRequired,
   context: PropTypes.any,
+  getComponent: PropTypes.func.isRequired,
   getPropMeta: PropTypes.func.isRequired,
   getBindingMeta: PropTypes.func.isRequired,
   renderValue: PropTypes.func,
