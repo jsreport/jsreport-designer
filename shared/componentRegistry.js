@@ -190,8 +190,6 @@ function loadComponents (componentsToLoad, reload = false) {
 
                 stylesToResolve.push(styleKey)
 
-                debugger
-
                 if (
                   expressions != null &&
                   Array.isArray(styleBinding.expression) &&

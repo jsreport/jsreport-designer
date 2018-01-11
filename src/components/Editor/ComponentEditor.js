@@ -8,7 +8,7 @@ import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
 import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
-import { componentTypes, bindingEditor as bindingEditorConf, defaultBindingEditorResolver } from '../../lib/configuration'
+import { componentTypes, bindingEditor as bindingEditorConf } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import styles from './ComponentEditor.scss'
 
