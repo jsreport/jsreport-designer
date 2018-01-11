@@ -18,22 +18,23 @@ class StylesBindingEditor extends Component {
       bindings[bindingName] != null
     ) ? bindings[bindingName] : undefined
 
+    let defaultValue = null
     let cases = []
 
-    if (
-      component.bindings != null &&
-      styleNameBinding != null &&
-      styleNameBinding.expression != null
-    ) {
-      cases = styleNameBinding.expression.map((exprName) => {
-        return {
-          name: exprName,
-          conditionSource: (
-            expressions != null &&
-            expressions[bindingName] != null &&
-            expressions[bindingName][exprName] != null
-          ) ? expressions[bindingName][exprName].value : '',
-          valueWhenMatched: (
+    if (styleNameBinding != null) {
+      if (
+        styleNameBinding.compose != null &&
+        typeof styleNameBinding.compose.conditional === 'object' &&
+        styleNameBinding.compose.conditional.default != null
+      ) {
+        defaultValue = styleNameBinding.compose.conditional.default
+      }
+
+      if (styleNameBinding.expression != null) {
+        cases = styleNameBinding.expression.map((exprName) => {
+          let value
+
+          if (
             styleNameBinding.compose != null &&
             styleNameBinding.compose.content != null &&
             styleNameBinding.compose.content[exprName] != null &&
@@ -42,15 +43,28 @@ class StylesBindingEditor extends Component {
               styleNameBinding.compose.conditional === true ||
               styleNameBinding.compose.conditional.default != null
             )
-          ) ? styleNameBinding.compose.content[exprName] : undefined
-        }
-      })
+          ) {
+            value = styleNameBinding.compose.content[exprName]
+          }
+
+          return {
+            name: exprName,
+            conditionSource: (
+              expressions != null &&
+              expressions[bindingName] != null &&
+              expressions[bindingName][exprName] != null
+            ) ? expressions[bindingName][exprName].value : '',
+            valueWhenMatched: value
+          }
+        })
+      }
     }
 
     let initialState = {
       isDirty: false,
+      showDefaultControl: defaultValue != null,
       conditions: {
-        default: null,
+        default: defaultValue,
         cases
       }
     }
@@ -58,6 +72,7 @@ class StylesBindingEditor extends Component {
     this.state = initialState
 
     this.handleNewCondition = this.handleNewCondition.bind(this)
+    this.handleToogleDefaultValue = this.handleToogleDefaultValue.bind(this)
     this.handleConditionSourceChange = this.handleConditionSourceChange.bind(this)
     this.handleStyleValueChange = this.handleStyleValueChange.bind(this)
     this.handleRemoveCondition = this.handleRemoveCondition.bind(this)
@@ -88,6 +103,21 @@ class StylesBindingEditor extends Component {
     })
   }
 
+  handleToogleDefaultValue (ev) {
+    const { conditions } = this.state
+    const checked = ev.target.checked
+
+    let stateChanges = {
+      showDefaultControl: checked
+    }
+
+    if (conditions.default != null && !checked) {
+      stateChanges.isDirty = true
+    }
+
+    this.setState(stateChanges)
+  }
+
   handleConditionSourceChange (index, newSource) {
     const { conditions } = this.state
     const currentCase = conditions.cases[index]
@@ -110,22 +140,36 @@ class StylesBindingEditor extends Component {
 
   handleStyleValueChange (index, newValue) {
     const { conditions } = this.state
-    const currentCase = conditions.cases[index]
 
-    this.setState({
-      isDirty: true,
-      conditions: {
-        ...conditions,
-        cases: [
-          ...conditions.cases.slice(0, index),
-          {
-            ...currentCase,
-            valueWhenMatched: newValue
-          },
-          ...conditions.cases.slice(index + 1)
-        ]
-      }
-    })
+    if (index == null) {
+      // when index is no specified then we are updating the default
+      // value
+      this.setState({
+        isDirty: true,
+        conditions: {
+          ...conditions,
+          default: newValue
+        }
+      })
+    } else {
+      // get the case that need the style update
+      const currentCase = conditions.cases[index]
+
+      this.setState({
+        isDirty: true,
+        conditions: {
+          ...conditions,
+          cases: [
+            ...conditions.cases.slice(0, index),
+            {
+              ...currentCase,
+              valueWhenMatched: newValue
+            },
+            ...conditions.cases.slice(index + 1)
+          ]
+        }
+      })
+    }
   }
 
   handleRemoveCondition (index) {
@@ -173,7 +217,7 @@ class StylesBindingEditor extends Component {
 
   handleSave () {
     const { propName, component, options, onSave } = this.props
-    const { conditions } = this.state
+    const { showDefaultControl, conditions } = this.state
     const cases = conditions.cases
     const bindingName = `@${propName}.${options.styleName}`
     const bindings = component.bindings || {}
@@ -188,7 +232,14 @@ class StylesBindingEditor extends Component {
       newBinding.expression = []
       newBinding.compose = {}
       newBinding.compose.content = {}
-      newBinding.compose.conditional = true
+
+      if (conditions.default != null && showDefaultControl) {
+        newBinding.compose.conditional = {
+          default: conditions.default
+        }
+      } else {
+        newBinding.compose.conditional = true
+      }
 
       cases.forEach((cond, condIndex) => {
         newBinding.expression.push(cond.name)
@@ -210,6 +261,14 @@ class StylesBindingEditor extends Component {
           errors.push({ index: condIndex, message: evaluateErr.message })
         }
       })
+    } else if (conditions.default != null && showDefaultControl) {
+      newBinding.compose = {}
+
+      newBinding.compose.conditional = {
+        default: conditions.default
+      }
+
+      newExpression = null
     } else {
       newBinding = null
       newExpression = null
@@ -373,7 +432,7 @@ class StylesBindingEditor extends Component {
   }
 
   render () {
-    const { isDirty, conditions } = this.state
+    const { showDefaultControl, isDirty, conditions } = this.state
     const { componentType, propName, options, onClose } = this.props
 
     return (
@@ -401,6 +460,33 @@ class StylesBindingEditor extends Component {
           {this.renderConditions()}
           <button onClick={this.handleNewCondition}>Add new condition</button>
         </div>
+        <br />
+        <div style={{ fontSize: '0.7rem' }}>
+          In case no condition is resolved as true, you can apply a default value as well
+          <br />
+          <br />
+          <label>
+            <input
+              type='checkbox'
+              checked={showDefaultControl}
+              style={{ marginLeft: '0px' }}
+              onChange={this.handleToogleDefaultValue}
+            />
+            Define default value
+          </label>
+        </div>
+        {showDefaultControl && (
+          <div>
+            <div style={{ marginBottom: '0.3rem' }}>
+              <b>{options.styleDisplayName || options.styleName}</b>
+            </div>
+            {this.renderStyleControl(
+              undefined,
+              options.styleName,
+              conditions.default
+            )}
+          </div>
+        )}
         <br />
         <button onClick={this.handleSave}>Save</button>
         {' '}

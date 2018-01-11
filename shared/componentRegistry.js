@@ -169,7 +169,7 @@ function loadComponents (componentsToLoad, reload = false) {
             let styleValues
             let style
 
-            if (bindings != null && expressions != null) {
+            if (bindings != null) {
               const bindingNames = Object.keys(bindings)
               // eslint-disable-next-line no-useless-escape
               const styleKeysReg = new RegExp(`^@${stylePropName}\.([^\s\n\r]+)`)
@@ -190,21 +190,31 @@ function loadComponents (componentsToLoad, reload = false) {
 
                 stylesToResolve.push(styleKey)
 
+                debugger
+
                 if (
-                  !Array.isArray(styleBinding.expression) ||
-                  styleBinding.expression.length === 0
+                  expressions != null &&
+                  Array.isArray(styleBinding.expression) &&
+                  styleBinding.expression.length > 0
                 ) {
+                  value = resolveBinding({
+                    binding: styleBinding,
+                    bindingName: bName,
+                    expressions,
+                    context: data,
+                    rootContext: data,
+                    computedFields
+                  })
+                } else if (
+                  isObject(styleBinding.compose) &&
+                  isObject(styleBinding.compose.conditional) &&
+                  styleBinding.compose.conditional.default != null
+                ) {
+                  // grab the default case is there is no expressions to resolve
+                  value = styleBinding.compose.conditional.default
+                } else {
                   return
                 }
-
-                value = resolveBinding({
-                  binding: styleBinding,
-                  bindingName: bName,
-                  expressions,
-                  context: data,
-                  rootContext: data,
-                  computedFields
-                })
 
                 styleValues[styleKey] = value
               })
@@ -301,9 +311,12 @@ function resolveBinding ({
           resolvedContent = undefined
         }
       } else {
-        // TODO: here goes the code and logic to apply the
-        // default case if it exists
-        resolvedContent = undefined
+        // no expression defined returned true so we take
+        // the default value if it was defined
+        resolvedContent = (
+          isObject(binding.compose.conditional) &&
+          binding.compose.conditional.default != null
+        ) ? binding.compose.conditional.default : undefined
       }
     } else if (binding.expression != null) {
       // resolving rich content
