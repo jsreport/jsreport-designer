@@ -80,9 +80,10 @@ class DataFieldsViewer extends Component {
     field,
     computedFields,
     leftSpace,
-    collapsed
+    collapsed,
+    insideNewContext
   }) {
-    const { title, disabled, selectedField, getDataExpressionName, getFullDataExpressionName } = this.props
+    const { title, disabled, selectedField, allowFirstLevelArrayProperties, getDataExpressionName, getFullDataExpressionName } = this.props
     const { fieldCollapse } = this.state
     let allowedTypes = this.props.allowedTypes
     let fullExpression = getFullDataExpressionName(expression)
@@ -249,6 +250,14 @@ class DataFieldsViewer extends Component {
 
                 if (field.type === 'array' && isFieldDisabled && !rootIsArray) {
                   innerIsDisabled = true
+                } else if (field.type === 'array' && isFieldDisabled && rootIsArray) {
+                  if (allowFirstLevelArrayProperties === true && expression.length === 0) {
+                    innerIsDisabled = false
+                  } else {
+                    innerIsDisabled = true
+                  }
+                } else if (insideNewContext && !allowFirstLevelArrayProperties) {
+                  innerIsDisabled = true
                 } else {
                   if (allowedTypes.indexOf('scalar') !== -1) {
                     innerIsDisabled = (
@@ -286,7 +295,8 @@ class DataFieldsViewer extends Component {
                         expression: [...expression, getDataExpressionName(fieldType, innerFieldId)],
                         field: innerField,
                         leftSpace: padding + leftSpace,
-                        collapsed: fieldCollapse[innerFieldKey]
+                        collapsed: fieldCollapse[innerFieldKey],
+                        insideNewContext: field.type === 'array'
                       })
                     )}
                   </li>
@@ -389,7 +399,8 @@ class DataFieldsViewer extends Component {
             field: dataFields,
             computedFields,
             leftSpace: 0,
-            collapsed: fieldCollapse[rootKey]
+            collapsed: fieldCollapse[rootKey],
+            insideNewContext: false
           })}
         </div>
         <br />
@@ -429,6 +440,7 @@ DataFieldsViewer.wrappedComponent.propTypes = {
   computedFields: PropTypes.array,
   selectedField: PropTypes.object,
   allowedTypes: PropTypes.arrayOf(PropTypes.string).isRequired,
+  allowFirstLevelArrayProperties: PropTypes.bool,
   getDataExpressionName: PropTypes.func,
   getFullDataExpressionName: PropTypes.func,
   onSelect: PropTypes.func

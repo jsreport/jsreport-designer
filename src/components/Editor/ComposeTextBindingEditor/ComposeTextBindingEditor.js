@@ -186,6 +186,7 @@ class ComposeTextBindingEditor extends Component {
             initialContent={this.getInitialContent()}
             dataFields={options.dataFields}
             allowedDataExpressionTypes={options.allowedDataExpressionTypes}
+            allowFirstLevelArrayProperties={options.allowFirstLevelArrayProperties}
             expressions={component.expressions ? component.expressions[bindingName] : undefined}
             onContentChange={this.handleContentChange}
           />

@@ -166,7 +166,7 @@ class ContentEditor extends Component {
   }
 
   render () {
-    const { dataFields, allowedDataExpressionTypes } = this.props
+    const { dataFields, allowedDataExpressionTypes, allowFirstLevelArrayProperties } = this.props
     const { editorState, editingExpressions } = this.state
 
     // If the user changes block type before entering any text, we can
@@ -197,6 +197,7 @@ class ContentEditor extends Component {
             editorState={editorState}
             dataFields={dataFields}
             allowedDataExpressionTypes={allowedDataExpressionTypes}
+            allowFirstLevelArrayProperties={allowFirstLevelArrayProperties}
             expressions={editingExpressions}
             onExpressionEdit={this.handleExpressionEdit}
           />
@@ -220,6 +221,7 @@ ContentEditor.propTypes = {
   initialContent: PropTypes.any,
   dataFields: PropTypes.object,
   allowedDataExpressionTypes: PropTypes.arrayOf(PropTypes.string),
+  allowFirstLevelArrayProperties: PropTypes.bool,
   expressions: PropTypes.object,
   onContentChange: PropTypes.func
 }

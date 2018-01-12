@@ -203,6 +203,7 @@ class DataSelectBindingEditor extends Component {
             selectedField={selectedField}
             dataFields={options.dataFields}
             allowedTypes={options.allowedTypes}
+            allowFirstLevelArrayProperties={options.allowFirstLevelArrayProperties}
             onSelect={this.handleSelect}
           />
         </div>

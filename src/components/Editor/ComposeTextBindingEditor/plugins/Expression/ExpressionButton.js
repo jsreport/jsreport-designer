@@ -131,7 +131,7 @@ class ExpressionButton extends Component {
   render () {
     const { getExpressionEntityInSelection, getExpressionFromEntity } = this
     const { showExpressionInput } = this.state
-    const { editorState, dataFields, allowedDataExpressionTypes, expressions } = this.props
+    const { editorState, dataFields, allowedDataExpressionTypes, allowFirstLevelArrayProperties, expressions } = this.props
     const currentExprEntity = getExpressionEntityInSelection(editorState)
 
     return (
@@ -152,6 +152,7 @@ class ExpressionButton extends Component {
             initialExpression={getExpressionFromEntity(currentExprEntity)}
             dataFields={dataFields}
             allowedDataExpressionTypes={allowedDataExpressionTypes}
+            allowFirstLevelArrayProperties={allowFirstLevelArrayProperties}
             expressions={expressions}
             onSave={this.handleSaveExpression}
             onClose={this.handleCloseExpression}
@@ -167,6 +168,7 @@ ExpressionButton.propTypes = {
   editorState: PropTypes.any.isRequired,
   dataFields: PropTypes.object,
   allowedDataExpressionTypes: PropTypes.arrayOf(PropTypes.string),
+  allowFirstLevelArrayProperties: PropTypes.bool,
   expressions: PropTypes.object,
   onExpressionEdit: PropTypes.func
 }

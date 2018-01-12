@@ -179,7 +179,8 @@ class TablePropertiesEditor extends PureComponent {
             'data',
             'dataProperties'
           )
-        )
+        ),
+        allowFirstLevelArrayProperties: params.context.name === 'value'
       }
     })
   }

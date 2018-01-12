@@ -192,7 +192,7 @@ class ExpressionEdit extends Component {
       expressionValueError
     } = this.state
 
-    const { top, left, dataFields, allowedDataExpressionTypes } = this.props
+    const { top, left, dataFields, allowedDataExpressionTypes, allowFirstLevelArrayProperties } = this.props
 
     return (
       <div
@@ -238,6 +238,7 @@ class ExpressionEdit extends Component {
               selectedField={selectedDataField}
               dataFields={dataFields}
               allowedTypes={allowedDataExpressionTypes}
+              allowFirstLevelArrayProperties={allowFirstLevelArrayProperties}
               onSelect={(selectedField) => this.setState({ selectedDataField: selectedField })}
             />
           </div>
@@ -289,6 +290,7 @@ ExpressionEdit.propTypes = {
   initialExpression: PropTypes.object,
   dataFields: PropTypes.object,
   allowedDataExpressionTypes: PropTypes.arrayOf(PropTypes.string),
+  allowFirstLevelArrayProperties: PropTypes.bool,
   expressions: PropTypes.object,
   onSave: PropTypes.func,
   onClose: PropTypes.func
