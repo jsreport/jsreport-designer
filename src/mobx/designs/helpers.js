@@ -115,8 +115,14 @@ function findProjectedFilledArea ({
 
     // does the projected preview has some conflic with other item in the group?
     if (
+      // checking if start col is in between the item
       (currentItem.start <= startCol && currentItem.end >= startCol) ||
-      (currentItem.start <= endCol && currentItem.end >= endCol)
+      // checking if end col is in between the item
+      (currentItem.start <= endCol && currentItem.end >= endCol) ||
+      // checking if item start is in between the start-end col range
+      (startCol <= currentItem.start && endCol >= currentItem.start) ||
+      // checking if item end is in between the start-end col range
+      (startCol <= currentItem.end && endCol >= currentItem.end)
     ) {
       conflict = true
     }
