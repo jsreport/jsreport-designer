@@ -84,6 +84,7 @@ function findProjectedFilledArea ({
   let endCol
   let visuallyConsumedCols
   let areaBox
+  let targetItem
 
   if (startOffset == null) {
     endCol = (startCol + colsToConsume) - 1
@@ -105,8 +106,21 @@ function findProjectedFilledArea ({
   for (let i = 0; i < currentGroup.items.length; i++) {
     let currentItem = currentGroup.items[i]
 
-    if (conflict) {
+    if (
+      targetItem == null &&
+      // checking if cursor col index is in between the item
+      currentItem.start <= targetColInfo.cursorIndex &&
+      currentItem.end >= targetColInfo.cursorIndex
+    ) {
+      targetItem = i
+    }
+
+    if (conflict && targetItem != null) {
       break
+    }
+
+    if (conflict) {
+      continue
     }
 
     if (noConflictItem != null && i === noConflictItem) {
@@ -139,7 +153,10 @@ function findProjectedFilledArea ({
   return {
     filled,
     conflict,
+    // group that is behind the cursor
     group: targetGroup,
+    // item that is behind the cursor
+    item: targetItem,
     start: startCol,
     end: endCol,
     areaBox
@@ -482,28 +499,34 @@ function addComponentToDesign ({
     // getting existing group
     currentGroup = groups[targetArea.group]
 
-    // searching for a item before/after the new one, or if there
-    // is already an existing item in current position
-    currentGroup.items.forEach((item, index) => {
-      if (
-        componentInExistingItemIndex == null &&
-        item.start <= targetArea.start &&
-        item.end >= targetArea.start
-      ) {
-        // getting the index of the first item
-        componentInExistingItemIndex = index
-      }
+    if (targetArea.item == null) {
+      // if an existing item was not the target then
+      // search for a item before/after the new one
+      currentGroup.items.forEach((item, index) => {
+        if (
+          componentInExistingItemIndex == null &&
+          item.start <= targetArea.start &&
+          item.end >= targetArea.start
+        ) {
+          // getting the index of the first item
+          componentInExistingItemIndex = index
+        }
 
-      if (itemAfterNewIndex == null && targetArea.end < item.start) {
-        // getting the index of the first item after
-        itemAfterNewIndex = index
-      }
+        if (itemAfterNewIndex == null && targetArea.end < item.start) {
+          // getting the index of the first item after
+          itemAfterNewIndex = index
+        }
 
-      if (item.end < targetArea.start) {
-        // getting the index of the last item before
-        itemBeforeNewIndex = index
-      }
-    })
+        if (item.end < targetArea.start) {
+          // getting the index of the last item before
+          itemBeforeNewIndex = index
+        }
+      })
+    } else {
+      // if item was the target then just find the
+      // before/after item more easily
+      componentInExistingItemIndex = targetArea.item
+    }
 
     if (componentInExistingItemIndex != null) {
       currentItem = currentGroup.items[componentInExistingItemIndex]

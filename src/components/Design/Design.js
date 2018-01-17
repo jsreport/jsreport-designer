@@ -3,6 +3,7 @@ import React, { Component } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import PropTypes from 'prop-types'
+import throttle from 'lodash/throttle'
 import memoize from 'lodash/memoize'
 import { ComponentDragTypes } from '../../Constants'
 import Canvas from './Canvas'
@@ -24,13 +25,46 @@ class Design extends Component {
     this.handleCanvasDragLeave = this.handleCanvasDragLeave.bind(this)
     this.handleCanvasDragEnd = this.handleCanvasDragEnd.bind(this)
 
-    // memoizing the calculation, only update when the cursor offset has changed
-    this.handleCanvasDragOver = memoize(
+    // it is important to throttle the launching of the event to avoid having a
+    // bad experience while dragging
+    this.handleCanvasDragOver = throttle(
       this.handleCanvasDragOver.bind(this),
-      ({ clientOffset }) => {
-        return clientOffset.x + ',' + clientOffset.y
+      100,
+      { leading: true, trailing: false }
+    )
+
+    // memoizing the calculation, only update when the cursor offset has changed
+    this.showHighlight = memoize(
+      this.showHighlight.bind(this),
+      (designId, dragPayload) => {
+        const cache = this.showHighlight.cache
+        const { clientOffset, targetCanvas } = dragPayload
+
+        const key = `${
+          targetCanvas.group != null ? targetCanvas.group + '/' : ''
+        }${
+          targetCanvas.item != null ? targetCanvas.item + '/' : ''
+        }${clientOffset.x},${clientOffset.y}`
+
+        // keeping the memoize cache in just one item
+        if (
+          this.previousHighlightKey != null &&
+          this.previousHighlightKey !== key
+        ) {
+          cache.clear()
+        }
+
+        this.previousHighlightKey = key
+
+        return key
       }
     )
+  }
+
+  showHighlight (designId, dragPayload) {
+    const { highlightAreaFromDrag } = this.props
+
+    highlightAreaFromDrag(designId, dragPayload)
   }
 
   handleCanvasClick () {
@@ -45,10 +79,11 @@ class Design extends Component {
   }
 
   handleCanvasDragOver (dragPayload) {
-    const { design, highlightAreaFromDrag } = this.props
+    const { showHighlight } = this
+    const { design } = this.props
 
     if (dragPayload) {
-      highlightAreaFromDrag(design.id, dragPayload)
+      showHighlight(design.id, dragPayload)
     }
   }
 
@@ -60,35 +95,73 @@ class Design extends Component {
 
   handleCanvasDragEnd () {
     const { design, clearHighlightArea } = this.props
+    const { showHighlight } = this
+
+    this.previousHighlightKey = null
+
+    if (showHighlight.cache) {
+      showHighlight.cache.clear()
+    }
 
     clearHighlightArea(design.id)
   }
 
   handleCanvasDrop (dropPayload) {
     const { design, clearHighlightArea, addOrRemoveComponentFromDrag } = this.props
-    const { groups, highlightedArea } = design
+    const { highlightedArea } = design
     const { dragType, draggedEl, targetCanvas } = dropPayload
+    let shouldProcessComponent = false
 
-    let shouldProcessComponent = (
-      highlightedArea != null &&
-      !highlightedArea.conflict &&
-      highlightedArea.filled
-    )
-
-    if (!shouldProcessComponent) {
-      return
+    if (targetCanvas == null) {
+      return clearHighlightArea(design.id)
     }
 
-    if (dragType === ComponentDragTypes.COMPONENT && targetCanvas.item != null) {
-      let targetDesignItem = groups[targetCanvas.group].items[targetCanvas.item]
-
-      // process the component if there is a change in group/item or position
+    if (
+      dragType === ComponentDragTypes.COMPONENT &&
+      targetCanvas.item == null &&
+      highlightedArea.item != null
+    ) {
+      // if there is an inconsistence about item detection, don't let it pass
+      // `targetCanvas.item` is what is detected from dnd events and
+      // `highlightedArea.item` is what is detected using custom logic and math
+      // so both values should be the same if item is detected as empty in dnd
+      shouldProcessComponent = false
+    } else if (dragType === ComponentDragTypes.COMPONENT && targetCanvas.item != null) {
+      // if coming from a component drag then check if dropped inside an item
+      // only process the component if there is a change in group/item or position
+      // and there is no area box shown
       shouldProcessComponent = (
-        (draggedEl.canvas.group !== targetCanvas.group &&
-        draggedEl.canvas.item !== targetCanvas.item) ||
-        (highlightedArea.end > targetDesignItem.end ||
-        highlightedArea.start < targetDesignItem.start)
+        (draggedEl.canvas.group !== targetCanvas.group ||
+        draggedEl.canvas.item !== targetCanvas.item) &&
+        highlightedArea.contextBox != null
       )
+    } else if (targetCanvas.item != null) {
+      // in case that the target is on item but the dragged element does not
+      // come from component in canvas then just let it pass if there is context
+      // box shown
+      shouldProcessComponent = (
+        highlightedArea.contextBox != null
+      )
+    } else {
+      // in other cases just check is there is any conflict or if the dragged element
+      // is not filled in the highlighted area
+      shouldProcessComponent = (
+        !highlightedArea.conflict &&
+        highlightedArea.filled
+      )
+
+      if (
+        shouldProcessComponent === true &&
+        dragType === ComponentDragTypes.COMPONENT &&
+        highlightedArea.areaBox == null
+      ) {
+        // but in case of dragged from component
+        // (with no context item highlighting) check if the group
+        // has changed
+        shouldProcessComponent = shouldProcessComponent && (
+          draggedEl.canvas.group !== targetCanvas.group
+        )
+      }
     }
 
     clearHighlightArea(design.id)

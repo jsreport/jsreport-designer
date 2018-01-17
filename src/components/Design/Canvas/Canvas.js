@@ -4,7 +4,6 @@ import PropTypes from 'prop-types'
 // eslint-disable-next-line no-unused-vars
 import { Provider, observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
-import throttle from 'lodash/throttle'
 import { ComponentDragTypes } from '../../../Constants'
 import DesignContainer from './DesignContainer'
 import styles from './Canvas.scss'
@@ -125,13 +124,7 @@ class Canvas extends Component {
     this.draggingTimeout = null
     this.dragOverContext = null
 
-    // it is important to throttle the launching of the event to avoid having a
-    // bad experience while dragging
-    this.handleDragOver = throttle(
-      this.handleDragOver.bind(this),
-      100,
-      { leading: true }
-    )
+    this.handleDragOver = this.handleDragOver.bind(this)
   }
 
   componentDidMount () {
@@ -191,8 +184,8 @@ class Canvas extends Component {
   handleDragOver (dragOverContext) {
     // ensuring that "onDragOver" is not being fired when
     // isDraggingOver is not true in Canvas.
-    // this scenario is possible just because we are throttling the original
-    // event and because of that we can have possible race conditions
+    // this scenario is possible just because we are throttling the calls to this event and
+    // because of that we can have possible race conditions
     // between "onDragLeave", "onDragEnd" and "onDragOver"
     if (!this.props.isDraggingOver) {
       return

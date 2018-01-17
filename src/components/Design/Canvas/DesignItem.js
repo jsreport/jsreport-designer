@@ -202,15 +202,13 @@ class DesignItem extends Component {
   }
 
   handleComponentClick (ev, componentId) {
-    const { design, item, setSelection } = this.props
+    const { design, setSelection } = this.props
 
     // stop progagation of component click
     ev.preventDefault()
     ev.stopPropagation()
 
-    if (!item.selected) {
-      setSelection(design.id, componentId)
-    }
+    setSelection(design.id, componentId)
 
     setTimeout(() => this.focusSelection(), 0)
   }

@@ -6,6 +6,20 @@
   box-shadow: 0px 0px 1px 0px #3068d8;
 }
 
+/*pseudo-element to prevent any dom element inside to a component*/
+/*to be draggable (since images an links are draggable by default*/
+/*we need to disable that behaviour)*/
+.designComponentInteractive:before {
+  content: "";
+  display: block;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+}
+
 .designComponentInteractive[data-selected],
 .designComponentInteractive[data-selected-preview],
 .designComponentInteractive[data-dragging-placeholder] {
@@ -16,6 +30,7 @@
   /*is important to use outline because outline does not consume*/
   /*the width and height of element*/
   outline: 1px dashed rgba(0, 0, 0, 0.8);
+  box-shadow: 0px 0px 3px 1px rgba(0, 0, 0, 0.6);
 }
 
 .designComponentInteractive[data-selected-preview] {

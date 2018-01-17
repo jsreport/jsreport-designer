@@ -308,17 +308,22 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     clientOffset
   } = dragPayload
 
-  let { x: cursorOffsetX } = clientOffset
-  let { height, top, left } = targetCanvas.groupDimensions
-  let targetItemIndex = targetCanvas.item
+  const { x: cursorOffsetX } = clientOffset
+  const { height, top, left } = targetCanvas.groupDimensions
+  const targetItemIndex = targetCanvas.item
+  const targetOnItem = targetItemIndex != null
+
   let noConflictItem
   let highlightedArea
   let originColIndex
+  let colInCursor
 
   let targetColInfo = {
     height,
     top
   }
+
+  colInCursor = cursorOffsetX - left
 
   if (draggedEl.consumedCols === 1) {
     // when only 1 col will be consumed start col should be
@@ -335,6 +340,13 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
   }
 
   originColIndex = Math.floor(originColIndex / colWidth)
+  colInCursor = Math.floor(colInCursor / colWidth)
+
+  if (colInCursor < 0) {
+    colInCursor = 0
+  } else if (colInCursor > numberOfCols - 1) {
+    colInCursor = numberOfCols - 1
+  }
 
   if (originColIndex < 0) {
     targetColInfo.startOffset = Math.abs(originColIndex)
@@ -345,6 +357,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     targetColInfo.index = originColIndex
   }
 
+  targetColInfo.cursorIndex = colInCursor
   targetColInfo.left = left + (targetColInfo.index * colWidth)
 
   if (dragType === ComponentDragTypes.COMPONENT && draggedEl.canvas.group === targetCanvas.group) {
@@ -359,7 +372,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     noConflictItem
   })
 
-  if (dragType === ComponentDragTypes.COMPONENT && targetItemIndex != null) {
+  if (targetOnItem) {
     let targetItem = groups[targetCanvas.group].items[targetItemIndex]
 
     highlightedArea.contextBox = {
@@ -368,8 +381,11 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
       width: ((targetItem.end - targetItem.start) + 1) * colWidth,
       height: highlightedArea.areaBox.height
     }
+
+    // don't show element filled area, just the context
+    delete highlightedArea.areaBox
   } else {
-    highlightedArea.context = null
+    highlightedArea.contextBox = null
   }
 
   highlightArea(design.id, highlightedArea)
@@ -456,13 +472,13 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
 
   targetGroup = groups[targetCanvas.group]
 
+  if (targetCanvas.item != null) {
+    targetItem = targetGroup.items[targetCanvas.item]
+  }
+
   if (dragType === ComponentDragTypes.COMPONENT) {
     if (draggedEl.canvas.item != null) {
       originItem = groups[draggedEl.canvas.group].items[draggedEl.canvas.item]
-    }
-
-    if (targetCanvas.item != null) {
-      targetItem = targetGroup.items[targetCanvas.item]
     }
   }
 
@@ -498,6 +514,7 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     componentSize: draggedEl.size,
     targetArea: {
       group: targetCanvas.group,
+      item: targetCanvas.item,
       start,
       end,
       minSpace: targetMinSpace

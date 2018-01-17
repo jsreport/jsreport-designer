@@ -52,7 +52,9 @@ class SideBar extends Component {
     let colWidth = this.props.design.colWidth
 
     let item = {
-      ...componentType
+      name: componentType.name,
+      icon: componentType.icon,
+      componentTypeGroup: componentType.group
     }
 
     let component
