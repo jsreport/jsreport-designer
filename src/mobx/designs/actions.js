@@ -360,8 +360,19 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
   targetColInfo.cursorIndex = colInCursor
   targetColInfo.left = left + (targetColInfo.index * colWidth)
 
-  if (dragType === ComponentDragTypes.COMPONENT && draggedEl.canvas.group === targetCanvas.group) {
-    noConflictItem = draggedEl.canvas.item
+  if (
+    dragType === ComponentDragTypes.COMPONENT &&
+    draggedEl.canvas.group === targetCanvas.group
+  ) {
+    const originItem = design.groups[draggedEl.canvas.group].items[draggedEl.canvas.item]
+
+    // only have no conflict if the origin item has
+    // only 1 component, these allows moving an item if it only
+    // has 1 component, when the item has more than one it correctly
+    // represent space conflicts if any
+    if (originItem.components.length <= 1) {
+      noConflictItem = draggedEl.canvas.item
+    }
   }
 
   highlightedArea = findProjectedFilledArea({
