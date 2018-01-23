@@ -7,6 +7,7 @@ import {
   generateGroup,
   findProjectedFilledArea,
   findProjectedFilledAreaWhenResizing,
+  findMarkedArea,
   addComponentToDesign,
   removeComponentInDesign,
   updateComponentInDesign,
@@ -315,6 +316,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
 
   let noConflictItem
   let highlightedArea
+  let markedArea
   let originColIndex
   let colInCursor
 
@@ -385,12 +387,45 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
 
   if (targetOnItem) {
     let targetItem = groups[targetCanvas.group].items[targetItemIndex]
+    let markTargetIsBlock = false
+    let markTargetDimensions
+    let markTargetElementId
+    let markMoveType
 
     highlightedArea.contextBox = {
       top: highlightedArea.areaBox.top,
       left: left + (targetItem.start * colWidth),
       width: ((targetItem.end - targetItem.start) + 1) * colWidth,
       height: highlightedArea.areaBox.height
+    }
+
+    if (targetCanvas.componentBehind != null) {
+      markTargetDimensions = targetCanvas.componentBehind.dimensions
+      markTargetElementId = targetCanvas.componentBehind.id
+    } else {
+      // when no component, make the mark a block target
+      markTargetIsBlock = true
+      // when no component, make the mark always after
+      markMoveType = 'after'
+      markTargetElementId = targetItem.id
+      markTargetDimensions = document.getElementById(targetItem.id).getBoundingClientRect()
+    }
+
+    markedArea = findMarkedArea({
+      design,
+      referencePoint: clientOffset,
+      moveType: markMoveType,
+      originElementId: dragType === ComponentDragTypes.COMPONENT ? (
+        draggedEl.id
+      ) : undefined,
+      targetDimensions: markTargetDimensions,
+      targetIsBlock: markTargetIsBlock,
+      targetType: 'component',
+      targetElementId: markTargetElementId
+    })
+
+    if (markedArea) {
+      highlightedArea.mark = markedArea
     }
 
     // don't show element filled area, just the context
@@ -526,6 +561,7 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     targetArea: {
       group: targetCanvas.group,
       item: targetCanvas.item,
+      componentAt: targetCanvas.componentAt,
       start,
       end,
       minSpace: targetMinSpace

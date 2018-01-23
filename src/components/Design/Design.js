@@ -44,6 +44,8 @@ class Design extends Component {
           targetCanvas.group != null ? targetCanvas.group + '/' : ''
         }${
           targetCanvas.item != null ? targetCanvas.item + '/' : ''
+        }${
+          targetCanvas.componentBehind != null ? '(with component)/' : ''
         }${clientOffset.x},${clientOffset.y}`
 
         // keeping the memoize cache in just one item
@@ -126,21 +128,12 @@ class Design extends Component {
       // `highlightedArea.item` is what is detected using custom logic and math
       // so both values should be the same if item is detected as empty in dnd
       shouldProcessComponent = false
-    } else if (dragType === ComponentDragTypes.COMPONENT && targetCanvas.item != null) {
-      // if coming from a component drag then check if dropped inside an item
-      // only process the component if there is a change in group/item or position
-      // and there is no area box shown
-      shouldProcessComponent = (
-        (draggedEl.canvas.group !== targetCanvas.group ||
-        draggedEl.canvas.item !== targetCanvas.item) &&
-        highlightedArea.contextBox != null
-      )
     } else if (targetCanvas.item != null) {
-      // in case that the target is on item but the dragged element does not
-      // come from component in canvas then just let it pass if there is context
-      // box shown
+      // in case that the target is on item then just let it pass if there is context
+      // box shown and mark
       shouldProcessComponent = (
-        highlightedArea.contextBox != null
+        highlightedArea.contextBox != null &&
+        highlightedArea.mark != null
       )
     } else {
       // in other cases just check is there is any conflict or if the dragged element
@@ -172,6 +165,10 @@ class Design extends Component {
 
     addOrRemoveComponentFromDrag(design.id, {
       ...dropPayload,
+      targetCanvas: {
+        ...dropPayload.targetCanvas,
+        componentAt: highlightedArea.mark != null ? highlightedArea.mark.move : undefined
+      },
       start: highlightedArea.start,
       end: highlightedArea.end
     }, { select: true })

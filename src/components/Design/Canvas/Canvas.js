@@ -33,7 +33,7 @@ const canvasTarget = {
       return
     }
 
-    let { element: designElement, groupDimensions } = dragOverContext
+    let { element: designElement, componentBehind, groupDimensions } = dragOverContext
     let targetCanvas
 
     if (!designElement) {
@@ -53,6 +53,10 @@ const canvasTarget = {
 
     if (targetCanvas != null) {
       targetCanvas.groupDimensions = groupDimensions
+
+      if (componentBehind != null) {
+        targetCanvas.componentBehind = componentBehind
+      }
     }
 
     onDragOver({

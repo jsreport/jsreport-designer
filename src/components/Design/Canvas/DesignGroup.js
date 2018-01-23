@@ -34,7 +34,12 @@ const groupTarget = {
 
     if (onDragOver) {
       if (monitor.isOver({ shallow: true })) {
-        onDragOver({ element: group, groupDimensions })
+        console.log(`only group`)
+        onDragOver({
+          element: group,
+          groupDimensions,
+          componentBehind: undefined
+        })
       } else if (monitor.isOver()) {
         onDragOver({ groupDimensions })
       }
@@ -112,6 +117,7 @@ class DesignGroup extends Component {
     return connectDropTarget(
       <div
         ref={this.getNode}
+        id={group.id}
         className={`${styles.designGroup} ${interactiveStyles.designGroupInteractive}`}
         style={inlineStyles}
         {...extraProps}

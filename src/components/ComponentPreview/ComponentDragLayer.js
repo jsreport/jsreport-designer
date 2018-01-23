@@ -70,6 +70,21 @@ function collect (monitor) {
 
 @observer
 class ComponentDragLayer extends Component {
+  componentWillReceiveProps (nextProps) {
+    const { design, updateDesign } = nextProps
+    const props = this.props
+
+    if (!design) {
+      return
+    }
+
+    if (props.isDragging === false && nextProps.isDragging === true) {
+      updateDesign(design.id, { isDragging: true })
+    } else if (props.isDragging === true && nextProps.isDragging === false) {
+      updateDesign(design.id, { isDragging: false })
+    }
+  }
+
   renderPreview (dataInput, dragItemType, colWidth, componentMeta) {
     switch (dragItemType) {
       case ComponentDragTypes.COMPONENT_BAR:
@@ -135,11 +150,13 @@ ComponentDragLayer.propTypes = {
     x: PropTypes.number.isRequired,
     y: PropTypes.number.isRequired
   }),
-  isDragging: PropTypes.bool.isRequired
+  isDragging: PropTypes.bool.isRequired,
+  updateDesign: PropTypes.func.isRequired
 }
 
 export default inject((injected) => ({
-  dataInput: injected.dataInputStore.value
+  dataInput: injected.dataInputStore.value,
+  updateDesign: injected.designsActions.update
 }))(
   DragLayer(collect)(ComponentDragLayer)
 )

@@ -238,6 +238,7 @@ class DesignComponent extends Component {
     let connectToDragSourceConditionally = this.connectToDragSourceConditionally
 
     const {
+      id,
       type,
       componentProps,
       rawContent,
@@ -263,8 +264,12 @@ class DesignComponent extends Component {
     return connectToDragSourceConditionally(
       <div
         ref={this.getComponentRef}
+        id={id}
         className={`${styles.designComponent} ${interactiveStyles.designComponentInteractive}`}
         {...extraProps}
+        data-jsreport-interactive-component
+        data-jsreport-component
+        data-jsreport-component-id={id}
         data-jsreport-component-type={type}
         onClick={this.handleClick}
         dangerouslySetInnerHTML={{

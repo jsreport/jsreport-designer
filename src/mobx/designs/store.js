@@ -51,6 +51,8 @@ class Design {
   // eslint-disable-next-line no-undef
   canvasRegistry = observable.map({}, 'canvasRegistry')
   // eslint-disable-next-line no-undef
+  @observable isDragging = false
+  // eslint-disable-next-line no-undef
   @observable isResizing = false
   // eslint-disable-next-line no-undef
   @observable isCanvasReady = false

@@ -13,7 +13,7 @@ class ComponentDragPreviewBox extends PureComponent {
     return (
       <div style={{
         width: `${width}px`,
-        opacity: '0.7'
+        opacity: '0.4'
       }}>
         <DesignComponent
           id={`dragPreview${componentMeta.name}`}
