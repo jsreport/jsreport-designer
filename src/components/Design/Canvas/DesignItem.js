@@ -283,9 +283,9 @@ class DesignItem extends Component {
       consumedCols,
       componentConsumedCols,
       canvas: {
-        group: design.canvasRegistry.get(item.parent.id).index,
-        item: design.canvasRegistry.get(item.id).index,
-        component: design.canvasRegistry.get(component.id).index
+        group: item.parent.id,
+        item: item.id,
+        component: component.id
       }
     }
   }

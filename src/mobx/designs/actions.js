@@ -298,7 +298,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     return
   }
 
-  const { numberOfCols, colWidth, groups } = design
+  const { numberOfCols, colWidth } = design
 
   const {
     dragType,
@@ -311,8 +311,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
 
   const { x: cursorOffsetX } = clientOffset
   const { height, top, left } = targetCanvas.groupDimensions
-  const targetItemIndex = targetCanvas.item
-  const targetOnItem = targetItemIndex != null
+  const targetOnItem = targetCanvas.item != null
 
   let noConflictItem
   let highlightedArea
@@ -366,7 +365,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     dragType === ComponentDragTypes.COMPONENT &&
     draggedEl.canvas.group === targetCanvas.group
   ) {
-    const originItem = design.groups[draggedEl.canvas.group].items[draggedEl.canvas.item]
+    const originItem = design.canvasRegistry.get(draggedEl.canvas.item).element
 
     // only have no conflict if the origin item has
     // only 1 component, these allows moving an item if it only
@@ -386,7 +385,7 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
   })
 
   if (targetOnItem) {
-    let targetItem = groups[targetCanvas.group].items[targetItemIndex]
+    let targetItem = design.canvasRegistry.get(targetCanvas.item).element
     let markTargetIsBlock = false
     let markTargetDimensions
     let markTargetElementId
@@ -500,8 +499,6 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     return
   }
 
-  const { groups } = design
-
   const {
     dragType,
     draggedEl,
@@ -510,29 +507,20 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     end
   } = dragPayload
 
-  let originItem
   let targetGroup
   let targetItem
   let targetMinSpace
   let componentToProcess
 
-  targetGroup = groups[targetCanvas.group]
+  targetGroup = design.canvasRegistry.get(targetCanvas.group).element
 
   if (targetCanvas.item != null) {
-    targetItem = targetGroup.items[targetCanvas.item]
-  }
-
-  if (dragType === ComponentDragTypes.COMPONENT) {
-    if (draggedEl.canvas.item != null) {
-      originItem = groups[draggedEl.canvas.group].items[draggedEl.canvas.item]
-    }
+    targetItem = design.canvasRegistry.get(targetCanvas.item).element
   }
 
   if (dragType === ComponentDragTypes.COMPONENT) {
     componentToProcess = (
-      originItem
-        .components[draggedEl.canvas.component]
-        .toJS(true)
+      design.canvasRegistry.get(draggedEl.canvas.component).element.toJS(true)
     )
 
     if (targetItem == null) {
@@ -596,7 +584,7 @@ export const startResizeElement = action(`${ACTION}_START_RESIZE_ELEMENT`, (desi
     elementDimensions
   } = payload
 
-  const { canvasRegistry, colWidth } = design
+  const { colWidth } = design
 
   let resizing = {}
   let limits = {}
@@ -641,7 +629,7 @@ export const startResizeElement = action(`${ACTION}_START_RESIZE_ELEMENT`, (desi
 
   highlightedArea = findProjectedFilledArea({
     design,
-    targetGroup: canvasRegistry.get(group.id).index,
+    targetGroup: group.id,
     targetColInfo: {
       height: elementDimensions.height,
       top: elementDimensions.top,

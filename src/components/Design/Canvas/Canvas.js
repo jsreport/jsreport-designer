@@ -10,7 +10,7 @@ import styles from './Canvas.scss'
 
 const canvasTarget = {
   hover (props, monitor, component) {
-    const { design, onDragOver } = props
+    const { onDragOver } = props
 
     if (!monitor.isOver()) {
       component.dragOverContext = null
@@ -42,12 +42,12 @@ const canvasTarget = {
 
     if (designElement.elementType === 'group') {
       targetCanvas = {
-        group: design.canvasRegistry.get(designElement.id).index
+        group: designElement.id
       }
     } else if (designElement.elementType === 'item') {
       targetCanvas = {
-        group: design.canvasRegistry.get(designElement.parent.id).index,
-        item: design.canvasRegistry.get(designElement.id).index
+        group: designElement.parent.id,
+        item: designElement.id
       }
     }
 
@@ -70,7 +70,6 @@ const canvasTarget = {
   },
 
   drop (props, monitor, component) {
-    const { design } = props
     const hasDroppedOnChild = monitor.didDrop()
 
     let dropResult = {
@@ -89,12 +88,12 @@ const canvasTarget = {
 
       if (designElement.elementType === 'group') {
         targetCanvas = {
-          group: design.canvasRegistry.get(designElement.id).index
+          group: designElement.id
         }
       } else if (designElement.elementType === 'item') {
         targetCanvas = {
-          group: design.canvasRegistry.get(designElement.parent.id).index,
-          item: design.canvasRegistry.get(designElement.id).index
+          group: designElement.parent.id,
+          item: designElement.id
         }
       }
 

@@ -76,8 +76,8 @@ function findProjectedFilledArea ({
   colsToConsume,
   noConflictItem
 }) {
-  const { numberOfCols, colWidth, groups } = design
-  let currentGroup = groups[targetGroup]
+  const { numberOfCols, colWidth } = design
+  let currentGroup = design.canvasRegistry.get(targetGroup).element
   let { index: startCol, startOffset } = targetColInfo
   let filled = false
   let conflict = false
@@ -112,7 +112,7 @@ function findProjectedFilledArea ({
       currentItem.start <= targetColInfo.cursorIndex &&
       currentItem.end >= targetColInfo.cursorIndex
     ) {
-      targetItem = i
+      targetItem = currentItem.id
     }
 
     if (conflict && targetItem != null) {
@@ -123,7 +123,7 @@ function findProjectedFilledArea ({
       continue
     }
 
-    if (noConflictItem != null && i === noConflictItem) {
+    if (noConflictItem != null && currentItem.id === noConflictItem) {
       continue
     }
 
@@ -528,7 +528,9 @@ function addComponentToDesign ({
     colWidth
   } = design
 
-  let layoutMode = groups[targetArea.group].layoutMode
+  let targetGroupRecord = design.canvasRegistry.get(targetArea.group)
+  let targetGroupIndex = targetGroupRecord.index
+  let layoutMode = targetGroupRecord.element.layoutMode
   let compProps = component.props || {}
   let newRecordForComponent = {}
   let componentMinSpace
@@ -555,7 +557,7 @@ function addComponentToDesign ({
   }
 
   // check to see if we should create a new group or update an existing one
-  if (placeholderGroupIndex != null && placeholderGroupIndex === targetArea.group) {
+  if (placeholderGroupIndex != null && placeholderGroupIndex === targetGroupIndex) {
     let newGroup
     let newItem
     let leftSpaceBeforeItem
@@ -597,15 +599,11 @@ function addComponentToDesign ({
     })
 
     canvasRegistry.set(newGroup.id, {
-      index: targetArea.group,
+      index: targetGroupIndex,
       element: newGroup
     })
 
     newRecordForComponent.index = 0
-    newRecordForComponent.groupId = newGroup.id
-    newRecordForComponent.groupIndex = targetArea.group
-    newRecordForComponent.itemId = newItem.id
-    newRecordForComponent.itemIndex = 0
 
     // adding group before placeholder (before the last group)
     groups.splice(Math.max(0, groups.length - 1), 0, newGroup)
@@ -620,7 +618,7 @@ function addComponentToDesign ({
     let existingItemIndex
 
     // getting existing group
-    currentGroup = groups[targetArea.group]
+    currentGroup = targetGroupRecord.element
 
     if (targetArea.item == null) {
       // if an existing item was not the target then
@@ -648,7 +646,7 @@ function addComponentToDesign ({
     } else {
       // if item was the target then just find the
       // before/after item more easily
-      existingItemIndex = targetArea.item
+      existingItemIndex = design.canvasRegistry.get(targetArea.item).index
     }
 
     if (existingItemIndex != null) {
@@ -670,10 +668,6 @@ function addComponentToDesign ({
       }
 
       newRecordForComponent.index = newComponentIndex
-      newRecordForComponent.groupId = currentGroup.id
-      newRecordForComponent.groupIndex = targetArea.group
-      newRecordForComponent.itemId = currentItem.id
-      newRecordForComponent.itemIndex = existingItemIndex
 
       newComponent.parent = currentItem
 
@@ -725,8 +719,6 @@ function addComponentToDesign ({
       }
 
       if (itemAfterNewIndex == null) {
-        newRecordForComponent.itemIndex = currentGroup.items.length
-
         canvasRegistry.set(currentItem.id, {
           index: currentGroup.items.length,
           element: currentItem
@@ -737,8 +729,6 @@ function addComponentToDesign ({
       } else {
         let nextItem = currentGroup.items[itemAfterNewIndex]
         let newLeftSpaceForNextItem
-
-        newRecordForComponent.itemIndex = itemAfterNewIndex
 
         canvasRegistry.set(currentItem.id, {
           index: itemAfterNewIndex,
@@ -774,10 +764,6 @@ function addComponentToDesign ({
         // then updating items order with the new item
         currentGroup.items.splice(itemAfterNewIndex, 0, currentItem)
       }
-
-      newRecordForComponent.groupId = currentGroup.id
-      newRecordForComponent.itemId = currentItem.id
-      newRecordForComponent.groupIndex = targetArea.group
     }
   }
 
