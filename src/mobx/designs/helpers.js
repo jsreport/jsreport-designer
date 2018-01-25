@@ -533,7 +533,6 @@ function addComponentToDesign ({
   let layoutMode = targetGroupRecord.element.layoutMode
   let compProps = component.props || {}
   let newRecordForComponent = {}
-  let componentMinSpace
   let newComponent
   let placeholderGroupIndex
 
@@ -549,12 +548,6 @@ function addComponentToDesign ({
   })
 
   newRecordForComponent.element = newComponent
-
-  if (layoutMode === 'grid') {
-    componentMinSpace = (targetArea.end - targetArea.start) + 1
-  } else {
-    componentMinSpace = Math.ceil(componentSize.width)
-  }
 
   // check to see if we should create a new group or update an existing one
   if (placeholderGroupIndex != null && placeholderGroupIndex === targetGroupIndex) {
@@ -659,12 +652,6 @@ function addComponentToDesign ({
         newComponentIndex = componentReferenceIndex
       } else {
         newComponentIndex = componentReferenceIndex + 1
-      }
-
-      // updating min space of item if component size
-      // is greater
-      if (componentMinSpace > currentItem.minSpace) {
-        currentItem.minSpace = componentMinSpace
       }
 
       newRecordForComponent.index = newComponentIndex

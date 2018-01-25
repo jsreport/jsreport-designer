@@ -507,29 +507,12 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     end
   } = dragPayload
 
-  let targetGroup
-  let targetItem
-  let targetMinSpace
   let componentToProcess
-
-  targetGroup = design.canvasRegistry.get(targetCanvas.group).element
-
-  if (targetCanvas.item != null) {
-    targetItem = design.canvasRegistry.get(targetCanvas.item).element
-  }
 
   if (dragType === ComponentDragTypes.COMPONENT) {
     componentToProcess = (
       design.canvasRegistry.get(draggedEl.canvas.component).element.toJS(true)
     )
-
-    if (targetItem == null) {
-      if (targetGroup.layoutMode === 'grid') {
-        targetMinSpace = draggedEl.componentConsumedCols
-      } else {
-        targetMinSpace = draggedEl.size.width
-      }
-    }
 
     removeComponent(design.id, componentToProcess.id, {
       select: false
@@ -552,7 +535,8 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
       componentAt: targetCanvas.componentAt,
       start,
       end,
-      minSpace: targetMinSpace
+      // always have a minSpace of 1
+      minSpace: 1
     }
   })
 
