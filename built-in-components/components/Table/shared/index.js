@@ -2,7 +2,7 @@
 module.exports = {
   getDefaultProps () {
     return {
-      data: [],
+      data: [null],
       columns: [{
         name: 'column1',
         value: 'value1'
