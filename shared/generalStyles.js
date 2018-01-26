@@ -1,5 +1,6 @@
 
 const styles = [
+  'margin',
   'padding',
   'background',
   'fontSize',
@@ -8,6 +9,26 @@ const styles = [
 ]
 
 const stylesMap = {
+  margin: (value) => {
+    let result = []
+
+    if (value == null) {
+      return undefined
+    }
+
+    const marginValue = value.margin
+
+    if (typeof marginValue !== 'object') {
+      result.push(`margin: ${marginValue}${value.unit};`)
+    } else {
+      result.push(`margin-top: ${marginValue.top != null ? marginValue.top : 0}${value.unit};`)
+      result.push(`margin-left: ${marginValue.left != null ? marginValue.left : 0}${value.unit};`)
+      result.push(`margin-right: ${marginValue.right != null ? marginValue.right : 0}${value.unit};`)
+      result.push(`margin-bottom: ${marginValue.bottom != null ? marginValue.bottom : 0}${value.unit};`)
+    }
+
+    return result.length > 0 ? result.join(' ') : undefined
+  },
   padding: (value) => {
     let result = []
 

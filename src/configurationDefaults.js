@@ -3,6 +3,7 @@ import isStyleProp from '../shared/isStyleProp'
 import ComposeTextBindingEditor from './components/Editor/ComposeTextBindingEditor'
 import DataSelectBindingEditor from './components/Editor/DataSelectBindingEditor'
 import StylesBindingEditor from './components/Editor/StylesBindingEditor'
+import MarginStyleControl from './components/Editor/StylesControl/MarginControl'
 import PaddingStyleControl from './components/Editor/StylesControl/PaddingControl'
 import BackgroundStyleControl from './components/Editor/StylesControl/BackgroundControl'
 import FontSizeStyleControl from './components/Editor/StylesControl/FontSizeControl'
@@ -23,6 +24,10 @@ export default () => {
     if (isStyleProp(meta)) {
       return { editor: StylesBindingEditor }
     }
+  }
+
+  configuration.generalStylesDefinition.margin = {
+    control: MarginStyleControl
   }
 
   configuration.generalStylesDefinition.padding = {
