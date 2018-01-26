@@ -1,5 +1,5 @@
 module.exports = () => ({
-  'grid': {
+  'canvas': {
     'baseWidth': 980,
     'numberOfCols': 12,
     'defaultNumberOfRows': 7,

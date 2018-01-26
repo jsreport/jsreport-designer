@@ -69,7 +69,7 @@ class DevTools extends Component {
     })
 
     payload = {
-      grid: {
+      canvas: {
         baseWidth: designObject.baseWidth,
         numberOfCols: designObject.numberOfCols,
         defaultNumberOfRows: designObject.defaultNumberOfRows,
@@ -115,7 +115,7 @@ class DevTools extends Component {
 
     return (
       <div style={{ position: 'absolute', top: '8px', right: '200px', zIndex: 100 }}>
-        <b>GRID: {numberOfCols} x {groups.length}, TOTAL ROWS: {groups.length}</b>
+        <b>CANVAS: {numberOfCols} x {groups.length}, TOTAL ROWS: {groups.length}</b>
         {' '}
         <button onClick={() => this.onInspectPayloadClick()}>Inspect Design payload</button>
         <button onClick={() => this.onPreviewClick('phantom-pdf')}>Preview pdf</button>
