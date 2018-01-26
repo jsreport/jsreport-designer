@@ -38,8 +38,8 @@
         {{#renderDesignGroup this (getDesignInformation 'grid.rowHeight')}}
           {{#renderDesignItem this}}
             {{#each components}}
-              {{#renderComponent type props bindings expressions template }}
-              {{/renderComponent}}
+              {{#renderDesignComponent type props bindings expressions template }}
+              {{/renderDesignComponent}}
             {{/each}}
           {{/renderDesignItem}}
         {{/renderDesignGroup}}
