@@ -140,7 +140,7 @@ function loadComponents (componentsToLoad, reload = false) {
         result.props = newProps
 
         componentHelpers = Object.assign({
-          resolveBinding: (bindingName, context, options) => {
+          $resolveBinding: (bindingName, context, options) => {
             let currentContext
 
             if (context == null || options == null) {
@@ -165,85 +165,15 @@ function loadComponents (componentsToLoad, reload = false) {
               computedFields
             })
           },
-          resolveStyle: (stylePropName) => {
-            let styleValues
-            let style
-
-            if (bindings != null) {
-              const bindingNames = Object.keys(bindings)
-              // eslint-disable-next-line no-useless-escape
-              const styleKeysReg = new RegExp(`^@${stylePropName}\.([^\s\n\r]+)`)
-              let stylesToResolve = []
-
-              styleValues = {}
-
-              bindingNames.forEach((bName) => {
-                const result = styleKeysReg.exec(bName)
-                let value
-
-                if (result == null) {
-                  return
-                }
-
-                const styleKey = result[1]
-                const styleBinding = bindings[bName]
-
-                stylesToResolve.push(styleKey)
-
-                if (
-                  expressions != null &&
-                  Array.isArray(styleBinding.expression) &&
-                  styleBinding.expression.length > 0
-                ) {
-                  value = resolveBinding({
-                    binding: styleBinding,
-                    bindingName: bName,
-                    expressions,
-                    context: data,
-                    rootContext: data,
-                    computedFields
-                  })
-                } else if (
-                  isObject(styleBinding.compose) &&
-                  isObject(styleBinding.compose.conditional) &&
-                  styleBinding.compose.conditional.default != null
-                ) {
-                  // grab the default case is there is no expressions to resolve
-                  value = styleBinding.compose.conditional.default
-                } else {
-                  return
-                }
-
-                styleValues[styleKey] = value
-              })
-
-              if (stylesToResolve.length === 0) {
-                // resolve from props when there is no
-                // style bindings to resolve
-                stylesToResolve = generalStyles.styles
-                styleValues = newProps[stylePropName]
-              }
-
-              style = generalStyles.resolver(
-                stylesToResolve,
-                generalStyles.stylesMap,
-                styleValues
-              )
-            } else {
-              styleValues = newProps[stylePropName]
-
-              style = generalStyles.resolver(
-                generalStyles.styles,
-                generalStyles.stylesMap,
-                styleValues
-              )
-            }
-
-            if (style == null) {
-              style = ''
-            }
-
-            return style
+          $resolveStyle: (stylePropName) => {
+            return resolveStyle({
+              stylePropName,
+              props: newProps,
+              bindings,
+              expressions,
+              context: data,
+              computedFields
+            })
           }
         }, componentModule.helpers())
 
@@ -535,6 +465,94 @@ function resolveBindingExpression (
     } : resolved[0].result,
     map: ensureMap === true ? true : isMap
   }
+}
+
+function resolveStyle ({
+  stylePropName,
+  props,
+  bindings,
+  expressions,
+  context,
+  computedFields
+}) {
+  let styleValues
+  let style
+
+  if (bindings != null) {
+    const bindingNames = Object.keys(bindings)
+    // eslint-disable-next-line no-useless-escape
+    const styleKeysReg = new RegExp(`^@${stylePropName}\.([^\s\n\r]+)`)
+    let stylesToResolve = []
+
+    styleValues = {}
+
+    bindingNames.forEach((bName) => {
+      const result = styleKeysReg.exec(bName)
+      let value
+
+      if (result == null) {
+        return
+      }
+
+      const styleKey = result[1]
+      const styleBinding = bindings[bName]
+
+      stylesToResolve.push(styleKey)
+
+      if (
+        expressions != null &&
+        Array.isArray(styleBinding.expression) &&
+        styleBinding.expression.length > 0
+      ) {
+        value = resolveBinding({
+          binding: styleBinding,
+          bindingName: bName,
+          expressions,
+          context: context,
+          rootContext: context,
+          computedFields
+        })
+      } else if (
+        isObject(styleBinding.compose) &&
+        isObject(styleBinding.compose.conditional) &&
+        styleBinding.compose.conditional.default != null
+      ) {
+        // grab the default case is there is no expressions to resolve
+        value = styleBinding.compose.conditional.default
+      } else {
+        return
+      }
+
+      styleValues[styleKey] = value
+    })
+
+    if (stylesToResolve.length === 0) {
+      // resolve from props when there is no
+      // style bindings to resolve
+      stylesToResolve = generalStyles.styles
+      styleValues = props[stylePropName]
+    }
+
+    style = generalStyles.resolver(
+      stylesToResolve,
+      generalStyles.stylesMap,
+      styleValues
+    )
+  } else {
+    styleValues = props[stylePropName]
+
+    style = generalStyles.resolver(
+      generalStyles.styles,
+      generalStyles.stylesMap,
+      styleValues
+    )
+  }
+
+  if (style == null) {
+    style = ''
+  }
+
+  return style
 }
 
 function replaceExpressionsInHTML (html, expressionsValues) {

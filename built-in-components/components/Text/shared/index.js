@@ -8,7 +8,7 @@ module.exports = {
   template () {
     return (
       `
-      <div style="{{resolveStyle "style"}}">
+      <div style="{{$resolveStyle "style"}}">
         <span>{{text}}</span>
       </div>
       `

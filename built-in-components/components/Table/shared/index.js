@@ -25,11 +25,11 @@ module.exports = {
         }
       </style>
       <div>
-        <table class="Table" style="{{resolveStyle "style"}}">
+        <table class="Table" style="{{$resolveStyle "style"}}">
           <tr>
             {{#each columns}}
               {{#if (isObject name)}}
-                <th>{{resolveBinding name.binding "/"}}</th>
+                <th>{{$resolveBinding name.binding "/"}}</th>
               {{else}}
                 <th>{{name}}</th>
               {{/if}}
@@ -39,7 +39,7 @@ module.exports = {
             <tr>
               {{#each @root.columns}}
                 {{#if (isObject value)}}
-                  <td>{{resolveBinding value.binding ../this}}</td>
+                  <td>{{$resolveBinding value.binding ../this}}</td>
                 {{else}}
                   <td>{{value}}</td>
                 {{/if}}

@@ -10,7 +10,7 @@ module.exports = {
   template () {
     return (
       `
-      <div style="{{resolveStyle "style"}} width: {{width}}px; height: {{height}}px">
+      <div style="{{$resolveStyle "style"}} width: {{width}}px; height: {{height}}px">
         <img style="width: 100%; height: 100%; vertical-align: top" src="{{url}}" />
       </div>
       `
