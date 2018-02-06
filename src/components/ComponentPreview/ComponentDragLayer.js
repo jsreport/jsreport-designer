@@ -5,7 +5,7 @@ import PropTypes from 'prop-types'
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragLayer } from 'react-dnd'
 import { ComponentDragTypes } from '../../Constants'
-import ComponentDragPreviewBox from './ComponentDragPreviewBox'
+import ComponentDragSnapshootBox from './ComponentDragSnapshootBox'
 import styles from './ComponentDragLayer.scss'
 
 function getDragLayerStyles (dragItemType, props) {
@@ -90,7 +90,7 @@ class ComponentDragLayer extends Component {
       case ComponentDragTypes.COMPONENT_BAR:
       case ComponentDragTypes.COMPONENT:
         return (
-          <ComponentDragPreviewBox
+          <ComponentDragSnapshootBox
             dataInput={dataInput}
             width={colWidth * (componentMeta.consumedCols != null ? componentMeta.consumedCols : 1)}
             componentMeta={componentMeta}

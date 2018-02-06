@@ -2,7 +2,7 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import { Component as DesignComponent } from '../DesignComponent'
 
-class ComponentDragPreviewBox extends PureComponent {
+class ComponentDragSnapshootBox extends PureComponent {
   render () {
     const {
       dataInput,
@@ -30,10 +30,10 @@ class ComponentDragPreviewBox extends PureComponent {
   }
 }
 
-ComponentDragPreviewBox.propTypes = {
+ComponentDragSnapshootBox.propTypes = {
   dataInput: PropTypes.oneOfType([PropTypes.object, PropTypes.array]),
   width: PropTypes.number.isRequired,
   componentMeta: PropTypes.object.isRequired
 }
 
-export default ComponentDragPreviewBox
+export default ComponentDragSnapshootBox

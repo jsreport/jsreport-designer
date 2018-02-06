@@ -68,11 +68,10 @@ class DesignComponent extends Component {
   }
 
   componentWillMount () {
-    const { designId, id, addFragmentToComponent } = this.props
+    const { designId, id, snapshoot, preview, addFragmentToComponent } = this.props
     const hasRawContent = this.props.rawContent != null
-    let componentCache = this.getComponentCache()
+    const componentCache = this.getComponentCache()
     let hasFragments = false
-    let renderedResult
 
     if (
       this.props.fragments != null &&
@@ -92,14 +91,15 @@ class DesignComponent extends Component {
       return
     }
 
-    renderedResult = this.renderComponent(this.props)
+    const renderedResult = this.renderComponent(this.props)
 
     if (
       designId != null &&
       renderedResult != null &&
       renderedResult.fragments != null &&
       !hasFragments &&
-      addFragmentToComponent != null
+      snapshoot !== true &&
+      preview !== true
     ) {
       let fragmentsToInsert = []
 
@@ -306,7 +306,6 @@ class DesignComponent extends Component {
     const componentCache = this.getComponentCache()
     const shouldRenderFragmentPlaceholder = preview !== true
     let shouldRenderAgain = true
-    let renderPayload
     let result
     let content
     let fragments
@@ -318,7 +317,7 @@ class DesignComponent extends Component {
     if (shouldRenderAgain) {
       this.dataInputChanged = false
 
-      renderPayload = {
+      const renderPayload = {
         props: componentProps,
         bindings,
         expressions,
@@ -359,7 +358,6 @@ class DesignComponent extends Component {
   render () {
     const DesignFragment = configuration.elementClasses.fragment
     let connectToDragSourceConditionally = this.connectToDragSourceConditionally
-    let componentHostEl
 
     const {
       root,
@@ -381,7 +379,7 @@ class DesignComponent extends Component {
       content = rawContent
     }
 
-    componentHostEl = (
+    let componentHostEl = (
       <DesignComponentHost
         key={`${type}-${id}(${root != null ? 'node' : 'relement'})`}
         nodeRef={this.setComponentRef}
