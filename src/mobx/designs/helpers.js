@@ -788,32 +788,17 @@ function addFragmentToComponentInDesign ({
   component,
   fragment
 }) {
-  const { canvasRegistry } = design
-  let fragmentInstance
-
-  if (!Array.isArray(fragment)) {
-    fragmentInstance = generateFragment(fragment)
+  [...fragment].forEach((item) => {
+    const fragmentInstance = generateFragment(item)
 
     fragmentInstance.parent = component
 
-    canvasRegistry.set(fragmentInstance.id, {
+    design.canvasRegistry.set(fragmentInstance.id, {
       element: fragmentInstance
     })
 
     component.fragments.set(fragmentInstance.name, fragmentInstance)
-  } else {
-    fragment.forEach(item => {
-      fragmentInstance = generateFragment(item)
-
-      fragmentInstance.parent = component
-
-      canvasRegistry.set(fragmentInstance.id, {
-        element: fragmentInstance
-      })
-
-      component.fragments.set(fragmentInstance.name, fragmentInstance)
-    })
-  }
+  })
 }
 
 function removeComponentInDesign ({
