@@ -11,3 +11,8 @@ export const openDesign = action(`${ACTION}_OPEN_DESIGN`, (designId) => {
 
   store.currentDesign = designsStore.designs.get(designId)
 })
+
+export const update = action(`${ACTION}_UPDATE`, (changes) => {
+  // TODO: check here to only update observable properties?
+  Object.keys(changes).forEach((key) => { store[key] = changes[key] })
+})

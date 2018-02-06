@@ -1,4 +1,5 @@
-import { DesignGroup, DesignItem, DesignComponent } from './store'
+import omit from 'lodash/omit'
+import { DesignGroup, DesignItem, DesignComponent, DesignFragment } from './store'
 
 function generateGroup ({ layoutMode, items, topSpace, placeholder }) {
   let groupDefaults = {
@@ -67,6 +68,14 @@ function generateItem ({
   }
 
   return new DesignItem(itemDefaults)
+}
+
+function generateComponent (compDefaults) {
+  return new DesignComponent(compDefaults)
+}
+
+function generateFragment (fragDefaults) {
+  return new DesignFragment(fragDefaults)
 }
 
 function findProjectedFilledArea ({
@@ -528,7 +537,7 @@ function addComponentToDesign ({
     colWidth
   } = design
 
-  let targetGroupRecord = design.canvasRegistry.get(targetArea.group)
+  let targetGroupRecord = canvasRegistry.get(targetArea.group)
   let targetGroupIndex = targetGroupRecord.index
   let layoutMode = targetGroupRecord.element.layoutMode
   let compProps = component.props || {}
@@ -542,10 +551,23 @@ function addComponentToDesign ({
   }
 
   // component information
-  newComponent = new DesignComponent({
-    ...component,
+  newComponent = generateComponent({
+    // omit fragments because we are adding by calling
+    // a method above
+    ...omit(component, ['fragments']),
     props: compProps
   })
+
+  if (
+    component.fragments != null &&
+    Object.keys(component.fragments).length > 0
+  ) {
+    addFragmentToComponentInDesign({
+      design,
+      component: newComponent,
+      fragment: Object.keys(component.fragments).map(fragName => component.fragments[fragName])
+    })
+  }
 
   newRecordForComponent.element = newComponent
 
@@ -639,7 +661,7 @@ function addComponentToDesign ({
     } else {
       // if item was the target then just find the
       // before/after item more easily
-      existingItemIndex = design.canvasRegistry.get(targetArea.item).index
+      existingItemIndex = canvasRegistry.get(targetArea.item).index
     }
 
     if (existingItemIndex != null) {
@@ -761,6 +783,39 @@ function addComponentToDesign ({
   }
 }
 
+function addFragmentToComponentInDesign ({
+  design,
+  component,
+  fragment
+}) {
+  const { canvasRegistry } = design
+  let fragmentInstance
+
+  if (!Array.isArray(fragment)) {
+    fragmentInstance = generateFragment(fragment)
+
+    fragmentInstance.parent = component
+
+    canvasRegistry.set(fragmentInstance.id, {
+      element: fragmentInstance
+    })
+
+    component.fragments.set(fragmentInstance.name, fragmentInstance)
+  } else {
+    fragment.forEach(item => {
+      fragmentInstance = generateFragment(item)
+
+      fragmentInstance.parent = component
+
+      canvasRegistry.set(fragmentInstance.id, {
+        element: fragmentInstance
+      })
+
+      component.fragments.set(fragmentInstance.name, fragmentInstance)
+    })
+  }
+}
+
 function removeComponentInDesign ({
   design,
   componentId
@@ -786,6 +841,15 @@ function removeComponentInDesign ({
   if (componentToRemoveIndex < parentItem.components.length - 1) {
     nextComponent = parentItem.components[componentToRemoveIndex + 1]
   }
+
+  // removing fragments from canvas registry
+  componentToRemove.fragments.values().forEach((fragment) => {
+    if (!canvasRegistry.has(fragment.id)) {
+      return
+    }
+
+    canvasRegistry.delete(fragment.id)
+  })
 
   // first updating component indexes that are next of the removed component
   for (let i = componentToRemoveIndex + 1, last = parentItem.components.length - 1; i <= last; i++) {
@@ -900,10 +964,13 @@ function updateItemSize ({
 
 export { generateGroup }
 export { generateItem }
+export { generateComponent }
+export { generateFragment }
 export { findProjectedFilledArea }
 export { findProjectedFilledAreaWhenResizing }
 export { findMarkedArea }
 export { addComponentToDesign }
+export { addFragmentToComponentInDesign }
 export { removeComponentInDesign }
 export { updateComponentInDesign }
 export { updateItemSize }

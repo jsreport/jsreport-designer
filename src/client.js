@@ -89,7 +89,10 @@ async function start (initialData) {
   mobxStoreExport.stores = storeExport.stores
   mobxStoreExport.actions = storeExport.actions
 
-  Designer = window.Designer = createDesigner(mobxStoreExport.stores)
+  Designer = window.Designer = createDesigner(
+    mobxStoreExport.stores,
+    mobxStoreExport.actions
+  )
 
   await fetchExtensions()
 

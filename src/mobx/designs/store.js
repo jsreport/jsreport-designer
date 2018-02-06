@@ -1,14 +1,16 @@
 import nanoid from 'nanoid'
 // (we disable the rule because eslint can recognize decorator usage in our setup)
 // eslint-disable-next-line no-unused-vars
-import { observable, computed } from 'mobx'
+import { toJS, observable, computed } from 'mobx'
 
 function setDefaults (instance, defaults) {
   if (!defaults) {
     return
   }
 
-  Object.keys(defaults).forEach((name) => { instance[name] = defaults[name] })
+  Object.keys(defaults).forEach((name) => {
+    instance[name] = defaults[name]
+  })
 }
 
 // filter elements and order them in ASC
@@ -19,11 +21,18 @@ function getSortedElementsByType (type, elements) {
 
   filteredElements.sort((a, b) => a.index - b.index)
 
-  return filteredElements.map((record) => ({
-    id: record.element.id,
-    index: record.index,
-    element: record.element
-  }))
+  return filteredElements.map((record) => {
+    let recordEntity = {
+      id: record.element.id,
+      element: record.element
+    }
+
+    if (record.index != null) {
+      recordEntity.index = record.index
+    }
+
+    return recordEntity
+  })
 }
 
 class Designs {
@@ -80,6 +89,12 @@ class Design {
   // just for debugging
   @computed get componentsInCanvasRegistry () {
     return getSortedElementsByType('component', this.canvasRegistry.values())
+  }
+
+  // eslint-disable-next-line no-undef
+  // just for debugging
+  @computed get fragmentsInCanvasRegistry () {
+    return getSortedElementsByType('fragment', this.canvasRegistry.values())
   }
 
   toJS () {
@@ -227,6 +242,8 @@ class DesignComponent {
   // eslint-disable-next-line no-undef
   @observable template = null
   // eslint-disable-next-line no-undef
+  fragments = observable.map({}, 'fragments')
+  // eslint-disable-next-line no-undef
   @observable parent = null
   // eslint-disable-next-line no-undef
   @observable selected = false
@@ -257,6 +274,13 @@ class DesignComponent {
       comp.template = this.template
     }
 
+    if (this.fragments.size > 0) {
+      comp.fragments = this.fragments.values().reduce((acu, frag) => {
+        acu[frag.name] = frag.toJS(includeId)
+        return acu
+      }, {})
+    }
+
     return comp
   }
 
@@ -269,7 +293,60 @@ class DesignComponent {
   }
 }
 
+class DesignFragment {
+  // eslint-disable-next-line no-undef
+  @observable id = null
+  // eslint-disable-next-line no-undef
+  @observable name = null
+  // eslint-disable-next-line no-undef
+  @observable type = null
+  // eslint-disable-next-line no-undef
+  @observable mode = null
+  // eslint-disable-next-line no-undef
+  @observable tag = null
+  // eslint-disable-next-line no-undef
+  @observable content = null
+  // eslint-disable-next-line no-undef
+  @observable.ref template = null
+  // eslint-disable-next-line no-undef
+  @observable.ref props = null
+  // eslint-disable-next-line no-undef
+  @observable parent = null
+  // eslint-disable-next-line no-undef
+  @observable selected = false
+
+  get elementType () {
+    return 'fragment'
+  }
+
+  toJS (includeId) {
+    let frag = {}
+
+    if (includeId === true) {
+      frag.id = this.id
+      frag.name = this.name
+      frag.type = this.type
+      frag.tag = this.tag
+      frag.template = this.template
+      frag.content = this.content
+    }
+
+    frag.mode = this.mode
+    frag.props = this.props
+
+    return frag
+  }
+
+  constructor (defaults) {
+    setDefaults(this, defaults)
+
+    if (this.id == null) {
+      this.id = `DF-${nanoid(7)}`
+    }
+  }
+}
+
 let store = new Designs()
 
-export { Design, DesignGroup, DesignItem, DesignComponent }
+export { Design, DesignGroup, DesignItem, DesignComponent, DesignFragment }
 export default store

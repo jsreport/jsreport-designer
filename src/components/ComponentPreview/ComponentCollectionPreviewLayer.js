@@ -56,6 +56,8 @@ class ComponentCollectionPreviewLayer extends Component {
           componentRef={this.getRefPreviewNode}
           type={componentType}
           componentProps={this.getDefaultPropsForComponent(componentType)}
+          preview
+          dragDisabled
         />
       </div>
     )

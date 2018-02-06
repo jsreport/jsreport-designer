@@ -6,6 +6,8 @@ _rootPath = _rootPath[_rootPath.length - 1] === '/' ? _rootPath.substring(0, _ro
 export let initializeListeners = []
 export let readyListeners = []
 
+export let elementClasses = {}
+export let defaultEditors = {}
 export let componentTypes = {}
 export let componentTypesDefinition = {}
 export let generalStyles = []

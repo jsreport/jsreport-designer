@@ -1,5 +1,10 @@
 import * as configuration from './lib/configuration.js'
 import isStyleProp from '../shared/isStyleProp'
+import DesignGroup from '../src/components/Design/Canvas/DesignGroup'
+import DesignItem from '../src/components/Design/Canvas/DesignItem'
+import DesignComponent from '../src/components/DesignComponent'
+import DesignFragment from '../src/components/DesignFragment'
+import PropertiesEditor, { PropertiesGroup, PropertyControl } from '../src/components/Editor/PropertiesEditor'
 import ComposeTextBindingEditor from './components/Editor/ComposeTextBindingEditor'
 import DataSelectBindingEditor from './components/Editor/DataSelectBindingEditor'
 import StylesBindingEditor from './components/Editor/StylesBindingEditor'
@@ -13,6 +18,15 @@ import ColorStyleControl from './components/Editor/StylesControl/ColorControl'
 // import DataInputCommand from './components/CommandBar/DataInputCommand'
 
 export default () => {
+  configuration.elementClasses['group'] = DesignGroup
+  configuration.elementClasses['item'] = DesignItem
+  configuration.elementClasses['component'] = DesignComponent
+  configuration.elementClasses['fragment'] = DesignFragment
+
+  configuration.defaultEditors.propertiesEditor = PropertiesEditor
+  configuration.defaultEditors.propertiesGroup = PropertiesGroup
+  configuration.defaultEditors.propertyControl = PropertyControl
+
   configuration.bindingEditor.defaultComponents.composeText = ComposeTextBindingEditor
   configuration.bindingEditor.defaultComponents.dataSelect = DataSelectBindingEditor
   configuration.bindingEditor.defaultComponents.style = StylesBindingEditor

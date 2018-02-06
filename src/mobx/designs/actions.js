@@ -9,6 +9,7 @@ import {
   findProjectedFilledAreaWhenResizing,
   findMarkedArea,
   addComponentToDesign,
+  addFragmentToComponentInDesign,
   removeComponentInDesign,
   updateComponentInDesign,
   updateItemSize
@@ -469,6 +470,28 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
   }
 })
 
+export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`, (designId, componentId, fragment) => {
+  const design = store.designs.get(designId)
+
+  if (!design) {
+    return
+  }
+
+  let component = design.canvasRegistry.get(componentId)
+
+  if (!component) {
+    return
+  }
+
+  component = component.element
+
+  addFragmentToComponentInDesign({
+    design,
+    component,
+    fragment
+  })
+})
+
 export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, componentId, opts = {}) => {
   const design = store.designs.get(designId)
   let options = Object.assign({}, { select: false }, opts)
@@ -805,7 +828,7 @@ export const updateComponent = action(`${ACTION}_UPDATE_COMPONENT`, (designId, c
 
   component = component.element
 
-  let { props, bindings, expressions, template } = changes
+  const { props, bindings, expressions, template } = changes
 
   updateComponentInDesign({
     design,

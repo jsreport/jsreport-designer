@@ -21,7 +21,7 @@
 }
 
 .designComponentInteractive[data-selected],
-.designComponentInteractive[data-selected-preview],
+.designComponentInteractive[data-snapshoot],
 .designComponentInteractive[data-dragging-placeholder] {
   z-index: 1;
 }
@@ -33,7 +33,7 @@
   box-shadow: 0px 0px 3px 1px rgba(0, 0, 0, 0.6);
 }
 
-.designComponentInteractive[data-selected-preview] {
+.designComponentInteractive[data-snapshoot] {
   /*if the component is selected in preview use border instead of outline*/
   /*because Safari has issues when using outline in drag snapshots*/
   border: 1px dashed rgba(0, 0, 0, 0.8);

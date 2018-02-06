@@ -2,17 +2,18 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 // (we disable the rule because eslint can recognize decorator usage in our setup)
 // eslint-disable-next-line no-unused-vars
-import { observer, inject } from 'mobx-react'
+import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import pick from 'lodash/pick'
 import omit from 'lodash/omit'
 import componentRegistry from '../../../shared/componentRegistry'
 import expressionUtils from '../../../shared/expressionUtils'
 import CommandButton from '../CommandButton'
-import { componentTypes, bindingEditor as bindingEditorConf } from '../../lib/configuration'
+import { defaultEditors, componentTypes, bindingEditor as bindingEditorConf } from '../../lib/configuration'
 import TemplateEditor from './TemplateEditor'
 import styles from './ComponentEditor.scss'
 
 @inject((injected) => ({
+  design: injected.editorStore.currentDesign,
   dataInput: injected.dataInputStore.value,
   dataFieldsMeta: injected.dataInputStore.fieldsMeta,
   getFullExpressionName: injected.dataInputStore.getFullExpressionName,
@@ -34,7 +35,10 @@ class ComponentEditor extends Component {
     this.changesInterceptor = null
 
     this.connectToChangesInterceptor = this.connectToChangesInterceptor.bind(this)
+    this.getDisplayName = this.getDisplayName.bind(this)
+    this.getComponentIsFragment = this.getComponentIsFragment.bind(this)
     this.getMeta = this.getMeta.bind(this)
+    this.getIcon = this.getIcon.bind(this)
     this.getValue = this.getValue.bind(this)
     this.getComponent = this.getComponent.bind(this)
     this.getPropMeta = this.getPropMeta.bind(this)
@@ -59,8 +63,32 @@ class ComponentEditor extends Component {
     this.changesInterceptor = changesInterceptor
   }
 
+  getComponentIsFragment () {
+    const { design, id } = this.props
+
+    return design.canvasRegistry.get(id).element.elementType === 'fragment'
+  }
+
+  getDisplayName () {
+    const { design, id, type } = this.props
+
+    if (this.getComponentIsFragment()) {
+      const frag = design.canvasRegistry.get(id).element
+
+      return `${frag.parent.type}#${frag.name}`
+    } else {
+      return type
+    }
+  }
+
   getPropertiesEditor (type) {
-    const editorInfo = componentTypes[type].propertiesEditor
+    let editorInfo
+
+    if (type.indexOf('#') === -1) {
+      editorInfo = componentTypes[type].propertiesEditor
+    } else {
+      editorInfo = defaultEditors.propertiesEditor
+    }
 
     if (typeof editorInfo !== 'object') {
       return { editor: editorInfo, options: {} }
@@ -73,6 +101,21 @@ class ComponentEditor extends Component {
     const meta = componentRegistry.getComponentDefinition(this.props.type) || {}
 
     return omit(meta, ['module'])
+  }
+
+  getIcon () {
+    const { design, id } = this.props
+    let uiMeta
+
+    if (this.getComponentIsFragment()) {
+      uiMeta = componentTypes[design.canvasRegistry.get(id).element.parent.type]
+    } else {
+      uiMeta = componentTypes[this.props.type]
+    }
+
+    uiMeta = uiMeta || {}
+
+    return uiMeta.icon != null ? uiMeta.icon : ''
   }
 
   getValue (collection, name) {
@@ -501,24 +544,27 @@ class ComponentEditor extends Component {
 
   render () {
     const { type } = this.props
+    const componentIsFragment = this.getComponentIsFragment()
 
     return (
       <div className={styles.componentEditor}>
         <div className={styles.componentEditorContent}>
           <h3 className={styles.componentEditorTitle}>
-            <span className={`fa ${(this.getMeta().icon || '')}`} />
+            <span className={`fa ${this.getIcon()}`} />
             &nbsp;
-            {type}
+            {this.getDisplayName()}
           </h3>
           <hr className={styles.componentEditorSeparator} />
-          <div className={styles.componentEditorOptions}>
-            <CommandButton
-              title='Edit component template'
-              titlePosition='bottom'
-              icon='code'
-              onClick={this.handleTemplateEditorOpen}
-            />
-          </div>
+          {componentIsFragment === false && (
+            <div className={styles.componentEditorOptions}>
+              <CommandButton
+                title='Edit component template'
+                titlePosition='bottom'
+                icon='code'
+                onClick={this.handleTemplateEditorOpen}
+              />
+            </div>
+          )}
           {this.renderPropertiesEditor()}
         </div>
         {this.renderBindingEditor()}
@@ -529,6 +575,7 @@ class ComponentEditor extends Component {
 }
 
 ComponentEditor.wrappedComponent.propTypes = {
+  design: MobxPropTypes.observableObject.isRequired,
   dataInput: PropTypes.oneOfType([
     PropTypes.object,
     PropTypes.array

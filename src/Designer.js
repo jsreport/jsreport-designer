@@ -9,7 +9,6 @@ import * as configuration from './lib/configuration.js'
 import api, { methods } from './helpers/api.js'
 import expressionUtils from '../shared/expressionUtils'
 import DataFieldsViewer from './components/DataFieldsViewer'
-import PropertiesEditor, { PropertiesGroup, PropertyControl } from './components/Editor/PropertiesEditor'
 
 /**
  * Main facade and API for extensions. Exposed as global variable Designer.
@@ -51,7 +50,7 @@ class Designer {
 
     // default propertiesEditor
     if (componentConfig.propertiesEditor == null) {
-      configuration.componentTypes[componentConfig.name].propertiesEditor = PropertiesEditor
+      configuration.componentTypes[componentConfig.name].propertiesEditor = configuration.defaultEditors.propertiesEditor
     }
   }
 
@@ -115,7 +114,7 @@ class Designer {
    * @returns {PropertiesEditor}
    */
   get PropertiesEditor () {
-    return PropertiesEditor
+    return configuration.defaultEditors.propertiesEditor
   }
 
   /**
@@ -124,7 +123,7 @@ class Designer {
    * @returns {PropertiesGroup}
    */
   get PropertiesGroup () {
-    return PropertiesGroup
+    return configuration.defaultEditors.propertiesGroup
   }
 
   /**
@@ -133,7 +132,7 @@ class Designer {
    * @returns {PropertyControl}
    */
   get PropertyControl () {
-    return PropertyControl
+    return configuration.defaultEditors.propertyControl
   }
 
   /**
@@ -147,7 +146,7 @@ class Designer {
 
   /** /react components **/
 
-  constructor (stores) {
+  constructor (stores, actions) {
     this.stores = stores
     this.expressionUtils = expressionUtils
     this.API = {}
@@ -155,8 +154,7 @@ class Designer {
     methods.forEach((m) => {
       this.API[m] = (...args) => {
         return api[m](...args).catch((e) => {
-          // TODO: dispatch when store is declared
-          // this.store.dispatch(this.entities.actions.apiFailed(e))
+          actions.editorActions.update({ apiError: e })
           throw e
         })
       }
@@ -181,6 +179,6 @@ class Designer {
 
 let designer
 
-export const createDesigner = (store) => (designer = new Designer(store))
+export const createDesigner = (store, actions) => (designer = new Designer(store, actions))
 
 export default designer

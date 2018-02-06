@@ -25,6 +25,9 @@ module.exports = {
         }
       </style>
       <div>
+        {{#$renderFragment name="label-header" inlineTag="span"}}
+          <b>label header<b/>
+        {{/$renderFragment}}
         <table class="Table" style="{{$resolveStyle "style"}}">
           <tr>
             {{#each columns}}
@@ -47,6 +50,9 @@ module.exports = {
             </tr>
           {{/each}}
         </table>
+        {{#$renderFragment name="label-footer" inlineTag="span"}}
+          <b>label footer</b>
+        {{/$renderFragment}}
       </div>
       `
     )

@@ -119,13 +119,14 @@ class SideBar extends Component {
     const { design } = this.props
     let componentId = selection[selection.length - 1]
     let component = design.canvasRegistry.get(componentId).element
+    const componentIsFragment = component.elementType === 'fragment'
 
     return (
       <ComponentEditor
         key={component.id}
         id={component.id}
         type={component.type}
-        template={component.template}
+        template={componentIsFragment ? undefined : component.template}
         properties={component.props}
         bindings={component.bindings}
         expressions={component.expressions}

@@ -9,6 +9,11 @@ const expressionUtils = require('./expressionUtils')
 const generalStyles = require('./generalStyles')
 const isStyleProp = require('./isStyleProp')
 
+const isBrowserContext = (
+  typeof window === 'object' &&
+  typeof window.Node === 'function'
+)
+
 const componentsDefinition = {}
 const components = {}
 
@@ -37,6 +42,10 @@ function getComponent (type) {
 }
 
 function compileTemplate (template) {
+  if (typeof template === 'function') {
+    return template
+  }
+
   return Handlebars.compile(template)
 }
 
@@ -44,7 +53,6 @@ function loadComponents (componentsToLoad, reload = false) {
   const componentRequires = componentsToLoad.map((componentDef) => {
     const styleProps = []
     let originalComponentModule
-    let componentTemplate
     let compiledTemplate
     let componentModule
 
@@ -81,8 +89,9 @@ function loadComponents (componentsToLoad, reload = false) {
       }
     }
 
-    componentTemplate = callInterop(originalComponentModule, originalComponentModule.template)
-    compiledTemplate = compileTemplate(componentTemplate)
+    compiledTemplate = compileTemplate(
+      callInterop(originalComponentModule, originalComponentModule.template)
+    )
 
     componentModule = Object.assign({}, originalComponentModule, {
       getDefaultProps: () => {
@@ -93,101 +102,23 @@ function loadComponents (componentsToLoad, reload = false) {
         return callInterop(originalComponentModule, originalComponentModule.template)
       },
       helpers: () => {
-        if (originalComponentModule.helpers) {
-          return callInterop(originalComponentModule, originalComponentModule.helpers)
+        if (!originalComponentModule.helpers) {
+          return {}
         }
 
-        return {}
+        return callInterop(originalComponentModule, originalComponentModule.helpers)
       },
-      render: ({ props, bindings, expressions, customCompiledTemplate, data, computedFields }) => {
-        const newProps = Object.assign({}, props)
-        let result = {}
-        let componentHelpers
+      render: ({
+        customCompiledTemplate,
+        ...restPayload
+      }) => {
+        const templateToUse = customCompiledTemplate != null ? customCompiledTemplate : compiledTemplate
 
-        // checking for binded props
-        if (isObject(bindings)) {
-          Object.keys(bindings).forEach((propName) => {
-            const isLazyBinding = propName[0] === '@'
-            let currentBinding
-            let resolvedValue
-
-            if (isLazyBinding) {
-              return
-            }
-
-            currentBinding = bindings[propName]
-
-            if (!isObject(currentBinding)) {
-              return
-            }
-
-            resolvedValue = resolveBinding({
-              binding: currentBinding,
-              bindingName: propName,
-              expressions: expressions,
-              context: data,
-              rootContext: data,
-              computedFields
-            })
-
-            newProps[propName] = resolvedValue
-          })
-        }
-
-        // TODO: use styleProps var here to filter allowed or
-        // disallowed style props when we support such configuration (if it makes sense)
-
-        result.props = newProps
-
-        componentHelpers = Object.assign({
-          $resolveBinding: (bindingName, context, options) => {
-            let currentContext
-
-            if (context == null || options == null) {
-              return null
-            }
-
-            if (context === '/') {
-              currentContext = data
-            } else {
-              currentContext = context
-            }
-
-            return resolveBinding({
-              binding: (
-                isObject(bindings) &&
-                bindings[bindingName] != null
-              ) ? bindings[bindingName] : undefined,
-              bindingName,
-              expressions: expressions,
-              context: currentContext,
-              rootContext: data,
-              computedFields
-            })
-          },
-          $resolveStyle: (stylePropName) => {
-            return resolveStyle({
-              stylePropName,
-              props: newProps,
-              bindings,
-              expressions,
-              context: data,
-              computedFields
-            })
-          }
-        }, componentModule.helpers())
-
-        if (customCompiledTemplate) {
-          result.content = customCompiledTemplate(newProps, {
-            helpers: componentHelpers
-          })
-        } else {
-          result.content = compiledTemplate(newProps, {
-            helpers: componentHelpers
-          })
-        }
-
-        return result
+        return renderComponentTemplate({
+          componentType: componentDef.name,
+          template: templateToUse,
+          helpers: componentModule.helpers()
+        }, restPayload)
       }
     })
 
@@ -198,6 +129,115 @@ function loadComponents (componentsToLoad, reload = false) {
   })
 
   return componentRequires
+}
+
+function renderComponentTemplate ({
+  componentType,
+  template,
+  helpers
+}, {
+  props,
+  bindings,
+  expressions,
+  data,
+  computedFields,
+  fragmentPlaceholders
+}) {
+  const newProps = Object.assign({}, props)
+  let result = {}
+  let fragments = {}
+  let componentHelpers
+
+  // checking for binded props
+  if (isObject(bindings)) {
+    Object.keys(bindings).forEach((propName) => {
+      const isLazyBinding = propName[0] === '@'
+      let currentBinding
+      let resolvedValue
+
+      if (isLazyBinding) {
+        return
+      }
+
+      currentBinding = bindings[propName]
+
+      if (!isObject(currentBinding)) {
+        return
+      }
+
+      resolvedValue = resolveBinding({
+        binding: currentBinding,
+        bindingName: propName,
+        expressions: expressions,
+        context: data,
+        rootContext: data,
+        computedFields
+      })
+
+      newProps[propName] = resolvedValue
+    })
+  }
+
+  // TODO: use styleProps var here to filter allowed or
+  // disallowed style props when we support such configuration (if it makes sense)
+
+  result.props = newProps
+
+  componentHelpers = Object.assign({
+    $resolveBinding: (bindingName, context, options) => {
+      let currentContext
+
+      if (context == null || options == null) {
+        return null
+      }
+
+      if (context === '/') {
+        currentContext = data
+      } else {
+        currentContext = context
+      }
+
+      return resolveBinding({
+        binding: (
+          isObject(bindings) &&
+          bindings[bindingName] != null
+        ) ? bindings[bindingName] : undefined,
+        bindingName,
+        expressions: expressions,
+        context: currentContext,
+        rootContext: data,
+        computedFields
+      })
+    },
+    $resolveStyle: (stylePropName) => {
+      return resolveStyle({
+        stylePropName,
+        props: newProps,
+        bindings,
+        expressions,
+        context: data,
+        computedFields
+      })
+    },
+    $renderFragment: (options) => {
+      return renderFragment(
+        fragmentPlaceholders,
+        fragments,
+        options
+      )
+    }
+  }, helpers != null ? helpers : {})
+
+  result.content = template(newProps, {
+    data: { componentType },
+    helpers: componentHelpers
+  })
+
+  if (Object.keys(fragments).length > 0) {
+    result.fragments = fragments
+  }
+
+  return result
 }
 
 function resolveBinding ({
@@ -555,6 +595,55 @@ function resolveStyle ({
   return style
 }
 
+function renderFragment (placeholderEnabled, fragments, options) {
+  const componentType = options.data.componentType
+  const name = options.hash.name
+  let result = ''
+  let content
+  let shouldRenderPlaceholder
+
+  if (placeholderEnabled != null) {
+    shouldRenderPlaceholder = placeholderEnabled
+  } else {
+    shouldRenderPlaceholder = isBrowserContext
+  }
+
+  if (name == null || typeof name !== 'string' || name.trim() === '') {
+    throw new Error('$renderFragment helper should be called with an name')
+  }
+
+  if (fragments[name] != null) {
+    throw new Error('$renderFragment ')
+  }
+
+  if (typeof options.hash.inlineTag === 'string') {
+    const tag = options.hash.inlineTag
+
+    fragments[name] = {}
+
+    content = options.fn(this)
+
+    // when rendering in browser means that we are in design mode,
+    // so in that case we just insert a comment placeholder for later
+    // replace it with the real html
+    if (shouldRenderPlaceholder) {
+      result = `<!-- jsreport-designer-fragment#name=${name} -->`
+    } else {
+      result = `<${tag}>${content}</${tag}>`
+    }
+
+    fragments[name].name = name
+    fragments[name].type = `${componentType}#${name}`
+    fragments[name].mode = 'inline'
+    fragments[name].tag = tag
+    // or maybe it should be renamed
+    fragments[name].content = content
+    fragments[name].template = options.fn
+  }
+
+  return new Handlebars.SafeString(result)
+}
+
 function replaceExpressionsInHTML (html, expressionsValues) {
   const parsedHTML = htmlParser(html)
   const expressionsHolders = findExpressionInHTMLNode(parsedHTML)
@@ -629,5 +718,6 @@ module.exports = {
   getComponents,
   getComponent,
   compileTemplate,
+  renderComponentTemplate,
   componentsCache: {}
 }

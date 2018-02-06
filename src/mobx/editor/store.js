@@ -15,6 +15,8 @@ class Editor {
   @observable defaultLayoutMode = null
   // eslint-disable-next-line no-undef
   @observable currentDesign = null
+  // eslint-disable-next-line no-undef
+  @observable.ref apiError = null
 }
 
 let store = new Editor()

@@ -86,7 +86,6 @@ class DesignItem extends Component {
     this.handleResizeStart = this.handleResizeStart.bind(this)
     this.handleResize = this.handleResize.bind(this)
     this.handleResizeEnd = this.handleResizeEnd.bind(this)
-    this.handleComponentClick = this.handleComponentClick.bind(this)
     this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
     this.handleComponentDragEnd = this.handleComponentDragEnd.bind(this)
   }
@@ -186,7 +185,21 @@ class DesignItem extends Component {
   }
 
   handleClick (ev) {
-    if (this.props.item.selected === true) {
+    const target = ev.target
+    const { design, setSelection } = this.props
+
+    if (target.dataset.jsreportComponent && target.dataset.jsreportComponentId) {
+      // here we handle component click in item click (through event delegation)
+      const componentId = target.dataset.jsreportComponentId
+
+      // stop progagation of component click
+      ev.preventDefault()
+      ev.stopPropagation()
+
+      setSelection(design.id, componentId)
+
+      setTimeout(() => this.focusSelection(), 0)
+    } else if (this.props.item.selected === true) {
       // stop progagation of click when the item is selected
       // this is necessary to prevent cleaning the selection
       ev.preventDefault()
@@ -230,18 +243,6 @@ class DesignItem extends Component {
     ev.stopPropagation()
 
     endResizeElement(design.id, item.id)
-  }
-
-  handleComponentClick (ev, componentId) {
-    const { design, setSelection } = this.props
-
-    // stop progagation of component click
-    ev.preventDefault()
-    ev.stopPropagation()
-
-    setSelection(design.id, componentId)
-
-    setTimeout(() => this.focusSelection(), 0)
   }
 
   handleComponentDragStart (component, componentRef) {
@@ -362,8 +363,7 @@ class DesignItem extends Component {
             // type is in key because we want the component to re-mount if type
             // is changed
             key={`${component.type}-${component.id}`}
-            component={component}
-            onClick={this.handleComponentClick}
+            source={component}
             onDragStart={this.handleComponentDragStart}
             onDragEnd={this.handleComponentDragEnd}
           />
