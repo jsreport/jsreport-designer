@@ -192,7 +192,6 @@ class DesignComponent extends Component {
     renderedResult = this.renderComponent(nextProps)
 
     this.renderedContent = renderedResult.content
-
   }
 
   componentWillUnmount () {

@@ -543,7 +543,6 @@ class ComponentEditor extends Component {
   }
 
   render () {
-    const { type } = this.props
     const componentIsFragment = this.getComponentIsFragment()
 
     return (
