@@ -45,8 +45,10 @@
     "object-assign": "4.1.1",
     "posthtml-parser": "0.3.0",
     "posthtml-render": "1.0.6",
+    "promise": "8.0.1",
     "serve-favicon": "2.4.5",
-    "serve-static": "1.13.1"
+    "serve-static": "1.13.1",
+    "whatwg-fetch": "2.0.3"
   },
   "devDependencies": {
     "babel-eslint": "8.0.3",
