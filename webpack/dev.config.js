@@ -64,7 +64,7 @@ module.exports = (appDir, extensions, componentTypes) => {
       extensions: ['.json', '.js', '.jsx'],
       alias: {
         // use browser build of handlebars
-        handlebars: 'handlebars/dist/handlebars.min.js'
+        handlebars: 'handlebars/dist/handlebars.js'
       }
     },
     resolveLoader: {
