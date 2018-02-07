@@ -17,11 +17,16 @@
 }
 
 .componentEditorTitle {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 400;
   line-height: 1.5;
   text-align: center;
   margin-bottom: 0;
+  word-break: break-all;
+}
+
+.componentEditorTitleIcon {
+  vertical-align: middle;
 }
 
 .componentEditorSeparator {

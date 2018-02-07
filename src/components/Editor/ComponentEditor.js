@@ -70,15 +70,9 @@ class ComponentEditor extends Component {
   }
 
   getDisplayName () {
-    const { design, id, type } = this.props
+    const { type } = this.props
 
-    if (this.getComponentIsFragment()) {
-      const frag = design.canvasRegistry.get(id).element
-
-      return `${frag.parent.type}#${frag.name}`
-    } else {
-      return type
-    }
+    return type
   }
 
   getPropertiesEditor (type) {
@@ -108,7 +102,7 @@ class ComponentEditor extends Component {
     let uiMeta
 
     if (this.getComponentIsFragment()) {
-      uiMeta = componentTypes[design.canvasRegistry.get(id).element.parent.type]
+      uiMeta = componentTypes[design.canvasRegistry.get(id).element.ownerType]
     } else {
       uiMeta = componentTypes[this.props.type]
     }
@@ -549,7 +543,7 @@ class ComponentEditor extends Component {
       <div className={styles.componentEditor}>
         <div className={styles.componentEditorContent}>
           <h3 className={styles.componentEditorTitle}>
-            <span className={`fa ${this.getIcon()}`} />
+            <span className={`${styles.componentEditorTitleIcon} fa ${this.getIcon()}`} />
             &nbsp;
             {this.getDisplayName()}
           </h3>

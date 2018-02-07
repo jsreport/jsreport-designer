@@ -301,15 +301,19 @@ class DesignFragment {
   // eslint-disable-next-line no-undef
   @observable type = null
   // eslint-disable-next-line no-undef
+  @observable ownerType = null
+  // eslint-disable-next-line no-undef
   @observable mode = null
   // eslint-disable-next-line no-undef
   @observable tag = null
   // eslint-disable-next-line no-undef
-  @observable content = null
+  @observable sketch = null
   // eslint-disable-next-line no-undef
   @observable.ref template = null
   // eslint-disable-next-line no-undef
   @observable.ref props = null
+  // eslint-disable-next-line no-undef
+  fragments = observable.map({}, 'fragments')
   // eslint-disable-next-line no-undef
   @observable parent = null
   // eslint-disable-next-line no-undef
@@ -326,13 +330,21 @@ class DesignFragment {
       frag.id = this.id
       frag.name = this.name
       frag.type = this.type
+      frag.ownerType = this.ownerType
       frag.tag = this.tag
       frag.template = this.template
-      frag.content = this.content
+      frag.sketch = this.sketch
     }
 
     frag.mode = this.mode
     frag.props = this.props
+
+    if (this.fragments.size > 0) {
+      frag.fragments = this.fragments.values().reduce((acu, currentFrag) => {
+        acu[currentFrag.name] = currentFrag.toJS(includeId)
+        return acu
+      }, {})
+    }
 
     return frag
   }

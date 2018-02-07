@@ -788,8 +788,18 @@ function addFragmentToComponentInDesign ({
   component,
   fragment
 }) {
-  [...fragment].forEach((item) => {
-    const fragmentInstance = generateFragment(item)
+  const fragments = !Array.isArray(fragment) ? [fragment] : fragment
+
+  fragments.forEach((currentFrag) => {
+    const fragmentInstance = generateFragment(omit(currentFrag, ['fragments']))
+
+    if (currentFrag.fragments != null) {
+      addFragmentToComponentInDesign({
+        design,
+        component: fragmentInstance,
+        fragment: Object.keys(currentFrag.fragments).map(fragName => currentFrag.fragments[fragName])
+      })
+    }
 
     fragmentInstance.parent = component
 

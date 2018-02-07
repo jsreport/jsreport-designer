@@ -222,14 +222,17 @@ function renderComponentTemplate ({
     $renderFragment: (options) => {
       return renderFragment(
         fragmentPlaceholders,
-        fragments,
         options
       )
     }
   }, helpers != null ? helpers : {})
 
   result.content = template(newProps, {
-    data: { componentType },
+    data: {
+      componentOwnerType: componentType,
+      componentType,
+      fragments
+    },
     helpers: componentHelpers
   })
 
@@ -595,15 +598,17 @@ function resolveStyle ({
   return style
 }
 
-function renderFragment (placeholderEnabled, fragments, options) {
+function renderFragment (placeholdersOutput, options) {
+  const componentOwnerType = options.data.componentOwnerType
   const componentType = options.data.componentType
+  const fragments = options.data.fragments
   const name = options.hash.name
   let result = ''
-  let content
   let shouldRenderPlaceholder
+  let contentData
 
-  if (placeholderEnabled != null) {
-    shouldRenderPlaceholder = placeholderEnabled
+  if (placeholdersOutput != null) {
+    shouldRenderPlaceholder = placeholdersOutput
   } else {
     shouldRenderPlaceholder = isBrowserContext
   }
@@ -613,15 +618,32 @@ function renderFragment (placeholderEnabled, fragments, options) {
   }
 
   if (fragments[name] != null) {
-    throw new Error('$renderFragment ')
+    throw new Error(`$renderFragment with name "${name}" already exists in this context`)
+  }
+
+  if (options.data) {
+    contentData = Handlebars.createFrame(options.data)
+  } else {
+    contentData = Handlebars.createFrame({})
   }
 
   if (typeof options.hash.inlineTag === 'string') {
     const tag = options.hash.inlineTag
+    const newComponentType = `${componentType}#${name}`
 
+    // create the fragment space after rendering the content
+    // to be able to detect fragments with duplicate name in the
+    // same context
     fragments[name] = {}
 
-    content = options.fn(this)
+    // creating container for fragments
+    // inside the fragment itself if any
+    contentData.fragments = {}
+
+    // pass composed new component type to any child
+    contentData.componentType = newComponentType
+
+    const content = options.fn(this, { data: contentData })
 
     // when rendering in browser means that we are in design mode,
     // so in that case we just insert a comment placeholder for later
@@ -633,12 +655,16 @@ function renderFragment (placeholderEnabled, fragments, options) {
     }
 
     fragments[name].name = name
-    fragments[name].type = `${componentType}#${name}`
+    fragments[name].type = newComponentType
+    fragments[name].ownerType = componentOwnerType
     fragments[name].mode = 'inline'
     fragments[name].tag = tag
-    // or maybe it should be renamed
-    fragments[name].content = content
+    fragments[name].sketch = content
     fragments[name].template = options.fn
+
+    if (Object.keys(contentData.fragments).length > 0) {
+      fragments[name].fragments = { ...contentData.fragments }
+    }
   }
 
   return new Handlebars.SafeString(result)

@@ -109,10 +109,12 @@ class DesignComponent extends Component {
         fragmentsToInsert.push({
           name: fragment.name,
           type: fragment.type,
+          ownerType: fragment.ownerType,
           mode: fragment.mode,
           tag: fragment.tag,
-          content: fragment.content,
+          sketch: fragment.sketch,
           template: fragment.template,
+          fragments: fragment.fragments,
           props: {
             value: 'Sample fragment value'
           }

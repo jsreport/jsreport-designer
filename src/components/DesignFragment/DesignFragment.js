@@ -22,14 +22,12 @@ class DesignFragment extends Component {
     const mountNode = this.mountNode
 
     return createPortal(
-      fragment.content != null ? (
-        <DesignComponent
-          source={fragment}
-          root={mountNode}
-          onClick={onClick}
-          dragDisabled
-        />
-      ) : null,
+      <DesignComponent
+        source={fragment}
+        root={mountNode}
+        onClick={onClick}
+        dragDisabled
+      />,
       mountNode
     )
   }
