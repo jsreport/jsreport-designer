@@ -57,23 +57,18 @@ class SideBar extends Component {
       componentTypeGroup: componentType.group
     }
 
-    let component
-    let componentPreviewNode
-    let componentDimensions
-
     if (!this.componentPreviewNodes || !this.componentPreviewNodes[item.name]) {
       return {}
     }
 
-    component = componentRegistry.getComponent(item.name)
-    componentPreviewNode = this.componentPreviewNodes[item.name]
+    const componentPreviewNode = this.componentPreviewNodes[item.name]
 
     // showing preview node when dragging is starting,
     // this is needed in order to take the dimensions of the component from the DOM
     componentPreviewNode.container.style.display = 'block'
 
     // taking the consumed space of component from the DOM
-    componentDimensions = componentPreviewNode.component.getBoundingClientRect()
+    const componentDimensions = componentPreviewNode.component.getBoundingClientRect()
 
     item.size = {
       width: componentDimensions.width,
@@ -85,7 +80,7 @@ class SideBar extends Component {
       y: componentDimensions.height / 2
     }
 
-    item.props = typeof component.getDefaultProps === 'function' ? component.getDefaultProps() : {}
+    item.props = componentRegistry.getDefaultProps(item.name)
 
     item.rawContent = componentPreviewNode.instance.getRawContent()
 

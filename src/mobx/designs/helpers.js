@@ -786,18 +786,31 @@ function addComponentToDesign ({
 function addFragmentToComponentInDesign ({
   design,
   component,
-  fragment
+  fragment,
+  getDefaultProps
 }) {
   const fragments = !Array.isArray(fragment) ? [fragment] : fragment
 
   fragments.forEach((currentFrag) => {
-    const fragmentInstance = generateFragment(omit(currentFrag, ['fragments']))
+    // we omit fragments from the data because we are going
+    // to insert them as special instances
+    const newFragmentData = omit(currentFrag, ['fragments'])
+    const innerFragments = currentFrag.fragments
 
-    if (currentFrag.fragments != null) {
+    // if no props is present in fragment data then
+    // get default props from the function
+    if (newFragmentData.props == null) {
+      newFragmentData.props = getDefaultProps(newFragmentData.type)
+    }
+
+    const fragmentInstance = generateFragment(newFragmentData)
+
+    if (innerFragments != null) {
       addFragmentToComponentInDesign({
         design,
         component: fragmentInstance,
-        fragment: Object.keys(currentFrag.fragments).map(fragName => currentFrag.fragments[fragName])
+        fragment: Object.keys(innerFragments).map(fragName => innerFragments[fragName]),
+        getDefaultProps
       })
     }
 

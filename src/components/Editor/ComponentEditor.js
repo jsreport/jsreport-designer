@@ -36,7 +36,7 @@ class ComponentEditor extends Component {
 
     this.connectToChangesInterceptor = this.connectToChangesInterceptor.bind(this)
     this.getDisplayName = this.getDisplayName.bind(this)
-    this.getComponentIsFragment = this.getComponentIsFragment.bind(this)
+    this.isComponentFragment = this.isComponentFragment.bind(this)
     this.getMeta = this.getMeta.bind(this)
     this.getIcon = this.getIcon.bind(this)
     this.getValue = this.getValue.bind(this)
@@ -63,7 +63,7 @@ class ComponentEditor extends Component {
     this.changesInterceptor = changesInterceptor
   }
 
-  getComponentIsFragment () {
+  isComponentFragment () {
     const { design, id } = this.props
 
     return design.canvasRegistry.get(id).element.elementType === 'fragment'
@@ -101,7 +101,7 @@ class ComponentEditor extends Component {
     const { design, id } = this.props
     let uiMeta
 
-    if (this.getComponentIsFragment()) {
+    if (this.isComponentFragment()) {
       uiMeta = componentTypes[design.canvasRegistry.get(id).element.ownerType]
     } else {
       uiMeta = componentTypes[this.props.type]
@@ -537,7 +537,7 @@ class ComponentEditor extends Component {
   }
 
   render () {
-    const componentIsFragment = this.getComponentIsFragment()
+    const componentIsFragment = this.isComponentFragment()
 
     return (
       <div className={styles.componentEditor}>

@@ -157,6 +157,10 @@ class PropertiesEditor extends PureComponent {
 
 PropertiesEditor.propTypes = {
   componentType: PropTypes.string.isRequired,
+  dataInput: PropTypes.oneOfType([
+    PropTypes.object,
+    PropTypes.array
+  ]),
   properties: PropTypes.object.isRequired,
   bindings: PropTypes.object,
   expressions: PropTypes.object,

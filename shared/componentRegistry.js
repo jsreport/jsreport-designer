@@ -30,7 +30,24 @@ function getComponentsDefinition () {
 }
 
 function getComponentDefinition (type) {
-  return componentsDefinition[type]
+  const typeParts = type.split('#')
+  const isFragment = typeParts.length > 1
+  const componentDef = componentsDefinition[typeParts[0]]
+  let def
+
+  if (componentDef == null) {
+    return
+  }
+
+  if (!isFragment) {
+    def = componentDef
+  } else if (componentDef.fragments != null) {
+    const fragmentName = typeParts.slice(-1)[0]
+
+    def = componentDef.fragments[fragmentName]
+  }
+
+  return def
 }
 
 function getComponents () {
@@ -39,6 +56,29 @@ function getComponents () {
 
 function getComponent (type) {
   return components[type]
+}
+
+// returns default props for a specific component type
+// (either if the type is a component or a fragment)
+function getDefaultProps (type) {
+  const typeParts = type.split('#')
+  const isFragment = typeParts.length > 1
+  const component = getComponent(typeParts[0])
+  let props
+
+  if (!isFragment) {
+    props = typeof component.getDefaultProps === 'function' ? (
+      component.getDefaultProps()
+    ) : {}
+  } else {
+    const fragmentName = typeParts.slice(-1)[0]
+
+    props = typeof component.getDefaultPropsForFragments === 'function' ? (
+      component.getDefaultPropsForFragments(fragmentName)
+    ) : {}
+  }
+
+  return props
 }
 
 function compileTemplate (template) {
@@ -139,13 +179,14 @@ function renderComponentTemplate ({
   props,
   bindings,
   expressions,
+  fragments,
   data,
   computedFields,
-  fragmentPlaceholders
+  fragmentPlaceholdersOutput
 }) {
   const newProps = Object.assign({}, props)
   let result = {}
-  let fragments = {}
+  let fragmentsPlaceholders = {}
   let componentHelpers
 
   // checking for binded props
@@ -221,7 +262,7 @@ function renderComponentTemplate ({
     },
     $renderFragment: (options) => {
       return renderFragment(
-        fragmentPlaceholders,
+        fragmentPlaceholdersOutput,
         options
       )
     }
@@ -229,15 +270,16 @@ function renderComponentTemplate ({
 
   result.content = template(newProps, {
     data: {
-      componentOwnerType: componentType,
-      componentType,
-      fragments
+      rootComponentType: componentType,
+      componentType: componentType,
+      fragmentsData: fragments,
+      fragmentsPlaceholders
     },
     helpers: componentHelpers
   })
 
-  if (Object.keys(fragments).length > 0) {
-    result.fragments = fragments
+  if (Object.keys(fragmentsPlaceholders).length > 0) {
+    result.fragments = fragmentsPlaceholders
   }
 
   return result
@@ -599,9 +641,11 @@ function resolveStyle ({
 }
 
 function renderFragment (placeholdersOutput, options) {
-  const componentOwnerType = options.data.componentOwnerType
+  const rootComponentType = options.data.rootComponentType
+  const componentOwnerType = rootComponentType.split('#')[0]
   const componentType = options.data.componentType
-  const fragments = options.data.fragments
+  const fragmentsData = options.data.fragmentsData || {}
+  const fragmentsPlaceholders = options.data.fragmentsPlaceholders
   const name = options.hash.name
   let result = ''
   let shouldRenderPlaceholder
@@ -617,7 +661,7 @@ function renderFragment (placeholdersOutput, options) {
     throw new Error('$renderFragment helper should be called with an name')
   }
 
-  if (fragments[name] != null) {
+  if (fragmentsPlaceholders[name] != null) {
     throw new Error(`$renderFragment with name "${name}" already exists in this context`)
   }
 
@@ -630,20 +674,40 @@ function renderFragment (placeholdersOutput, options) {
   if (typeof options.hash.inlineTag === 'string') {
     const tag = options.hash.inlineTag
     const newComponentType = `${componentType}#${name}`
+    const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
 
     // create the fragment space after rendering the content
     // to be able to detect fragments with duplicate name in the
     // same context
-    fragments[name] = {}
+    fragmentsPlaceholders[name] = {}
 
     // creating container for fragments
     // inside the fragment itself if any
-    contentData.fragments = {}
+    contentData.fragmentsPlaceholders = {}
 
     // pass composed new component type to any child
     contentData.componentType = newComponentType
 
-    const content = options.fn(this, { data: contentData })
+    const currentFragmentData = getInnerFragmentData(
+      fragmentsData,
+      fragmentsLookup
+    )
+
+    let fragmentContext
+
+    // if there is no fragments props yet and we are in
+    // browser context get the props from the default getter
+    if (currentFragmentData == null && isBrowserContext) {
+      const componentOwner = getComponent(componentOwnerType)
+
+      if (typeof componentOwner.getDefaultPropsForFragments === 'function') {
+        fragmentContext = componentOwner.getDefaultPropsForFragments(name)
+      }
+    } else if (currentFragmentData != null) {
+      fragmentContext = currentFragmentData.props
+    }
+
+    const content = options.fn(fragmentContext, { data: contentData })
 
     // when rendering in browser means that we are in design mode,
     // so in that case we just insert a comment placeholder for later
@@ -654,16 +718,16 @@ function renderFragment (placeholdersOutput, options) {
       result = `<${tag}>${content}</${tag}>`
     }
 
-    fragments[name].name = name
-    fragments[name].type = newComponentType
-    fragments[name].ownerType = componentOwnerType
-    fragments[name].mode = 'inline'
-    fragments[name].tag = tag
-    fragments[name].sketch = content
-    fragments[name].template = options.fn
+    fragmentsPlaceholders[name].name = name
+    fragmentsPlaceholders[name].type = newComponentType
+    fragmentsPlaceholders[name].ownerType = componentOwnerType
+    fragmentsPlaceholders[name].mode = 'inline'
+    fragmentsPlaceholders[name].tag = tag
+    fragmentsPlaceholders[name].sketch = content
+    fragmentsPlaceholders[name].template = options.fn
 
-    if (Object.keys(contentData.fragments).length > 0) {
-      fragments[name].fragments = { ...contentData.fragments }
+    if (Object.keys(contentData.fragmentsPlaceholders).length > 0) {
+      fragmentsPlaceholders[name].fragments = { ...contentData.fragmentsPlaceholders }
     }
   }
 
@@ -729,6 +793,36 @@ function findExpressionInHTMLNode (node, nodeIndexInParent, parent) {
   return expressionsHolders
 }
 
+function getInnerFragmentData (data, fragmentNames) {
+  if (data == null) {
+    return undefined
+  }
+
+  let current = data
+
+  for (let i = 0; i < fragmentNames.length; i++) {
+    const fragName = fragmentNames[i]
+
+    if (current == null) {
+      continue
+    }
+
+    const dataIsMap = typeof current.values === 'function'
+
+    if (i !== 0) {
+      current = current.fragments
+    }
+
+    if (dataIsMap) {
+      current = current.get(fragName)
+    } else {
+      current = current[fragName]
+    }
+  }
+
+  return current
+}
+
 function callInterop (context, fn) {
   if (fn && fn.default) {
     return fn.default.apply(context)
@@ -743,6 +837,7 @@ module.exports = {
   getComponentDefinition,
   getComponents,
   getComponent,
+  getDefaultProps,
   compileTemplate,
   renderComponentTemplate,
   componentsCache: {}

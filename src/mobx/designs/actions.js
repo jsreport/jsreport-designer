@@ -470,7 +470,7 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
   }
 })
 
-export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`, (designId, componentId, fragment) => {
+export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`, (designId, componentId, fragment, getDefaultProps) => {
   const design = store.designs.get(designId)
 
   if (!design) {
@@ -488,7 +488,8 @@ export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`,
   addFragmentToComponentInDesign({
     design,
     component,
-    fragment
+    fragment,
+    getDefaultProps
   })
 })
 

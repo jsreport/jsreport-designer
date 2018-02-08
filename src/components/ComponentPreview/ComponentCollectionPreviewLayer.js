@@ -34,16 +34,6 @@ class ComponentCollectionPreviewLayer extends Component {
     }
   }
 
-  getDefaultPropsForComponent (componentTypeName) {
-    const component = componentRegistry.getComponent(componentTypeName)
-
-    if (typeof component.getDefaultProps !== 'function') {
-      return {}
-    }
-
-    return component.getDefaultProps()
-  }
-
   renderComponentPreview (componentType) {
     const {
       colWidth
@@ -55,7 +45,7 @@ class ComponentCollectionPreviewLayer extends Component {
           id={`collectionPreview${componentType}`}
           componentRef={this.getRefPreviewNode}
           type={componentType}
-          componentProps={this.getDefaultPropsForComponent(componentType)}
+          componentProps={componentRegistry.getDefaultProps(componentType)}
           preview
           dragDisabled
         />

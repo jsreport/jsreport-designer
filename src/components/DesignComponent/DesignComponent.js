@@ -101,27 +101,12 @@ class DesignComponent extends Component {
       snapshoot !== true &&
       preview !== true
     ) {
-      let fragmentsToInsert = []
-
-      Object.keys(renderedResult.fragments).forEach((fragmentName) => {
-        const fragment = renderedResult.fragments[fragmentName]
-
-        fragmentsToInsert.push({
-          name: fragment.name,
-          type: fragment.type,
-          ownerType: fragment.ownerType,
-          mode: fragment.mode,
-          tag: fragment.tag,
-          sketch: fragment.sketch,
-          template: fragment.template,
-          fragments: fragment.fragments,
-          props: {
-            value: 'Sample fragment value'
-          }
-        })
-      })
-
-      addFragmentToComponent(designId, id, fragmentsToInsert)
+      addFragmentToComponent(
+        designId,
+        id,
+        Object.keys(renderedResult.fragments).map(fragName => renderedResult.fragments[fragName]),
+        componentRegistry.getDefaultProps
+      )
     }
 
     this.renderedContent = renderedResult.content
@@ -300,6 +285,7 @@ class DesignComponent extends Component {
     componentProps,
     bindings,
     expressions,
+    fragments,
     dataInput,
     computedFieldsInput,
     preview
@@ -310,7 +296,7 @@ class DesignComponent extends Component {
     let shouldRenderAgain = true
     let result
     let content
-    let fragments
+    let fragmentsPlaceholders
 
     if (componentCache != null && componentCache.props === componentProps && !this.dataInputChanged) {
       shouldRenderAgain = false
@@ -323,37 +309,46 @@ class DesignComponent extends Component {
         props: componentProps,
         bindings,
         expressions,
-        customCompiledTemplate,
+        fragments,
         data: dataInput,
         computedFields: computedFieldsInput,
-        fragmentPlaceholders: shouldRenderFragmentPlaceholder
+        fragmentPlaceholdersOutput: shouldRenderFragmentPlaceholder
       }
 
       if (type.indexOf('#') === -1) {
+        if (customCompiledTemplate) {
+          console.log('rendering component from custom template', type)
+        } else {
+          console.log('rendering component from template', type)
+        }
+
         result = componentRegistry.getComponent(type).render(renderPayload)
       } else {
+        console.log('rendering fragment', type)
+
         result = componentRegistry.renderComponentTemplate({
+          componentType: type,
           template: customCompiledTemplate
         }, renderPayload)
       }
 
-      fragments = !shouldRenderFragmentPlaceholder ? undefined : result.fragments
+      fragmentsPlaceholders = !shouldRenderFragmentPlaceholder ? undefined : result.fragments
 
       this.setComponentCache({
         props: componentProps,
         content: result.content,
-        fragments
+        fragmentsPlaceholders
       })
 
       content = result.content
     } else {
       content = componentCache.content
-      fragments = componentCache.fragments
+      fragmentsPlaceholders = componentCache.fragmentsPlaceholders
     }
 
     return {
       content,
-      fragments
+      fragments: fragmentsPlaceholders
     }
   }
 
