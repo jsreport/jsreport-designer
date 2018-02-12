@@ -1,5 +1,5 @@
 
-function mountFragments (fragmentsCollection, rootNode) {
+function getFragmentsNodes (rootNode) {
   const fragmentsSlotsIterator = document.createNodeIterator(
     rootNode,
     NodeFilter.SHOW_COMMENT,
@@ -13,9 +13,21 @@ function mountFragments (fragmentsCollection, rootNode) {
   )
 
   let currentSlotNode = fragmentsSlotsIterator.nextNode()
+  const fragmentsNodes = []
 
   while (currentSlotNode != null) {
-    const value = currentSlotNode.nodeValue.trim()
+    fragmentsNodes.push(currentSlotNode)
+    currentSlotNode = fragmentsSlotsIterator.nextNode()
+  }
+
+  return fragmentsNodes
+}
+
+function mountFragmentsNodes (fragmentsNodes, fragmentsCollection) {
+  for (let i = 0; i < fragmentsNodes.length; i++) {
+    const currentFragmentNode = fragmentsNodes[i]
+
+    const value = currentFragmentNode.nodeValue.trim()
     const attrs = value.split('#').slice(1)
 
     if (attrs.length > 0) {
@@ -24,12 +36,11 @@ function mountFragments (fragmentsCollection, rootNode) {
       const fragmentInstance = fragmentsCollection[nameValue]
 
       if (fragmentInstance != null) {
-        currentSlotNode.parentNode.replaceChild(fragmentInstance.mountNode, currentSlotNode)
+        currentFragmentNode.parentNode.replaceChild(fragmentInstance.mountNode, currentFragmentNode)
       }
     }
-
-    currentSlotNode = fragmentsSlotsIterator.nextNode()
   }
 }
 
-export { mountFragments }
+export { getFragmentsNodes }
+export { mountFragmentsNodes }

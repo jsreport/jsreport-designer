@@ -7,8 +7,29 @@ import htmlElementPropType from '../../helpers/htmlElementPropType'
 // https://github.com/facebook/react/pull/7361
 // https://github.com/facebook/react/issues/12014#issuecomment-357673890
 class RawHTML extends Component {
+  constructor (props) {
+    super(props)
+
+    this.addOrUpdateTargetNode = this.addOrUpdateTargetNode.bind(this)
+  }
+
   componentWillMount () {
     const { targetNode, html } = this.props
+    const { addOrUpdateTargetNode } = this
+
+    addOrUpdateTargetNode(targetNode, html)
+  }
+
+  componentWillReceiveProps (nextProps) {
+    const currentProps = this.props
+    const { addOrUpdateTargetNode } = this
+
+    if (currentProps.html !== nextProps.html) {
+      addOrUpdateTargetNode(nextProps.targetNode, nextProps.html)
+    }
+  }
+
+  addOrUpdateTargetNode (targetNode, html) {
     // fragment that will contain all the nodes that will be
     // inserted into targetNode
     const docFrag = document.createDocumentFragment()
@@ -28,6 +49,10 @@ class RawHTML extends Component {
 
     // remove wrapper because is not needed anymore
     docFrag.removeChild(wrapper)
+
+    while (targetNode.hasChildNodes()) {
+      targetNode.removeChild(targetNode.firstChild)
+    }
 
     // and finally insert the document fragment into the target node
     targetNode.appendChild(docFrag)

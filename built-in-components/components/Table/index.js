@@ -20,6 +20,23 @@ module.exports = (reporter, definition) => ({
       }
     }
   },
+  fragments: {
+    header: {
+      propsMeta: {
+        text: null
+      }
+    },
+    content: {
+      propsMeta: {
+        text: null
+      }
+    },
+    footer: {
+      propsMeta: {
+        text: null
+      }
+    }
+  },
   modulePath: path.join(__dirname, 'shared/index.js'),
   directory: __dirname
 })

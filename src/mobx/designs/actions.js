@@ -10,6 +10,7 @@ import {
   findMarkedArea,
   addComponentToDesign,
   addFragmentToComponentInDesign,
+  removeFragmentFromComponentInDesign,
   removeComponentInDesign,
   updateComponentInDesign,
   updateItemSize
@@ -470,7 +471,7 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
   }
 })
 
-export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`, (designId, componentId, fragment, getDefaultProps) => {
+export const addFragmentToComponent = action(`${ACTION}_ADD_FRAGMENT_TO_COMPONENT`, (designId, componentId, fragment, getDefaultProps) => {
   const design = store.designs.get(designId)
 
   if (!design) {
@@ -491,6 +492,123 @@ export const addFragmentToComponent = action(`${ACTION}_ADD_CHILD_TO_COMPONENT`,
     fragment,
     getDefaultProps
   })
+})
+
+export const removeFragmentFromComponent = action(`${ACTION}_REMOVE_FRAGMENT_FROM_COMPONENT`, (designId, componentId, fragmentName) => {
+  const design = store.designs.get(designId)
+
+  if (!design) {
+    return
+  }
+
+  let component = design.canvasRegistry.get(componentId)
+
+  if (!component) {
+    return
+  }
+
+  component = component.element
+
+  removeFragmentFromComponentInDesign({
+    design,
+    component,
+    fragmentName
+  })
+})
+
+export const addOrRemoveFragmentInComponent = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, componentId, fragmentsCollection, getDefaultProps) => {
+  const design = store.designs.get(designId)
+  const staleFragments = []
+
+  if (!design) {
+    return
+  }
+
+  let component = design.canvasRegistry.get(componentId)
+
+  if (!component) {
+    return
+  }
+
+  component = component.element
+
+  if (
+    component.fragments.size === 0 &&
+    Object.keys(fragmentsCollection).length > 0
+  ) {
+    addFragmentToComponent(
+      designId,
+      componentId,
+      Object.keys(fragmentsCollection).map(fragName => fragmentsCollection[fragName]),
+      getDefaultProps
+    )
+  } else {
+    const currentFragmentsNames = component.fragments.keys()
+    const toAdd = []
+    const toUpdate = []
+    const toRemove = [...currentFragmentsNames]
+
+    Object.keys(fragmentsCollection).forEach((fragName) => {
+      const fragIndex = toRemove.indexOf(fragName)
+
+      if (fragIndex === -1) {
+        toAdd.push(fragName)
+      } else {
+        toUpdate.push(fragName)
+        toRemove.splice(fragIndex, 1)
+      }
+    })
+
+    if (toRemove.length > 0) {
+      removeFragmentFromComponent(
+        designId,
+        componentId,
+        toRemove
+      )
+    }
+
+    if (toAdd.length > 0) {
+      addFragmentToComponent(
+        designId,
+        componentId,
+        toAdd.map(fragName => fragmentsCollection[fragName]),
+        getDefaultProps
+      )
+    }
+
+    if (toUpdate.length > 0) {
+      toUpdate.forEach((fragName) => {
+        const currentFrag = component.fragments.get(fragName)
+        const updateInfo = fragmentsCollection[fragName]
+
+        const attrsToUpdate = [
+          'mode',
+          'type',
+          'ownerType',
+          'sketch',
+          'tag'
+        ]
+
+        if (
+          `${updateInfo.tag}/${updateInfo.sketch}` !== `${currentFrag.tag}/${currentFrag.sketch}`
+        ) {
+          attrsToUpdate.push('template')
+        }
+
+        if (updateInfo.tag !== currentFrag.tag) {
+          staleFragments.push(currentFrag)
+        }
+
+        updateElement(
+          designId,
+          currentFrag.id,
+          pick(updateInfo, attrsToUpdate)
+        )
+      })
+    }
+  }
+
+  return staleFragments
 })
 
 export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, componentId, opts = {}) => {

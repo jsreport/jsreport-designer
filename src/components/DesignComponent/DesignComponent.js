@@ -6,7 +6,7 @@ import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DragSource } from 'react-dnd'
 import DesignComponentHost from './DesignComponentContentHost'
 import * as configuration from '../../lib/configuration'
-import { mountFragments } from '../../helpers/fragments'
+import { getFragmentsNodes, mountFragmentsNodes } from '../../helpers/fragments'
 import htmlElementPropType from '../../helpers/htmlElementPropType'
 import componentRegistry from '../../../shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
@@ -50,17 +50,15 @@ class DesignComponent extends Component {
     this.customCompiledTemplate = null
     this.renderedContent = null
 
-    if (props.template != null && props.rawContent == null) {
-      this.customCompiledTemplate = componentRegistry.compileTemplate(props.template)
-    }
-
     this.setComponentCache = this.setComponentCache.bind(this)
     this.getComponentCache = this.getComponentCache.bind(this)
+    this.clearComponentCache = this.clearComponentCache.bind(this)
 
     this.setComponentRef = this.setComponentRef.bind(this)
     this.setFragmentsRef = this.setFragmentsRef.bind(this)
 
     this.getRawContent = this.getRawContent.bind(this)
+    this.mountFragments = this.mountFragments.bind(this)
 
     this.connectToDragSourceConditionally = this.connectToDragSourceConditionally.bind(this)
 
@@ -68,10 +66,14 @@ class DesignComponent extends Component {
   }
 
   componentWillMount () {
-    const { designId, id, snapshoot, preview, addFragmentToComponent } = this.props
-    const hasRawContent = this.props.rawContent != null
+    const { designId, id, template, rawContent, snapshoot, preview, addOrRemoveFragmentInComponent } = this.props
+    const hasRawContent = rawContent != null
     const componentCache = this.getComponentCache()
     let hasFragments = false
+
+    if (template != null && !hasRawContent) {
+      this.customCompiledTemplate = componentRegistry.compileTemplate(template)
+    }
 
     if (
       this.props.fragments != null &&
@@ -97,14 +99,16 @@ class DesignComponent extends Component {
       designId != null &&
       renderedResult != null &&
       renderedResult.fragments != null &&
+      // we only need to add the fragments to the store
+      // if the store does not have them yet
       !hasFragments &&
       snapshoot !== true &&
       preview !== true
     ) {
-      addFragmentToComponent(
+      addOrRemoveFragmentInComponent(
         designId,
         id,
-        Object.keys(renderedResult.fragments).map(fragName => renderedResult.fragments[fragName]),
+        renderedResult.fragments,
         componentRegistry.getDefaultProps
       )
     }
@@ -114,6 +118,7 @@ class DesignComponent extends Component {
 
   componentDidMount () {
     const { dragDisabled } = this.props
+    const mountFragments = this.mountFragments
     const componentCache = this.getComponentCache()
 
     if (componentCache && componentCache.keep) {
@@ -134,7 +139,7 @@ class DesignComponent extends Component {
       return
     }
 
-    mountFragments(this.fragmentsInstances, this.node)
+    mountFragments(this.node, this.fragmentsInstances)
 
     if (dragDisabled !== true) {
       // we need to connect to the drag source after mount because
@@ -146,6 +151,7 @@ class DesignComponent extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
+    const { designId, id, snapshoot, preview, addOrRemoveFragmentInComponent } = nextProps
     const hasRawContent = nextProps.rawContent != null
     let renderedResult
 
@@ -167,6 +173,9 @@ class DesignComponent extends Component {
     } else if (this.props.template != null && nextProps.template == null) {
       this.customCompiledTemplate = null
       this.setComponentCache(undefined)
+    } else if (typeof nextProps.template === 'function' && this.customCompiledTemplate !== nextProps.template) {
+      this.customCompiledTemplate = nextProps.template
+      this.setComponentCache(undefined)
     } else if (this.props.bindings !== nextProps.bindings) {
       this.setComponentCache(undefined)
     }
@@ -179,6 +188,42 @@ class DesignComponent extends Component {
     renderedResult = this.renderComponent(nextProps)
 
     this.renderedContent = renderedResult.content
+
+    if (
+      designId != null &&
+      snapshoot !== true &&
+      preview !== true
+    ) {
+      const staleFragments = addOrRemoveFragmentInComponent(
+        designId,
+        id,
+        renderedResult.fragments || {},
+        componentRegistry.getDefaultProps
+      )
+
+      // stale fragments are those whom tag has been changed and will be
+      // re-mounted, so we need to clear the cache in order for them to
+      // get fresh data on first mount
+      if (staleFragments.length > 0) {
+        staleFragments.forEach(stale => this.clearComponentCache(stale.type, stale.id))
+      }
+    }
+  }
+
+  componentDidUpdate (prevProps) {
+    const currentProps = this.props
+    const hasRawContent = currentProps.rawContent != null
+    const mountFragments = this.mountFragments
+
+    if (hasRawContent) {
+      return
+    }
+
+    if (this.fragmentsInstances == null || Object.keys(this.fragmentsInstances).length === 0) {
+      return
+    }
+
+    mountFragments(this.node, this.fragmentsInstances)
   }
 
   componentWillUnmount () {
@@ -193,7 +238,12 @@ class DesignComponent extends Component {
 
   setComponentCache (value) {
     componentRegistry.componentsCache[this.props.type] = componentRegistry.componentsCache[this.props.type] || {}
-    componentRegistry.componentsCache[this.props.type][this.props.id] = value
+
+    if (value != null) {
+      componentRegistry.componentsCache[this.props.type][this.props.id] = value
+    } else {
+      this.clearComponentCache(this.props.type, this.props.id)
+    }
   }
 
   getComponentCache () {
@@ -205,6 +255,18 @@ class DesignComponent extends Component {
     }
 
     return componentRegistry.componentsCache[this.props.type][this.props.id]
+  }
+
+  clearComponentCache (type, id) {
+    if (!componentRegistry.componentsCache[type]) {
+      return
+    }
+
+    delete componentRegistry.componentsCache[type][id]
+
+    if (Object.keys(componentRegistry.componentsCache[type]).length === 0) {
+      delete componentRegistry.componentsCache[type]
+    }
   }
 
   setComponentRef (el) {
@@ -224,7 +286,11 @@ class DesignComponent extends Component {
   setFragmentsRef (fragmentName, el) {
     const fragmentsInstances = this.fragmentsInstances || {}
 
-    fragmentsInstances[fragmentName] = el
+    if (el == null && fragmentsInstances[fragmentName] != null) {
+      delete fragmentsInstances[fragmentName]
+    } else {
+      fragmentsInstances[fragmentName] = el
+    }
 
     this.fragmentsInstances = fragmentsInstances
   }
@@ -255,6 +321,19 @@ class DesignComponent extends Component {
     }
 
     return null
+  }
+
+  mountFragments (rootNode, fragmentsCollection) {
+    const fragmentsNodes = getFragmentsNodes(rootNode)
+
+    // "mountFragments" will only do something if there is
+    // new html comments in current html (fragments placeholders)
+    // otherwhise it does nothing
+    if (fragmentsNodes.length === 0) {
+      return
+    }
+
+    mountFragmentsNodes(fragmentsNodes, fragmentsCollection)
   }
 
   connectToDragSourceConditionally (isDragging, ...args) {
@@ -316,16 +395,8 @@ class DesignComponent extends Component {
       }
 
       if (type.indexOf('#') === -1) {
-        if (customCompiledTemplate) {
-          console.log('rendering component from custom template', type)
-        } else {
-          console.log('rendering component from template', type)
-        }
-
         result = componentRegistry.getComponent(type).render(renderPayload)
       } else {
-        console.log('rendering fragment', type)
-
         result = componentRegistry.renderComponentTemplate({
           componentType: type,
           template: customCompiledTemplate
@@ -398,13 +469,19 @@ class DesignComponent extends Component {
       <Fragment>
         {componentHostEl}
         {fragments != null && fragments.size > 0 && (
-          fragments.keys().map((fragName) => (
-            <DesignFragment
-              key={fragName}
-              ref={(el) => this.setFragmentsRef(fragName, el)}
-              fragment={fragments.get(fragName)}
-            />
-          ))
+          fragments.keys().map((fragName) => {
+            const frag = fragments.get(fragName)
+
+            return (
+              <DesignFragment
+                // we use tag as key because we want to re-create the component
+                // in case the tag is changed
+                key={`${frag.tag}/${fragName}`}
+                ref={(el) => this.setFragmentsRef(fragName, el)}
+                fragment={frag}
+              />
+            )
+          })
         )}
       </Fragment>
     )
@@ -447,7 +524,7 @@ DesignComponent.propTypes = {
   // disabling because we are using the prop not in render but in other places
   // eslint-disable-next-line react/no-unused-prop-types
   onDragEnd: PropTypes.func,
-  addFragmentToComponent: PropTypes.func,
+  addOrRemoveFragmentInComponent: PropTypes.func,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool
@@ -500,7 +577,7 @@ export default inject((injected, props) => {
     fragments: source.fragments,
     selected: source.selected,
     ...restProps,
-    addFragmentToComponent: injected.designsActions.addFragmentToComponent
+    addOrRemoveFragmentInComponent: injected.designsActions.addOrRemoveFragmentInComponent
   }
 })(
   DragSource(

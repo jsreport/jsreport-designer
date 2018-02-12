@@ -12,6 +12,22 @@ module.exports = {
       }]
     }
   },
+  getDefaultPropsForFragments (fragmentName) {
+    switch (fragmentName) {
+      case 'header':
+        return {
+          text: 'header'
+        }
+      case 'content':
+        return {
+          text: 'content'
+        }
+      case 'footer':
+        return {
+          text: 'footer'
+        }
+    }
+  },
   helpers: require('./helpers'),
   // TODO: when we have the component API ready
   // replace the inline style tag with the selected standard
@@ -25,8 +41,11 @@ module.exports = {
         }
       </style>
       <div>
-        {{#$renderFragment name="label-header" inlineTag="span"}}
-          <b>label header<b/>
+        {{#$renderFragment name="header" inlineTag="span"}}
+          <b>{{text}}</b>
+          {{#$renderFragment name="content" inlineTag="span"}}
+            {{text}}
+          {{/$renderFragment}}
         {{/$renderFragment}}
         <table class="Table" style="{{$resolveStyle "style"}}">
           <tr>
@@ -50,8 +69,8 @@ module.exports = {
             </tr>
           {{/each}}
         </table>
-        {{#$renderFragment name="label-footer" inlineTag="span"}}
-          <b>label footer</b>
+        {{#$renderFragment name="footer" inlineTag="span"}}
+          <b>{{text}}</b>
         {{/$renderFragment}}
       </div>
       `
