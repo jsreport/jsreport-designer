@@ -851,33 +851,33 @@ function addFragmentToComponentInDesign ({
   })
 }
 
-function removeFragmentFromComponentInDesign ({
-  design,
-  component,
-  fragmentName
-}) {
-  const { canvasRegistry } = design
-  const fragmentsNames = !Array.isArray(fragmentName) ? [fragmentName] : fragmentName
-
-  fragmentsNames.forEach((currentFragName) => {
-    const currentFragment = component.fragments.get(currentFragName)
-
-    if (!currentFragment) {
-      return
-    }
-
-    if (currentFragment.fragments.size > 0) {
-      removeFragmentFromComponentInDesign({
-        design,
-        currentFragment,
-        fragmentName: currentFragment.fragments.keys()
-      })
-    }
-
-    canvasRegistry.delete(currentFragment.id)
-    component.fragments.delete(currentFragment.name)
-  })
-}
+// function removeFragmentFromComponentInDesign ({
+//   design,
+//   component,
+//   fragmentName
+// }) {
+//   const { canvasRegistry } = design
+//   const fragmentsNames = !Array.isArray(fragmentName) ? [fragmentName] : fragmentName
+//
+//   fragmentsNames.forEach((currentFragName) => {
+//     const currentFragment = component.fragments.get(currentFragName)
+//
+//     if (!currentFragment) {
+//       return
+//     }
+//
+//     if (currentFragment.fragments.size > 0) {
+//       removeFragmentFromComponentInDesign({
+//         design,
+//         currentFragment,
+//         fragmentName: currentFragment.fragments.keys()
+//       })
+//     }
+//
+//     canvasRegistry.delete(currentFragment.id)
+//     component.fragments.delete(currentFragment.name)
+//   })
+// }
 
 function removeComponentInDesign ({
   design,
@@ -1035,7 +1035,7 @@ export { findProjectedFilledAreaWhenResizing }
 export { findMarkedArea }
 export { addComponentToDesign }
 export { addFragmentToComponentInDesign }
-export { removeFragmentFromComponentInDesign }
+// export { removeFragmentFromComponentInDesign }
 export { removeComponentInDesign }
 export { updateComponentInDesign }
 export { updateItemSize }

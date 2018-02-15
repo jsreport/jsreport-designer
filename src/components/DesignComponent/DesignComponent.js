@@ -115,12 +115,12 @@ class DesignComponent extends Component {
       snapshoot !== true &&
       preview !== true
     ) {
-      addOrRemoveFragmentInComponent(
-        designId,
-        id,
-        renderedResult.fragments,
-        componentRegistry.getDefaultProps
-      )
+      // addOrRemoveFragmentInComponent(
+      //   designId,
+      //   fragmentId != null ? fragmentId : id,
+      //   renderedResult.fragments,
+      //   componentRegistry.getDefaultProps
+      // )
     }
 
     this.renderedContent = renderedResult.content
@@ -223,19 +223,19 @@ class DesignComponent extends Component {
       snapshoot !== true &&
       preview !== true
     ) {
-      const staleFragments = addOrRemoveFragmentInComponent(
-        designId,
-        id,
-        renderedResult.fragments || {},
-        componentRegistry.getDefaultProps
-      )
-
-      // stale fragments are those whom tag has been changed and will be
-      // re-mounted, so we need to clear the cache in order for them to
-      // get fresh data on first mount
-      if (staleFragments.length > 0) {
-        staleFragments.forEach(stale => this.clearComponentCache(stale.type, stale.id))
-      }
+      // const staleFragmentsInstances = addOrRemoveFragmentInComponent(
+      //   designId,
+      //   fragmentId != null ? fragmentId : id,
+      //   renderedResult.fragments || {},
+      //   componentRegistry.getDefaultProps
+      // )
+      //
+      // // stale fragments instances are those whom tag has been changed and will be
+      // // re-mounted, so we need to clear the cache in order for them to
+      // // get fresh data on first mount
+      // if (staleFragmentsInstances.length > 0) {
+      //   staleFragmentsInstances.forEach(stale => this.clearComponentCache(stale.type, stale.id))
+      // }
     }
   }
 
