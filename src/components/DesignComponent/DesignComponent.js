@@ -45,7 +45,7 @@ class DesignComponent extends Component {
     super(props)
 
     this.node = null
-    this.fragmentsInstances = null
+    this.fragmentsRefs = null
     this.dataInputChanged = false
     this.customCompiledTemplate = null
     this.renderedContent = null
@@ -66,7 +66,17 @@ class DesignComponent extends Component {
   }
 
   componentWillMount () {
-    const { designId, id, template, rawContent, snapshoot, preview, addOrRemoveFragmentInComponent } = this.props
+    const {
+      designId,
+      id,
+      fragmentId,
+      template,
+      rawContent,
+      snapshoot,
+      preview,
+      addOrRemoveFragmentInComponent
+    } = this.props
+
     const hasRawContent = rawContent != null
     const componentCache = this.getComponentCache()
     let hasFragments = false
@@ -135,11 +145,11 @@ class DesignComponent extends Component {
       })
     }
 
-    if (this.fragmentsInstances == null || Object.keys(this.fragmentsInstances).length === 0) {
+    if (this.fragmentsRefs == null || Object.keys(this.fragmentsRefs).length === 0) {
       return
     }
 
-    mountFragments(this.node, this.fragmentsInstances)
+    mountFragments(this.node, this.fragmentsRefs)
 
     if (dragDisabled !== true) {
       // we need to connect to the drag source after mount because
@@ -151,7 +161,15 @@ class DesignComponent extends Component {
   }
 
   componentWillReceiveProps (nextProps) {
-    const { designId, id, snapshoot, preview, addOrRemoveFragmentInComponent } = nextProps
+    const {
+      designId,
+      id,
+      fragmentId,
+      snapshoot,
+      preview,
+      addOrRemoveFragmentInComponent
+    } = nextProps
+
     const hasRawContent = nextProps.rawContent != null
     let renderedResult
 
@@ -176,8 +194,19 @@ class DesignComponent extends Component {
     } else if (typeof nextProps.template === 'function' && this.customCompiledTemplate !== nextProps.template) {
       this.customCompiledTemplate = nextProps.template
       this.setComponentCache(undefined)
+    } else if (this.getComponentCache() != null && this.getComponentCache().props !== nextProps.componentProps) {
+      this.setComponentCache(undefined)
     } else if (this.props.bindings !== nextProps.bindings) {
       this.setComponentCache(undefined)
+    }
+
+    if (
+      this.getComponentCache() != null &&
+      !this.dataInputChanged &&
+      this.props.selected !== nextProps.selected
+    ) {
+      // ignore when only component selected state has changed
+      return
     }
 
     // don't try to render component from template if we have raw content to show
@@ -219,11 +248,13 @@ class DesignComponent extends Component {
       return
     }
 
-    if (this.fragmentsInstances == null || Object.keys(this.fragmentsInstances).length === 0) {
+    console.log(`${this.props.type}.${this.props.id} (didUpdate)`)
+
+    if (this.fragmentsRefs == null || Object.keys(this.fragmentsRefs).length === 0) {
       return
     }
 
-    mountFragments(this.node, this.fragmentsInstances)
+    mountFragments(this.node, this.fragmentsRefs)
   }
 
   componentWillUnmount () {
@@ -283,16 +314,16 @@ class DesignComponent extends Component {
     this.props.componentRef(this.props.type, el, this)
   }
 
-  setFragmentsRef (fragmentName, el) {
-    const fragmentsInstances = this.fragmentsInstances || {}
+  setFragmentsRef (fragmentId, el) {
+    const fragmentsRefs = this.fragmentsRefs || {}
 
-    if (el == null && fragmentsInstances[fragmentName] != null) {
-      delete fragmentsInstances[fragmentName]
+    if (el == null && fragmentsRefs[fragmentId] != null) {
+      delete fragmentsRefs[fragmentId]
     } else {
-      fragmentsInstances[fragmentName] = el
+      fragmentsRefs[fragmentId] = el
     }
 
-    this.fragmentsInstances = fragmentsInstances
+    this.fragmentsRefs = fragmentsRefs
   }
 
   getTemporalNodeForDrag () {
@@ -377,7 +408,7 @@ class DesignComponent extends Component {
     let content
     let fragmentsPlaceholders
 
-    if (componentCache != null && componentCache.props === componentProps && !this.dataInputChanged) {
+    if (componentCache != null && !this.dataInputChanged) {
       shouldRenderAgain = false
     }
 
@@ -430,14 +461,23 @@ class DesignComponent extends Component {
     const {
       root,
       id,
+      fragmentId,
       type,
       rawContent,
       fragments,
       selected,
+      preview,
       snapshoot,
       isDragging,
       dragDisabled
     } = this.props
+
+    const shouldRenderFragments = (
+      snapshoot !== true &&
+      preview !== true &&
+      fragments != null &&
+      fragments.size > 0
+    )
 
     let content
 
@@ -452,6 +492,7 @@ class DesignComponent extends Component {
         key={`${type}-${id}(${root != null ? 'node' : 'relement'})`}
         nodeRef={this.setComponentRef}
         id={id}
+        componentId={fragmentId != null ? fragmentId : undefined}
         type={type}
         root={root != null ? root : 'div'}
         content={content}
@@ -468,7 +509,7 @@ class DesignComponent extends Component {
     return (
       <Fragment>
         {componentHostEl}
-        {fragments != null && fragments.size > 0 && (
+        {shouldRenderFragments && (
           fragments.keys().map((fragName) => {
             const frag = fragments.get(fragName)
 
@@ -476,8 +517,8 @@ class DesignComponent extends Component {
               <DesignFragment
                 // we use tag as key because we want to re-create the component
                 // in case the tag is changed
-                key={`${frag.tag}/${fragName}`}
-                ref={(el) => this.setFragmentsRef(fragName, el)}
+                key={`${frag.mode}/${fragName}`}
+                ref={(el) => this.setFragmentsRef(frag.type, el)}
                 fragment={frag}
               />
             )
@@ -510,6 +551,7 @@ DesignComponent.propTypes = {
   // eslint-disable-next-line react/no-unused-prop-types
   expressions: PropTypes.object,
   fragments: MobxPropTypes.observableMap,
+  fragmentId: PropTypes.string,
   rawContent: PropTypes.string,
   selected: PropTypes.bool,
   snapshoot: PropTypes.bool,
@@ -562,15 +604,15 @@ class ObservableDesignComponent extends Component {
 }
 
 export default inject((injected, props) => {
-  let { source, ...restProps } = props
+  let { source, id, template, ...restProps } = props
 
   return {
     designId: injected.design.id,
-    id: source.id,
+    id: id != null ? id : source.id,
     type: source.type,
     dataInput: injected.dataInputStore.value,
     computedFieldsInput: injected.dataInputStore.computedFieldsValues,
-    template: source.template,
+    template: typeof template === 'function' ? template : source.template,
     componentProps: source.props,
     bindings: source.bindings,
     expressions: source.expressions,

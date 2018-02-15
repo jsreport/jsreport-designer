@@ -1,7 +1,11 @@
 import pick from 'lodash/pick'
 import { action } from 'mobx'
 import { store as editorStore } from '../editor'
-import store, { Design, DesignItem, DesignComponent } from './store'
+import store, {
+  Design,
+  DesignItem,
+  DesignComponent
+} from './store'
 import { ComponentDragTypes } from '../../Constants'
 import {
   generateGroup,
@@ -662,7 +666,8 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
   } else {
     componentToProcess = {
       type: draggedEl.name,
-      props: draggedEl.props
+      props: draggedEl.props,
+      fragments: draggedEl.fragments
     }
   }
 

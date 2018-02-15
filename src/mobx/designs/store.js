@@ -19,7 +19,9 @@ function getSortedElementsByType (type, elements) {
     return record.element.elementType === type
   })
 
-  filteredElements.sort((a, b) => a.index - b.index)
+  if (type !== 'fragment') {
+    filteredElements.sort((a, b) => a.index - b.index)
+  }
 
   return filteredElements.map((record) => {
     let recordEntity = {
@@ -305,13 +307,9 @@ class DesignFragment {
   // eslint-disable-next-line no-undef
   @observable mode = null
   // eslint-disable-next-line no-undef
-  @observable tag = null
-  // eslint-disable-next-line no-undef
-  @observable sketch = null
-  // eslint-disable-next-line no-undef
-  @observable.ref template = null
-  // eslint-disable-next-line no-undef
   @observable.ref props = null
+  // eslint-disable-next-line no-undef
+  @observable instances = []
   // eslint-disable-next-line no-undef
   fragments = observable.map({}, 'fragments')
   // eslint-disable-next-line no-undef
@@ -331,9 +329,6 @@ class DesignFragment {
       frag.name = this.name
       frag.type = this.type
       frag.ownerType = this.ownerType
-      frag.tag = this.tag
-      frag.template = this.template
-      frag.sketch = this.sketch
     }
 
     frag.mode = this.mode
@@ -344,6 +339,12 @@ class DesignFragment {
         acu[currentFrag.name] = currentFrag.toJS(includeId)
         return acu
       }, {})
+    }
+
+    if (includeId === true) {
+      frag.instances = this.instances.map((ins) => {
+        return ins.toJS(includeId)
+      })
     }
 
     return frag
@@ -358,7 +359,54 @@ class DesignFragment {
   }
 }
 
+class DesignFragmentInlineInstance {
+  // eslint-disable-next-line no-undef
+  @observable id = null
+  // eslint-disable-next-line no-undef
+  @observable tag = null
+  // eslint-disable-next-line no-undef
+  @observable sketch = null
+  // eslint-disable-next-line no-undef
+  @observable.ref template = null
+  // eslint-disable-next-line no-undef
+  @observable fragmentId = null
+
+  get elementType () {
+    return 'fragmentInlineInstance'
+  }
+
+  toJS (includeId) {
+    let ins = {}
+
+    if (includeId === true) {
+      ins.id = this.id
+    }
+
+    ins.tag = this.tag
+    ins.sketch = this.sketch
+    ins.template = this.template
+
+    return ins
+  }
+
+  constructor (defaults) {
+    setDefaults(this, defaults)
+
+    if (this.id == null) {
+      throw new Error('Fragment inline instance must have an id')
+    }
+  }
+}
+
 let store = new Designs()
 
-export { Design, DesignGroup, DesignItem, DesignComponent, DesignFragment }
+export {
+  Design,
+  DesignGroup,
+  DesignItem,
+  DesignComponent,
+  DesignFragment,
+  DesignFragmentInlineInstance
+}
+
 export default store

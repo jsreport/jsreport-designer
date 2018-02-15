@@ -71,7 +71,7 @@ function getDefaultProps (type) {
       component.getDefaultProps()
     ) : {}
   } else {
-    const fragmentName = typeParts.slice(-1)[0]
+    const fragmentName = typeParts.slice(1).join('#')
 
     props = typeof component.getDefaultPropsForFragments === 'function' ? (
       component.getDefaultPropsForFragments(fragmentName)
@@ -661,10 +661,6 @@ function renderFragment (placeholdersOutput, options) {
     throw new Error('$renderFragment helper should be called with an name')
   }
 
-  if (fragmentsPlaceholders[name] != null) {
-    throw new Error(`$renderFragment with name "${name}" already exists in this context`)
-  }
-
   if (options.data) {
     contentData = Handlebars.createFrame(options.data)
   } else {
@@ -675,15 +671,21 @@ function renderFragment (placeholdersOutput, options) {
     const tag = options.hash.inlineTag
     const newComponentType = `${componentType}#${name}`
     const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
+    let instanceIndex
 
     // create the fragment space after rendering the content
-    // to be able to detect fragments with duplicate name in the
-    // same context
-    fragmentsPlaceholders[name] = {}
+    // to be able to detect fragments with multiple instances
+    if (fragmentsPlaceholders[name] == null) {
+      fragmentsPlaceholders[name] = {
+        instances: []
+      }
+    }
+
+    instanceIndex = fragmentsPlaceholders[name].instances.length
 
     // creating container for fragments
     // inside the fragment itself if any
-    contentData.fragmentsPlaceholders = {}
+    contentData.fragmentsPlaceholders = fragmentsPlaceholders[name].fragments || {}
 
     // pass composed new component type to any child
     contentData.componentType = newComponentType
@@ -701,7 +703,8 @@ function renderFragment (placeholdersOutput, options) {
       const componentOwner = getComponent(componentOwnerType)
 
       if (typeof componentOwner.getDefaultPropsForFragments === 'function') {
-        fragmentContext = componentOwner.getDefaultPropsForFragments(name)
+        const fragFullName = newComponentType.split('#').slice(1).join('#')
+        fragmentContext = componentOwner.getDefaultPropsForFragments(fragFullName)
       }
     } else if (currentFragmentData != null) {
       fragmentContext = currentFragmentData.props
@@ -713,21 +716,27 @@ function renderFragment (placeholdersOutput, options) {
     // so in that case we just insert a comment placeholder for later
     // replace it with the real html
     if (shouldRenderPlaceholder) {
-      result = `<!-- jsreport-designer-fragment#name=${name} -->`
+      result = `<!-- jsreport-designer-fragment@type=${newComponentType}@instance=${instanceIndex} -->`
     } else {
       result = `<${tag}>${content}</${tag}>`
     }
 
-    fragmentsPlaceholders[name].name = name
-    fragmentsPlaceholders[name].type = newComponentType
-    fragmentsPlaceholders[name].ownerType = componentOwnerType
-    fragmentsPlaceholders[name].mode = 'inline'
-    fragmentsPlaceholders[name].tag = tag
-    fragmentsPlaceholders[name].sketch = content
-    fragmentsPlaceholders[name].template = options.fn
+    if (instanceIndex === 0) {
+      fragmentsPlaceholders[name].name = name
+      fragmentsPlaceholders[name].type = newComponentType
+      fragmentsPlaceholders[name].ownerType = componentOwnerType
+      fragmentsPlaceholders[name].mode = 'inline'
+    }
+
+    fragmentsPlaceholders[name].instances.push({
+      tag: tag,
+      sketch: content,
+      template: options.fn
+    })
 
     if (Object.keys(contentData.fragmentsPlaceholders).length > 0) {
-      fragmentsPlaceholders[name].fragments = { ...contentData.fragmentsPlaceholders }
+      const prevInnerPlaceholders = fragmentsPlaceholders[name].fragments || {}
+      fragmentsPlaceholders[name].fragments = { ...prevInnerPlaceholders, ...contentData.fragmentsPlaceholders }
     }
   }
 

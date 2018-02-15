@@ -13,7 +13,7 @@ class DesignComponentHost extends Component {
   }
 
   componentWillMount () {
-    const { root, id, type, selected, snapshoot, isDragging } = this.props
+    const { root, id, componentId, type, selected, snapshoot, isDragging } = this.props
     const rootIsDOM = typeof root !== 'string'
 
     if (!rootIsDOM) {
@@ -27,7 +27,7 @@ class DesignComponentHost extends Component {
 
     root.dataset.jsreportInteractiveComponent = true
     root.dataset.jsreportComponent = true
-    root.dataset.jsreportComponentId = id
+    root.dataset.jsreportComponentId = componentId != null ? componentId : id
     root.dataset.jsreportComponentType = type
 
     if (selected) {
@@ -49,6 +49,14 @@ class DesignComponentHost extends Component {
 
     if (!root || !rootIsDOM) {
       return
+    }
+
+    if (this.props.componentId !== nextProps.componentId) {
+      if (nextProps.componentId == null) {
+        root.dataset.jsreportComponentId = nextProps.id
+      } else {
+        root.dataset.jsreportComponentId = nextProps.componentId
+      }
     }
 
     // when root is a dom node the we need to handle the attributes
@@ -81,6 +89,7 @@ class DesignComponentHost extends Component {
     const {
       nodeRef,
       id,
+      componentId,
       type,
       root,
       content,
@@ -96,7 +105,7 @@ class DesignComponentHost extends Component {
 
       dataProps['data-jsreport-interactive-component'] = true
       dataProps['data-jsreport-component'] = true
-      dataProps['data-jsreport-component-id'] = id
+      dataProps['data-jsreport-component-id'] = componentId != null ? componentId : id
       dataProps['data-jsreport-component-type'] = type
 
       if (selected) {
@@ -138,6 +147,7 @@ class DesignComponentHost extends Component {
 DesignComponentHost.propTypes = {
   nodeRef: PropTypes.func,
   id: PropTypes.string.isRequired,
+  componentId: PropTypes.string,
   type: PropTypes.string.isRequired,
   root: PropTypes.oneOfType([
     PropTypes.string,

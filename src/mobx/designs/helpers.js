@@ -1,5 +1,11 @@
 import omit from 'lodash/omit'
-import { DesignGroup, DesignItem, DesignComponent, DesignFragment } from './store'
+import {
+  DesignGroup,
+  DesignItem,
+  DesignComponent,
+  DesignFragment,
+  DesignFragmentInlineInstance
+} from './store'
 
 function generateGroup ({ layoutMode, items, topSpace, placeholder }) {
   let groupDefaults = {
@@ -75,7 +81,36 @@ function generateComponent (compDefaults) {
 }
 
 function generateFragment (fragDefaults) {
-  return new DesignFragment(fragDefaults)
+  const instances = fragDefaults.instances
+  const newFragment = new DesignFragment(omit(fragDefaults, ['instances']))
+
+  if (Array.isArray(instances) && instances.length > 0) {
+    instances.forEach((ins, insIndex) => {
+      newFragment.instances.push(
+        generateInlineFragmentInstance(
+          newFragment.id,
+          insIndex,
+          ins
+        )
+      )
+    })
+  }
+
+  return newFragment
+}
+
+function generateInlineFragmentInstance (fragmentId, index, data) {
+  const insData = { ...data }
+
+  if (insData.fragmentId == null) {
+    insData.fragmentId = fragmentId
+  }
+
+  if (insData.id == null) {
+    insData.id = `${fragmentId}-instance${index}`
+  }
+
+  return new DesignFragmentInlineInstance(insData)
 }
 
 function findProjectedFilledArea ({
@@ -562,6 +597,7 @@ function addComponentToDesign ({
     component.fragments != null &&
     Object.keys(component.fragments).length > 0
   ) {
+    // adding fragments to the component instance
     addFragmentToComponentInDesign({
       design,
       component: newComponent,
@@ -786,8 +822,7 @@ function addComponentToDesign ({
 function addFragmentToComponentInDesign ({
   design,
   component,
-  fragment,
-  getDefaultProps
+  fragment
 }) {
   const fragments = !Array.isArray(fragment) ? [fragment] : fragment
 
@@ -796,31 +831,23 @@ function addFragmentToComponentInDesign ({
     // to insert them as special instances
     const newFragmentData = omit(currentFrag, ['fragments'])
     const innerFragments = currentFrag.fragments
-
-    // if no props is present in fragment data then
-    // get default props from the function
-    if (newFragmentData.props == null) {
-      newFragmentData.props = getDefaultProps(newFragmentData.type)
-    }
-
-    const fragmentInstance = generateFragment(newFragmentData)
+    const newFragment = generateFragment(newFragmentData)
 
     if (innerFragments != null) {
       addFragmentToComponentInDesign({
         design,
-        component: fragmentInstance,
-        fragment: Object.keys(innerFragments).map(fragName => innerFragments[fragName]),
-        getDefaultProps
+        component: newFragment,
+        fragment: Object.keys(innerFragments).map(fragName => innerFragments[fragName])
       })
     }
 
-    fragmentInstance.parent = component
+    newFragment.parent = component
 
-    design.canvasRegistry.set(fragmentInstance.id, {
-      element: fragmentInstance
+    design.canvasRegistry.set(newFragment.id, {
+      element: newFragment
     })
 
-    component.fragments.set(fragmentInstance.name, fragmentInstance)
+    component.fragments.set(newFragment.name, newFragment)
   })
 }
 
@@ -1002,6 +1029,7 @@ export { generateGroup }
 export { generateItem }
 export { generateComponent }
 export { generateFragment }
+export { generateInlineFragmentInstance }
 export { findProjectedFilledArea }
 export { findProjectedFilledAreaWhenResizing }
 export { findMarkedArea }

@@ -1,41 +1,63 @@
-import React, { Component } from 'react'
+import React, { Fragment, Component } from 'react'
 import { createPortal } from 'react-dom'
-import { PropTypes as MobxPropTypes } from 'mobx-react'
-import PropTypes from 'prop-types'
+// (we disable the rule because eslint can recognize decorator usage in our setup)
+// eslint-disable-next-line no-unused-vars
+import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
 import * as configuration from '../../lib/configuration'
 
+@observer
 class DesignFragment extends Component {
   constructor (props) {
     super(props)
 
-    this.mountNode = null
+    this.mountNodes = null
+  }
+
   }
 
   componentWillMount () {
     const { fragment } = this.props
-    this.mountNode = document.createElement(fragment.tag)
+
+    this.mountNodes = fragment.instances.reduce((acu, instance, instanceIndex) => {
+      acu[`${fragment.type}.${instanceIndex}`] = document.createElement(instance.tag)
+      return acu
+    }, {})
   }
 
   render () {
+    // TODO: refactor rest of components (Group, Item) to use components
+    // from configuration
     const DesignComponent = configuration.elementClasses.component
-    const { fragment, onClick } = this.props
-    const mountNode = this.mountNode
+    const { fragment } = this.props
+    const mountNodes = this.mountNodes
 
-    return createPortal(
-      <DesignComponent
-        source={fragment}
-        root={mountNode}
-        onClick={onClick}
-        dragDisabled
-      />,
-      mountNode
+    return (
+      <Fragment>
+        {fragment.instances.map((instance, instanceIndex) => {
+          const mountNode = mountNodes[`${fragment.type}.${instanceIndex}`]
+
+          return (
+            createPortal(
+              <DesignComponent
+                key={`${fragment.mode}/${instance.id}`}
+                source={fragment}
+                root={mountNode}
+                id={instance.id}
+                fragmentId={fragment.id}
+                template={instance.template}
+                dragDisabled
+              />,
+              mountNode
+            )
+          )
+        })}
+      </Fragment>
     )
   }
 }
 
 DesignFragment.propTypes = {
-  fragment: MobxPropTypes.observableObject.isRequired,
-  onClick: PropTypes.func
+  fragment: MobxPropTypes.observableObject.isRequired
 }
 
 export default DesignFragment

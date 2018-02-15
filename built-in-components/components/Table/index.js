@@ -24,16 +24,25 @@ module.exports = (reporter, definition) => ({
     header: {
       propsMeta: {
         text: null
-      }
-    },
-    content: {
-      propsMeta: {
-        text: null
+      },
+      fragments: {
+        content: {
+          propsMeta: {
+            text: null
+          }
+        }
       }
     },
     footer: {
       propsMeta: {
         text: null
+      },
+      fragments: {
+        content: {
+          propsMeta: {
+            text: null
+          }
+        }
       }
     }
   },

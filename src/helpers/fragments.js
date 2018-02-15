@@ -23,21 +23,34 @@ function getFragmentsNodes (rootNode) {
   return fragmentsNodes
 }
 
-function mountFragmentsNodes (fragmentsNodes, fragmentsCollection) {
+function mountFragmentsNodes (fragmentsNodes, fragmentsRefsCollection) {
   for (let i = 0; i < fragmentsNodes.length; i++) {
-    const currentFragmentNode = fragmentsNodes[i]
+    const currentFragmentPlaceholderNode = fragmentsNodes[i]
 
-    const value = currentFragmentNode.nodeValue.trim()
-    const attrs = value.split('#').slice(1)
+    const value = currentFragmentPlaceholderNode.nodeValue.trim()
+    const attrs = value.split('@').slice(1)
 
     if (attrs.length > 0) {
-      const nameInfo = attrs[0].split('=')
-      const nameValue = nameInfo[1]
-      const fragmentInstance = fragmentsCollection[nameValue]
+      const typeInfo = attrs[0].split('=')
+      const instanceInfo = attrs[1].split('=')
+      const typeValue = typeInfo[1]
+      const instanceValue = instanceInfo[1]
 
-      if (fragmentInstance != null) {
-        currentFragmentNode.parentNode.replaceChild(fragmentInstance.mountNode, currentFragmentNode)
+      const fragmentMountNodes = fragmentsRefsCollection[typeValue] != null ? (
+        fragmentsRefsCollection[typeValue].mountNodes
+      ) : undefined
+
+      if (fragmentMountNodes == null) {
+        return
       }
+
+      const currentFragmentInstanceNode = fragmentMountNodes[`${typeValue}.${instanceValue}`]
+
+      if (currentFragmentInstanceNode == null) {
+        return
+      }
+
+      currentFragmentPlaceholderNode.parentNode.replaceChild(currentFragmentInstanceNode, currentFragmentPlaceholderNode)
     }
   }
 }

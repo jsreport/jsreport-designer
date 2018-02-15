@@ -18,13 +18,17 @@ module.exports = {
         return {
           text: 'header'
         }
-      case 'content':
+      case 'header#content':
         return {
-          text: 'content'
+          text: 'hcontent'
         }
       case 'footer':
         return {
           text: 'footer'
+        }
+      case 'footer#content':
+        return {
+          text: 'fcontent'
         }
     }
   },
@@ -41,12 +45,14 @@ module.exports = {
         }
       </style>
       <div>
+        {{!--
         {{#$renderFragment name="header" inlineTag="span"}}
           <b>{{text}}</b>
           {{#$renderFragment name="content" inlineTag="span"}}
             {{text}}
           {{/$renderFragment}}
         {{/$renderFragment}}
+        --}}
         <table class="Table" style="{{$resolveStyle "style"}}">
           <tr>
             {{#each columns}}
@@ -69,9 +75,20 @@ module.exports = {
             </tr>
           {{/each}}
         </table>
-        {{#$renderFragment name="footer" inlineTag="span"}}
-          <b>{{text}}</b>
-        {{/$renderFragment}}
+        {{!--
+          {{#$renderFragment name="footer" inlineTag="span"}}
+            <b>{{text}}</b>
+            {{#$renderFragment name="content" inlineTag="span"}}
+              {{text}}
+            {{/$renderFragment}}
+          {{/$renderFragment}}
+          {{#$renderFragment name="footer" inlineTag="span"}}
+            <i>{{text}}</i>
+            {{#$renderFragment name="content" inlineTag="span"}}
+              {{text}}
+            {{/$renderFragment}}
+          {{/$renderFragment}}
+        --}}
       </div>
       `
     )

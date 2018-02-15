@@ -24,6 +24,7 @@ class SideBar extends Component {
     this.componentCollectionPreviewNode = document.getElementById('component-collection-preview-root')
 
     this.getRegisteredComponents = this.getRegisteredComponents.bind(this)
+    this.getInitialFragmentsData = this.getInitialFragmentsData.bind(this)
     this.handleComponentPreviewNodesChange = this.handleComponentPreviewNodesChange.bind(this)
     this.handleComponentBarItemDragStart = this.handleComponentBarItemDragStart.bind(this)
     this.handleComponentBarItemDragEnd = this.handleComponentBarItemDragEnd.bind(this)
@@ -42,19 +43,52 @@ class SideBar extends Component {
     })
   }
 
+  getInitialFragmentsData (componentType, fragmentsDef) {
+    if (fragmentsDef == null) {
+      return
+    }
+
+    const ownerComponentype = componentType.split('#')[0]
+
+    const data = Object.keys(fragmentsDef).reduce((acu, fragmentName) => {
+      const fragmentDef = fragmentsDef[fragmentName]
+      const fragmentType = `${componentType}#${fragmentName}`
+
+      acu[fragmentName] = {
+        name: fragmentName,
+        type: fragmentType,
+        ownerType: ownerComponentype,
+        mode: fragmentDef.mode,
+        props: componentRegistry.getDefaultProps(fragmentType)
+      }
+
+      if (fragmentDef.fragments != null) {
+        acu[fragmentName].fragments = this.getInitialFragmentsData(
+          fragmentType,
+          fragmentDef.fragments
+        )
+      }
+
+      return acu
+    }, {})
+
+    return data
+  }
+
   handleComponentPreviewNodesChange (previewNodes) {
     // we are using a preview layer where we are rendering one instance per component type,
     // these preview nodes will be used to take the dimensions consumed by a component
     this.componentPreviewNodes = previewNodes
   }
 
-  handleComponentBarItemDragStart (componentType) {
-    let colWidth = this.props.design.colWidth
+  handleComponentBarItemDragStart (componentTypeInfo) {
+    const getInitialFragmentsData = this.getInitialFragmentsData
+    const colWidth = this.props.design.colWidth
 
-    let item = {
-      name: componentType.name,
-      icon: componentType.icon,
-      componentTypeGroup: componentType.group
+    const item = {
+      name: componentTypeInfo.name,
+      icon: componentTypeInfo.icon,
+      componentTypeGroup: componentTypeInfo.group
     }
 
     if (!this.componentPreviewNodes || !this.componentPreviewNodes[item.name]) {
@@ -81,6 +115,11 @@ class SideBar extends Component {
     }
 
     item.props = componentRegistry.getDefaultProps(item.name)
+
+    item.fragments = getInitialFragmentsData(
+      componentTypeInfo.name,
+      componentRegistry.getComponentDefinition(componentTypeInfo.name).fragments
+    )
 
     item.rawContent = componentPreviewNode.instance.getRawContent()
 

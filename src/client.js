@@ -41,6 +41,8 @@ const storesDefaults = {
 if (__DEVELOPMENT__) {
   // expose utility for debugging observables
   window.observableToJS = toJS
+  // expose the componet registry just in dev for debugging
+  window.componentRegistry = componentRegistry
 
   // require the App container used to help HMR component source files
   AppHMRContainer = require('./components/AppHMRContainer').default
