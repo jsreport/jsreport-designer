@@ -12,7 +12,7 @@ module.exports = {
       }]
     }
   },
-  getDefaultPropsForFragments (fragmentName) {
+  getDefaultPropsForInlineFragments (fragmentName) {
     switch (fragmentName) {
       case 'header':
         return {
@@ -46,9 +46,9 @@ module.exports = {
       </style>
       <div>
         {{!--
-        {{#$renderFragment name="header" inlineTag="span"}}
+        {{#$renderFragment name="header" tag="span"}}
           <b>{{text}}</b>
-          {{#$renderFragment name="content" inlineTag="span"}}
+          {{#$renderFragment name="content" tag="span"}}
             {{text}}
           {{/$renderFragment}}
         {{/$renderFragment}}
@@ -76,15 +76,15 @@ module.exports = {
           {{/each}}
         </table>
         {{!--
-          {{#$renderFragment name="footer" inlineTag="span"}}
+          {{#$renderFragment name="footer" tag="span"}}
             <b>{{text}}</b>
-            {{#$renderFragment name="content" inlineTag="span"}}
+            {{#$renderFragment name="content" tag="span"}}
               {{text}}
             {{/$renderFragment}}
           {{/$renderFragment}}
-          {{#$renderFragment name="footer" inlineTag="span"}}
+          {{#$renderFragment name="footer" tag="span"}}
             <i>{{text}}</i>
-            {{#$renderFragment name="content" inlineTag="span"}}
+            {{#$renderFragment name="content" tag="span"}}
               {{text}}
             {{/$renderFragment}}
           {{/$renderFragment}}

@@ -1,0 +1,20 @@
+
+.designFragmentDropZoneContainer {
+  outline: 1px dashed rgba(147, 37, 218, 0.4);
+  outline-offset: -2px;
+}
+
+.designFragmentDropZoneEmpty {
+  position: absolute;
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #fff;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  justify-content: center;
+  align-items: center;
+  font-style: italic;
+  overflow: hidden;
+}

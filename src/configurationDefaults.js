@@ -8,6 +8,8 @@ import PropertiesEditor, { PropertiesGroup, PropertyControl } from '../src/compo
 import ComposeTextBindingEditor from './components/Editor/ComposeTextBindingEditor'
 import DataSelectBindingEditor from './components/Editor/DataSelectBindingEditor'
 import StylesBindingEditor from './components/Editor/StylesBindingEditor'
+import WidthStyleControl from './components/Editor/StylesControl/WidthControl'
+import HeightStyleControl from './components/Editor/StylesControl/HeightControl'
 import MarginStyleControl from './components/Editor/StylesControl/MarginControl'
 import PaddingStyleControl from './components/Editor/StylesControl/PaddingControl'
 import BackgroundStyleControl from './components/Editor/StylesControl/BackgroundControl'
@@ -38,6 +40,14 @@ export default () => {
     if (isStyleProp(meta)) {
       return { editor: StylesBindingEditor }
     }
+  }
+
+  configuration.generalStylesDefinition.width = {
+    control: WidthStyleControl
+  }
+
+  configuration.generalStylesDefinition.height = {
+    control: HeightStyleControl
   }
 
   configuration.generalStylesDefinition.margin = {

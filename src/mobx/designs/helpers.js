@@ -3,8 +3,9 @@ import {
   DesignGroup,
   DesignItem,
   DesignComponent,
-  DesignFragment,
-  DesignFragmentInlineInstance
+  DesignFragmentInline,
+  DesignFragmentComponent,
+  DesignFragmentInstance
 } from './store'
 
 function generateGroup ({ layoutMode, items, topSpace, placeholder }) {
@@ -81,13 +82,21 @@ function generateComponent (compDefaults) {
 }
 
 function generateFragment (fragDefaults) {
+  const mode = fragDefaults.mode
   const instances = fragDefaults.instances
-  const newFragment = new DesignFragment(omit(fragDefaults, ['instances']))
+  const fragInitialData = omit(fragDefaults, ['instances'])
+  let newFragment
+
+  if (mode === 'inline') {
+    newFragment = new DesignFragmentInline(fragInitialData)
+  } else if (mode === 'component') {
+    newFragment = new DesignFragmentComponent(fragInitialData)
+  }
 
   if (Array.isArray(instances) && instances.length > 0) {
     instances.forEach((ins, insIndex) => {
       newFragment.instances.push(
-        generateInlineFragmentInstance(
+        generateFragmentInstance(
           newFragment.id,
           insIndex,
           ins
@@ -99,7 +108,7 @@ function generateFragment (fragDefaults) {
   return newFragment
 }
 
-function generateInlineFragmentInstance (fragmentId, index, data) {
+function generateFragmentInstance (fragmentId, index, data) {
   const insData = { ...data }
 
   if (insData.fragmentId == null) {
@@ -110,7 +119,7 @@ function generateInlineFragmentInstance (fragmentId, index, data) {
     insData.id = `${fragmentId}-instance${index}`
   }
 
-  return new DesignFragmentInlineInstance(insData)
+  return new DesignFragmentInstance(insData)
 }
 
 function findProjectedFilledArea ({
@@ -851,6 +860,24 @@ function addFragmentToComponentInDesign ({
   })
 }
 
+function addFragmentInstanceToComponentInDesign ({
+  design,
+  fragment,
+  instance
+}) {
+  const instances = !Array.isArray(instance) ? [instance] : instance
+
+  instances.forEach((instance, instanceIndex) => {
+    const newInstance = generateFragmentInstance(
+      fragment.id,
+      instanceIndex,
+      instance
+    )
+
+    fragment.instances.push(newInstance)
+  })
+}
+
 // function removeFragmentFromComponentInDesign ({
 //   design,
 //   component,
@@ -1029,12 +1056,12 @@ export { generateGroup }
 export { generateItem }
 export { generateComponent }
 export { generateFragment }
-export { generateInlineFragmentInstance }
+export { generateFragmentInstance }
 export { findProjectedFilledArea }
 export { findProjectedFilledAreaWhenResizing }
 export { findMarkedArea }
 export { addComponentToDesign }
-export { addFragmentToComponentInDesign }
+export { addFragmentInstanceToComponentInDesign }
 // export { removeFragmentFromComponentInDesign }
 export { removeComponentInDesign }
 export { updateComponentInDesign }

@@ -1,5 +1,7 @@
 
 const styles = [
+  'width',
+  'height',
   'margin',
   'padding',
   'background',
@@ -9,6 +11,8 @@ const styles = [
 ]
 
 const stylesMap = {
+  width: (value) => value != null ? `width: ${value.size}${value.unit};` : undefined,
+  height: (value) => value != null ? `height: ${value.size}${value.unit};` : undefined,
   margin: (value) => {
     let result = []
 

@@ -73,8 +73,8 @@ function getDefaultProps (type) {
   } else {
     const fragmentName = typeParts.slice(1).join('#')
 
-    props = typeof component.getDefaultPropsForFragments === 'function' ? (
-      component.getDefaultPropsForFragments(fragmentName)
+    props = typeof component.getDefaultPropsForInlineFragments === 'function' ? (
+      component.getDefaultPropsForInlineFragments(fragmentName)
     ) : {}
   }
 
@@ -647,6 +647,7 @@ function renderFragment (placeholdersOutput, options) {
   const fragmentsData = options.data.fragmentsData || {}
   const fragmentsPlaceholders = options.data.fragmentsPlaceholders
   const name = options.hash.name
+  const newComponentType = `${componentType}#${name}`
   let result = ''
   let shouldRenderPlaceholder
   let contentData
@@ -658,8 +659,16 @@ function renderFragment (placeholdersOutput, options) {
   }
 
   if (name == null || typeof name !== 'string' || name.trim() === '') {
-    throw new Error('$renderFragment helper should be called with an name')
+    throw new Error('$renderFragment helper should be called with a name')
   }
+
+  const fragmentDef = getComponentDefinition(newComponentType)
+
+  if (!fragmentDef) {
+    throw new Error(`fragment "${name}" is not defined, you should define the fragment in component definition before use it`)
+  }
+
+  const mode = fragmentDef.mode
 
   if (options.data) {
     contentData = Handlebars.createFrame(options.data)
@@ -667,28 +676,32 @@ function renderFragment (placeholdersOutput, options) {
     contentData = Handlebars.createFrame({})
   }
 
-  if (typeof options.hash.inlineTag === 'string') {
-    const tag = options.hash.inlineTag
-    const newComponentType = `${componentType}#${name}`
-    const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
-    let instanceIndex
-
-    // create the fragment space after rendering the content
-    // to be able to detect fragments with multiple instances
-    if (fragmentsPlaceholders[name] == null) {
-      fragmentsPlaceholders[name] = {
-        instances: []
-      }
+  // create the fragment space before rendering the content
+  // to be able to detect fragments with multiple instances
+  if (fragmentsPlaceholders[name] == null) {
+    fragmentsPlaceholders[name] = {
+      instances: []
     }
+  }
 
-    instanceIndex = fragmentsPlaceholders[name].instances.length
+  const instanceIndex = fragmentsPlaceholders[name].instances.length
+  const tag = options.hash.tag
+  const style = options.hash.style
+  const placeholderTag = `<!-- jsreport-designer-fragment@mode=${mode}@name=${name}@type=${newComponentType}@instance=${instanceIndex} -->`
+
+  // pass composed new component type to any child
+  contentData.componentType = newComponentType
+
+  if (typeof tag !== 'string' || tag.trim() === '') {
+    throw new Error(`fragment "${name}" should be called with a tag`)
+  }
+
+  if (mode === 'inline') {
+    const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
 
     // creating container for fragments
     // inside the fragment itself if any
     contentData.fragmentsPlaceholders = fragmentsPlaceholders[name].fragments || {}
-
-    // pass composed new component type to any child
-    contentData.componentType = newComponentType
 
     const currentFragmentData = getInnerFragmentData(
       fragmentsData,
@@ -702,9 +715,9 @@ function renderFragment (placeholdersOutput, options) {
     if (currentFragmentData == null && isBrowserContext) {
       const componentOwner = getComponent(componentOwnerType)
 
-      if (typeof componentOwner.getDefaultPropsForFragments === 'function') {
+      if (typeof componentOwner.getDefaultPropsForInlineFragments === 'function') {
         const fragFullName = newComponentType.split('#').slice(1).join('#')
-        fragmentContext = componentOwner.getDefaultPropsForFragments(fragFullName)
+        fragmentContext = componentOwner.getDefaultPropsForInlineFragments(fragFullName)
       }
     } else if (currentFragmentData != null) {
       fragmentContext = currentFragmentData.props
@@ -715,29 +728,53 @@ function renderFragment (placeholdersOutput, options) {
     // when rendering in browser means that we are in design mode,
     // so in that case we just insert a comment placeholder for later
     // replace it with the real html
-    if (shouldRenderPlaceholder) {
-      result = `<!-- jsreport-designer-fragment@type=${newComponentType}@instance=${instanceIndex} -->`
-    } else {
-      result = `<${tag}>${content}</${tag}>`
-    }
-
-    if (instanceIndex === 0) {
-      fragmentsPlaceholders[name].name = name
-      fragmentsPlaceholders[name].type = newComponentType
-      fragmentsPlaceholders[name].ownerType = componentOwnerType
-      fragmentsPlaceholders[name].mode = 'inline'
+    if (!shouldRenderPlaceholder) {
+      if (style != null) {
+        result = `<${tag} style="${style}">${content}</${tag}>`
+      } else {
+        result = `<${tag}>${content}</${tag}>`
+      }
     }
 
     fragmentsPlaceholders[name].instances.push({
       tag: tag,
       sketch: content,
-      template: options.fn
+      template: options.fn,
+      style: style != null ? style : undefined
     })
 
     if (Object.keys(contentData.fragmentsPlaceholders).length > 0) {
       const prevInnerPlaceholders = fragmentsPlaceholders[name].fragments || {}
       fragmentsPlaceholders[name].fragments = { ...prevInnerPlaceholders, ...contentData.fragmentsPlaceholders }
     }
+  } else if (mode === 'component') {
+    if (options.fn != null) {
+      throw new Error(`Invalid use of fragment "${name}". A fragment in component mode can not render as a block helper`)
+    }
+
+    if (!shouldRenderPlaceholder) {
+      if (style != null) {
+        result = `<${tag} style="${style}"></${tag}>`
+      } else {
+        result = `<${tag}></${tag}>`
+      }
+    }
+
+    fragmentsPlaceholders[name].instances.push({
+      tag: tag,
+      style: style != null ? style : undefined
+    })
+  }
+
+  if (shouldRenderPlaceholder) {
+    result = placeholderTag
+  }
+
+  if (instanceIndex === 0) {
+    fragmentsPlaceholders[name].name = name
+    fragmentsPlaceholders[name].type = newComponentType
+    fragmentsPlaceholders[name].ownerType = componentOwnerType
+    fragmentsPlaceholders[name].mode = mode
   }
 
   return new Handlebars.SafeString(result)

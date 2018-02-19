@@ -1,6 +1,7 @@
 
 module.exports = (reporter, definition) => {
   reporter.initializeListeners.add('designer-built-in-components', () => {
+    reporter.designer.registerComponent(require('../components/Box')(reporter, definition))
     reporter.designer.registerComponent(require('../components/Text')(reporter, definition))
     reporter.designer.registerComponent(require('../components/Image')(reporter, definition))
     reporter.designer.registerComponent(require('../components/Table')(reporter, definition))

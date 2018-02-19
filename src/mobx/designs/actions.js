@@ -9,13 +9,12 @@ import store, {
 import { ComponentDragTypes } from '../../Constants'
 import {
   generateGroup,
-  // generateInlineFragmentInstance,
+  // generateFragmentInstance,
   findProjectedFilledArea,
   findProjectedFilledAreaWhenResizing,
   findMarkedArea,
   addComponentToDesign,
-  // addFragmentToComponentInDesign,
-  // removeFragmentFromComponentInDesign,
+  addFragmentInstanceToComponentInDesign,
   removeComponentInDesign,
   updateComponentInDesign,
   updateItemSize
@@ -476,6 +475,7 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
   }
 })
 
+// TODO: remove this if not needed in other places
 // export const addFragmentToComponent = action(`${ACTION}_ADD_FRAGMENT_TO_COMPONENT`, (designId, componentId, fragment) => {
 //   const design = store.designs.get(designId)
 //
@@ -498,174 +498,216 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
 //   })
 // })
 
-// export const removeFragmentFromComponent = action(`${ACTION}_REMOVE_FRAGMENT_FROM_COMPONENT`, (designId, componentId, fragmentName) => {
-//   const design = store.designs.get(designId)
-//
-//   if (!design) {
-//     return
-//   }
-//
-//   let component = design.canvasRegistry.get(componentId)
-//
-//   if (!component) {
-//     return
-//   }
-//
-//   component = component.element
-//
-//   removeFragmentFromComponentInDesign({
-//     design,
-//     component,
-//     fragmentName
-//   })
-// })
+// TODO: remove this if not needed in other places
+/*
+export const removeFragmentFromComponent = action(`${ACTION}_REMOVE_FRAGMENT_FROM_COMPONENT`, (designId, componentId, fragmentName) => {
+  const design = store.designs.get(designId)
+
+  if (!design) {
+    return
+  }
+
+  let component = design.canvasRegistry.get(componentId)
+
+  if (!component) {
+    return
+  }
+
+  component = component.element
+
+  removeFragmentFromComponentInDesign({
+    design,
+    component,
+    fragmentName
+  })
+})
+*/
 
 // TODO: complete this to add fragment instances
-export const addOrRemoveFragmentInstance = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, fragmentId, fragmentsCollection) => {
+export const addOrRemoveFragmentInstanceInComponent = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, fragmentsIds, fragmentsCollectionToProcess) => {
+  const design = store.designs.get(designId)
+  const staleInstances = []
 
+  if (!design) {
+    return staleInstances
+  }
+
+  if (fragmentsIds.length === 0) {
+    return staleInstances
+  }
+
+  fragmentsIds.forEach((fragId) => {
+    let currentFragment = design.canvasRegistry.get(fragId)
+
+    if (!currentFragment) {
+      return
+    }
+
+    currentFragment = currentFragment.element
+
+    if (currentFragment.instances.length === 0) {
+      let instancesToAdd = []
+
+      if (fragmentsCollectionToProcess[currentFragment.name] != null) {
+        instancesToAdd = fragmentsCollectionToProcess[currentFragment.name].instances
+      }
+
+      addFragmentInstanceToComponentInDesign({
+        design,
+        fragment: currentFragment,
+        instance: instancesToAdd
+      })
+    } else {
+      // TODO: complete updating
+    }
+  })
+
+  return staleInstances
 })
 
 // TODO: remove this if not needed in other places
+/*
 export const addOrRemoveFragmentInComponent = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, componentId, fragmentsCollection, getDefaultProps) => {
-  // const design = store.designs.get(designId)
-  // const staleFragments = []
-  //
-  // if (!design) {
-  //   return
-  // }
-  //
-  // let component = design.canvasRegistry.get(componentId)
-  //
-  // if (!component) {
-  //   return
-  // }
-  //
-  // component = component.element
-  //
-  // if (
-  //   component.fragments.size === 0 &&
-  //   Object.keys(fragmentsCollection).length > 0
-  // ) {
-  //   addFragmentToComponent(
-  //     designId,
-  //     componentId,
-  //     Object.keys(fragmentsCollection).map(fragName => fragmentsCollection[fragName]),
-  //     getDefaultProps
-  //   )
-  // } else {
-  //   const currentFragmentsNames = component.fragments.keys()
-  //   const toAdd = []
-  //   const toUpdate = []
-  //   const toRemove = [...currentFragmentsNames]
-  //
-  //   Object.keys(fragmentsCollection).forEach((fragName) => {
-  //     const fragIndex = toRemove.indexOf(fragName)
-  //
-  //     if (fragIndex === -1) {
-  //       toAdd.push(fragName)
-  //     } else {
-  //       toUpdate.push(fragName)
-  //       toRemove.splice(fragIndex, 1)
-  //     }
-  //   })
-  //
-  //   if (toRemove.length > 0) {
-  //     removeFragmentFromComponent(
-  //       designId,
-  //       componentId,
-  //       toRemove
-  //     )
-  //   }
-  //
-  //   if (toAdd.length > 0) {
-  //     addFragmentToComponent(
-  //       designId,
-  //       componentId,
-  //       toAdd.map(fragName => fragmentsCollection[fragName]),
-  //       getDefaultProps
-  //     )
-  //   }
-  //
-  //   if (toUpdate.length > 0) {
-  //     toUpdate.forEach((fragName) => {
-  //       const currentFrag = component.fragments.get(fragName)
-  //       const updateInfo = fragmentsCollection[fragName]
-  //
-  //       const attrsToUpdate = [
-  //         'mode',
-  //         'type',
-  //         'ownerType'
-  //       ]
-  //
-  //       debugger
-  //       // updating inner fragments
-  //       addOrRemoveFragmentInComponent(
-  //         designId,
-  //         currentFrag.id,
-  //         updateInfo.fragments || {},
-  //         getDefaultProps
-  //       )
-  //
-  //       const instancesToRemoveCount = (
-  //         currentFrag.instances.length - updateInfo.instances.length
-  //       )
-  //
-  //       if (instancesToRemoveCount > 0) {
-  //         // removing instances
-  //         currentFrag.instances.splice(
-  //           currentFrag.instances.length - instancesToRemoveCount,
-  //           instancesToRemoveCount
-  //         )
-  //       }
-  //
-  //       // checking instances to update
-  //       updateInfo.instances.forEach((updInstance, updInstanceIndex) => {
-  //         const currentFragInstance = currentFrag.instances[updInstanceIndex]
-  //
-  //         if (currentFragInstance != null) {
-  //           const originalTag = currentFragInstance.tag
-  //           const originalSketch = currentFragInstance.sketch
-  //
-  //           // update fragment instance
-  //           currentFragInstance.tag = updInstance.tag
-  //           currentFragInstance.sketch = updInstance.sketch
-  //
-  //           // update template when something in sketch or tag has changed
-  //           if (
-  //             `${updInstance.tag}/${updInstance.sketch}` !== `${originalTag}/${originalSketch}`
-  //           ) {
-  //             currentFragInstance.template = updInstance.template
-  //           }
-  //
-  //           if (updInstance.tag !== originalTag) {
-  //             staleFragments.push({
-  //               type: currentFrag.type,
-  //               id: currentFragInstance.id
-  //             })
-  //           }
-  //         } else {
-  //           // add new fragment instance
-  //           currentFrag.instances.push(
-  //             generateInlineFragmentInstance(
-  //               currentFrag.id,
-  //               updInstanceIndex,
-  //               updInstance
-  //             )
-  //           )
-  //         }
-  //       })
-  //
-  //       updateElement(
-  //         designId,
-  //         currentFrag.id,
-  //         pick(updateInfo, attrsToUpdate)
-  //       )
-  //     })
-  //   }
-  // }
-  //
-  // return staleFragments
+  const design = store.designs.get(designId)
+  const staleFragments = []
+
+  if (!design) {
+    return
+  }
+
+  let component = design.canvasRegistry.get(componentId)
+
+  if (!component) {
+    return
+  }
+
+  component = component.element
+
+  if (
+    component.fragments.size === 0 &&
+    Object.keys(fragmentsCollection).length > 0
+  ) {
+    addFragmentToComponent(
+      designId,
+      componentId,
+      Object.keys(fragmentsCollection).map(fragName => fragmentsCollection[fragName]),
+      getDefaultProps
+    )
+  } else {
+    const currentFragmentsNames = component.fragments.keys()
+    const toAdd = []
+    const toUpdate = []
+    const toRemove = [...currentFragmentsNames]
+
+    Object.keys(fragmentsCollection).forEach((fragName) => {
+      const fragIndex = toRemove.indexOf(fragName)
+
+      if (fragIndex === -1) {
+        toAdd.push(fragName)
+      } else {
+        toUpdate.push(fragName)
+        toRemove.splice(fragIndex, 1)
+      }
+    })
+
+    if (toRemove.length > 0) {
+      removeFragmentFromComponent(
+        designId,
+        componentId,
+        toRemove
+      )
+    }
+
+    if (toAdd.length > 0) {
+      addFragmentToComponent(
+        designId,
+        componentId,
+        toAdd.map(fragName => fragmentsCollection[fragName]),
+        getDefaultProps
+      )
+    }
+
+    if (toUpdate.length > 0) {
+      toUpdate.forEach((fragName) => {
+        const currentFrag = component.fragments.get(fragName)
+        const updateInfo = fragmentsCollection[fragName]
+
+        const attrsToUpdate = [
+          'mode',
+          'type',
+          'ownerType'
+        ]
+
+        debugger
+        // updating inner fragments
+        addOrRemoveFragmentInComponent(
+          designId,
+          currentFrag.id,
+          updateInfo.fragments || {},
+          getDefaultProps
+        )
+
+        const instancesToRemoveCount = (
+          currentFrag.instances.length - updateInfo.instances.length
+        )
+
+        if (instancesToRemoveCount > 0) {
+          // removing instances
+          currentFrag.instances.splice(
+            currentFrag.instances.length - instancesToRemoveCount,
+            instancesToRemoveCount
+          )
+        }
+
+        // checking instances to update
+        updateInfo.instances.forEach((updInstance, updInstanceIndex) => {
+          const currentFragInstance = currentFrag.instances[updInstanceIndex]
+
+          if (currentFragInstance != null) {
+            const originalTag = currentFragInstance.tag
+            const originalSketch = currentFragInstance.sketch
+
+            // update fragment instance
+            currentFragInstance.tag = updInstance.tag
+            currentFragInstance.sketch = updInstance.sketch
+
+            // update template when something in sketch or tag has changed
+            if (
+              `${updInstance.tag}/${updInstance.sketch}` !== `${originalTag}/${originalSketch}`
+            ) {
+              currentFragInstance.template = updInstance.template
+            }
+
+            if (updInstance.tag !== originalTag) {
+              staleFragments.push({
+                type: currentFrag.type,
+                id: currentFragInstance.id
+              })
+            }
+          } else {
+            // add new fragment instance
+            currentFrag.instances.push(
+              generateFragmentInstance(
+                currentFrag.id,
+                updInstanceIndex,
+                updInstance
+              )
+            )
+          }
+        })
+
+        updateElement(
+          designId,
+          currentFrag.id,
+          pick(updateInfo, attrsToUpdate)
+        )
+      })
+    }
+  }
+
+  return staleFragments
 })
+*/
 
 export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, componentId, opts = {}) => {
   const design = store.designs.get(designId)

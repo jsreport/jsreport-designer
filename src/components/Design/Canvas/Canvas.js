@@ -225,12 +225,16 @@ class Canvas extends Component {
 
     let extraProps = {}
 
-    if (!isDraggingOver && canDrop) {
+    if (canDrop) {
       extraProps['data-dragging'] = true
     }
 
+    if (!isDraggingOver && canDrop) {
+      extraProps['data-dragging-not-over'] = true
+    }
+
     if (isDraggingOver && canDrop) {
-      extraProps['data-can-drop'] = true
+      extraProps['data-dragging-over'] = true
     }
 
     if (gridLinesRemarked) {

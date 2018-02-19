@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 // (we disable the rule because eslint can recognize decorator usage in our setup)
 // eslint-disable-next-line no-unused-vars
 import { observer, PropTypes as MobxPropTypes } from 'mobx-react'
+import DesignFragmentDropZone from './DesignFragmentDropZone'
 import * as configuration from '../../lib/configuration'
 
 @observer
@@ -13,13 +14,17 @@ class DesignFragment extends Component {
     this.mountNodes = null
   }
 
-  }
-
   componentWillMount () {
     const { fragment } = this.props
 
     this.mountNodes = fragment.instances.reduce((acu, instance, instanceIndex) => {
-      acu[`${fragment.type}.${instanceIndex}`] = document.createElement(instance.tag)
+      const node = document.createElement(instance.tag)
+
+      if (instance.style != null) {
+        node.style = instance.style
+      }
+
+      acu[`${fragment.type}.${instanceIndex}`] = node
       return acu
     }, {})
   }
@@ -31,11 +36,11 @@ class DesignFragment extends Component {
     const { fragment } = this.props
     const mountNodes = this.mountNodes
 
-    return (
-      <Fragment>
-        {fragment.instances.map((instance, instanceIndex) => {
-          const mountNode = mountNodes[`${fragment.type}.${instanceIndex}`]
+    let content = (
+      fragment.instances.map((instance, instanceIndex) => {
+        const mountNode = mountNodes[`${fragment.type}.${instanceIndex}`]
 
+        if (fragment.mode === 'inline') {
           return (
             createPortal(
               <DesignComponent
@@ -50,7 +55,28 @@ class DesignFragment extends Component {
               mountNode
             )
           )
-        })}
+        } else if (fragment.mode === 'component') {
+          return (
+            createPortal(
+              <DesignFragmentDropZone
+                key={`${fragment.mode}/${instance.id}`}
+                fragmentId={fragment.id}
+                instanceId={instance.id}
+                root={mountNode}
+                components={fragment.components}
+              />,
+              mountNode
+            )
+          )
+        }
+
+        return null
+      })
+    )
+
+    return (
+      <Fragment>
+        {content}
       </Fragment>
     )
   }

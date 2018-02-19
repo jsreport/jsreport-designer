@@ -31,8 +31,8 @@ function mountFragmentsNodes (fragmentsNodes, fragmentsRefsCollection) {
     const attrs = value.split('@').slice(1)
 
     if (attrs.length > 0) {
-      const typeInfo = attrs[0].split('=')
-      const instanceInfo = attrs[1].split('=')
+      const typeInfo = attrs[2].split('=')
+      const instanceInfo = attrs[3].split('=')
       const typeValue = typeInfo[1]
       const instanceValue = instanceInfo[1]
 

@@ -46,7 +46,7 @@ const groupTarget = {
     }
   },
 
-  drop (props, monitor, component) {
+  drop (props, monitor) {
     const { group } = props
 
     if (monitor.didDrop()) {

@@ -307,8 +307,6 @@ class DesignFragment {
   // eslint-disable-next-line no-undef
   @observable mode = null
   // eslint-disable-next-line no-undef
-  @observable.ref props = null
-  // eslint-disable-next-line no-undef
   @observable instances = []
   // eslint-disable-next-line no-undef
   fragments = observable.map({}, 'fragments')
@@ -321,7 +319,7 @@ class DesignFragment {
     return 'fragment'
   }
 
-  toJS (includeId) {
+  generalToJS (includeId) {
     let frag = {}
 
     if (includeId === true) {
@@ -332,7 +330,6 @@ class DesignFragment {
     }
 
     frag.mode = this.mode
-    frag.props = this.props
 
     if (this.fragments.size > 0) {
       frag.fragments = this.fragments.values().reduce((acu, currentFrag) => {
@@ -359,7 +356,37 @@ class DesignFragment {
   }
 }
 
-class DesignFragmentInlineInstance {
+class DesignFragmentInline extends DesignFragment {
+  // eslint-disable-next-line no-undef
+  @observable.ref props = null
+
+  toJS (includeId) {
+    debugger
+    const frag = this.generalToJS(includeId)
+
+    frag.props = this.props
+
+    return frag
+  }
+}
+
+class DesignFragmentComponent extends DesignFragment {
+  // eslint-disable-next-line no-undef
+  @observable components = []
+
+  toJS (includeId) {
+    debugger
+    const frag = this.generalToJS(includeId)
+
+    frag.components = this.components.map((comp) => {
+      return comp.toJS(includeId)
+    })
+
+    return frag
+  }
+}
+
+class DesignFragmentInstance {
   // eslint-disable-next-line no-undef
   @observable id = null
   // eslint-disable-next-line no-undef
@@ -369,10 +396,12 @@ class DesignFragmentInlineInstance {
   // eslint-disable-next-line no-undef
   @observable.ref template = null
   // eslint-disable-next-line no-undef
+  @observable style = null
+  // eslint-disable-next-line no-undef
   @observable fragmentId = null
 
   get elementType () {
-    return 'fragmentInlineInstance'
+    return 'fragmentInstance'
   }
 
   toJS (includeId) {
@@ -383,8 +412,14 @@ class DesignFragmentInlineInstance {
     }
 
     ins.tag = this.tag
-    ins.sketch = this.sketch
-    ins.template = this.template
+
+    if (this.sketch != null) {
+      ins.sketch = this.sketch
+    }
+
+    if (this.template != null) {
+      ins.template = this.template
+    }
 
     return ins
   }
@@ -393,7 +428,7 @@ class DesignFragmentInlineInstance {
     setDefaults(this, defaults)
 
     if (this.id == null) {
-      throw new Error('Fragment inline instance must have an id')
+      throw new Error('Fragment instance must have an id')
     }
   }
 }
@@ -405,8 +440,9 @@ export {
   DesignGroup,
   DesignItem,
   DesignComponent,
-  DesignFragment,
-  DesignFragmentInlineInstance
+  DesignFragmentInline,
+  DesignFragmentComponent,
+  DesignFragmentInstance
 }
 
 export default store

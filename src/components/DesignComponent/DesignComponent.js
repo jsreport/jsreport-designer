@@ -67,14 +67,15 @@ class DesignComponent extends Component {
 
   componentWillMount () {
     const {
-      designId,
+      design,
       id,
       fragmentId,
       template,
+      fragments,
       rawContent,
       snapshoot,
       preview,
-      addOrRemoveFragmentInComponent
+      addOrRemoveFragmentInstanceInComponent
     } = this.props
 
     const hasRawContent = rawContent != null
@@ -86,8 +87,8 @@ class DesignComponent extends Component {
     }
 
     if (
-      this.props.fragments != null &&
-      this.props.fragments.size > 0
+      fragments != null &&
+      fragments.size > 0
     ) {
       hasFragments = true
     }
@@ -106,7 +107,26 @@ class DesignComponent extends Component {
     const renderedResult = this.renderComponent(this.props)
 
     if (
-      designId != null &&
+      design != null &&
+      hasFragments &&
+      renderedResult != null &&
+      renderedResult.fragments != null &&
+      // don't try to add fragment instances when the component is just a preview or
+      // snapshoot
+      snapshoot !== true &&
+      preview !== true
+    ) {
+      // debugger
+      addOrRemoveFragmentInstanceInComponent(
+        design.id,
+        fragments.values().map(frag => frag.id),
+        renderedResult.fragments
+      )
+    }
+
+    /*
+    if (
+      design != null &&
       renderedResult != null &&
       renderedResult.fragments != null &&
       // we only need to add the fragments to the store
@@ -115,13 +135,14 @@ class DesignComponent extends Component {
       snapshoot !== true &&
       preview !== true
     ) {
-      // addOrRemoveFragmentInComponent(
-      //   designId,
-      //   fragmentId != null ? fragmentId : id,
-      //   renderedResult.fragments,
-      //   componentRegistry.getDefaultProps
-      // )
+      addOrRemoveFragmentInComponent(
+        design.id,
+        fragmentId != null ? fragmentId : id,
+        renderedResult.fragments,
+        componentRegistry.getDefaultProps
+      )
     }
+    */
 
     this.renderedContent = renderedResult.content
   }
@@ -140,29 +161,28 @@ class DesignComponent extends Component {
     }
 
     if (dragDisabled !== true) {
+      // we need to re-connect to the drag source and preview after mount because
+      // our component host dom node is available at this point,
+      // in the first render the drag source was attached to null (this.node), so
+      // this call is to have everything right after mount
       this.props.connectDragPreview(this.node, {
         captureDraggingState: true
       })
+
+      this.connectToDragSourceConditionally(false)
     }
 
     if (this.fragmentsRefs == null || Object.keys(this.fragmentsRefs).length === 0) {
       return
     }
 
-    mountFragments(this.node, this.fragmentsRefs)
 
-    if (dragDisabled !== true) {
-      // we need to connect to the drag source after mount because
-      // our component host dom node is available at this point,
-      // in the first render the drag source was attached to null (this.node), so
-      // this call is to have everything right after mount
-      this.connectToDragSourceConditionally(false)
-    }
+    mountFragments(this.node, this.fragmentsRefs)
   }
 
   componentWillReceiveProps (nextProps) {
     const {
-      designId,
+      design,
       id,
       fragmentId,
       snapshoot,
@@ -219,12 +239,12 @@ class DesignComponent extends Component {
     this.renderedContent = renderedResult.content
 
     if (
-      designId != null &&
+      design != null &&
       snapshoot !== true &&
       preview !== true
     ) {
       // const staleFragmentsInstances = addOrRemoveFragmentInComponent(
-      //   designId,
+      //   design.id,
       //   fragmentId != null ? fragmentId : id,
       //   renderedResult.fragments || {},
       //   componentRegistry.getDefaultProps
@@ -530,7 +550,7 @@ class DesignComponent extends Component {
 }
 
 DesignComponent.propTypes = {
-  designId: PropTypes.string,
+  design: MobxPropTypes.observableObject,
   root: htmlElementPropType(true),
   id: PropTypes.string.isRequired,
   type: PropTypes.string.isRequired,
@@ -566,7 +586,7 @@ DesignComponent.propTypes = {
   // disabling because we are using the prop not in render but in other places
   // eslint-disable-next-line react/no-unused-prop-types
   onDragEnd: PropTypes.func,
-  addOrRemoveFragmentInComponent: PropTypes.func,
+  addOrRemoveFragmentInstanceInComponent: PropTypes.func,
   connectDragSource: PropTypes.func,
   connectDragPreview: PropTypes.func,
   isDragging: PropTypes.bool
@@ -607,7 +627,7 @@ export default inject((injected, props) => {
   let { source, id, template, ...restProps } = props
 
   return {
-    designId: injected.design.id,
+    design: injected.design,
     id: id != null ? id : source.id,
     type: source.type,
     dataInput: injected.dataInputStore.value,
@@ -619,7 +639,7 @@ export default inject((injected, props) => {
     fragments: source.fragments,
     selected: source.selected,
     ...restProps,
-    addOrRemoveFragmentInComponent: injected.designsActions.addOrRemoveFragmentInComponent
+    addOrRemoveFragmentInstanceInComponent: injected.designsActions.addOrRemoveFragmentInstanceInComponent
   }
 })(
   DragSource(

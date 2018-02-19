@@ -52,14 +52,20 @@ class SideBar extends Component {
 
     const data = Object.keys(fragmentsDef).reduce((acu, fragmentName) => {
       const fragmentDef = fragmentsDef[fragmentName]
+      const fragmentMode = fragmentDef.mode
       const fragmentType = `${componentType}#${fragmentName}`
 
       acu[fragmentName] = {
         name: fragmentName,
         type: fragmentType,
         ownerType: ownerComponentype,
-        mode: fragmentDef.mode,
-        props: componentRegistry.getDefaultProps(fragmentType)
+        mode: fragmentDef.mode
+      }
+
+      if (fragmentMode === 'inline') {
+        acu[fragmentName].props = componentRegistry.getDefaultProps(fragmentType)
+      } else {
+        acu[fragmentName].components = []
       }
 
       if (fragmentDef.fragments != null) {
