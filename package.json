@@ -72,7 +72,7 @@
     "in-publish": "2.0.0",
     "jsreport-browser-client-dist": "1.0.4",
     "jsreport-core": "1.5.1",
-    "jsreport-designer-dev": "github:jsreport/jsreport-designer-dev",
+    "jsreport-designer-dev": "github:jsreport/jsreport-designer-dev#92a4771935e62b9deae1e0c8d78eacb78b97af63",
     "jsreport-handlebars": "1.1.2",
     "mitt": "1.1.2",
     "mobx": "3.3.2",
