@@ -412,6 +412,7 @@ class DesignComponent extends Component {
         expressions,
         fragments,
         data: dataInput,
+        customCompiledTemplate,
         computedFields: computedFieldsInput,
         fragmentPlaceholdersOutput: shouldRenderFragmentPlaceholder
       }
@@ -419,6 +420,8 @@ class DesignComponent extends Component {
       if (type.indexOf('#') === -1) {
         result = componentRegistry.getComponent(type).render(renderPayload)
       } else {
+        // when rendering an inline fragment `customCompiledTemplate` contains the
+        // inline template to use
         result = componentRegistry.renderComponentTemplate({
           componentType: type,
           template: customCompiledTemplate
