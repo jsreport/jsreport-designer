@@ -450,10 +450,10 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
       let targetItem = design.canvasRegistry.get(targetCanvas.item).element
 
       highlightedArea.contextBox = {
-        top: highlightedArea.areaBox.top,
-        left: left + (targetItem.start * colWidth),
-        width: ((targetItem.end - targetItem.start) + 1) * colWidth,
-        height: highlightedArea.areaBox.height
+        top: targetCanvas.itemDimensions.top,
+        left: targetCanvas.itemDimensions.left,
+        width: targetCanvas.itemDimensions.width,
+        height: targetCanvas.itemDimensions.height
       }
 
       if (targetCanvas.componentBehind != null) {

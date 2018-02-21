@@ -55,6 +55,7 @@ const canvasTarget = {
         group: designElement.parent.id,
         groupDimensions: document.getElementById(designElement.parent.id).getBoundingClientRect(),
         item: designElement.id,
+        itemDimensions: document.getElementById(designElement.id).getBoundingClientRect(),
         componentBehind: searchComponentBehind(false, clientOffset.x, clientOffset.y)
       }
     } else if (designElement.elementType === 'fragment') {
