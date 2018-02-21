@@ -51,7 +51,9 @@ class DesignFragmentComponent extends Component {
   constructor (props) {
     super(props)
 
+    this.setComponentSnapshootCloneContainerNode = this.setComponentSnapshootCloneContainerNode.bind(this)
     this.handleComponentDragStart = this.handleComponentDragStart.bind(this)
+    this.handleComponentDragEnd = this.handleComponentDragEnd.bind(this)
   }
 
   componentWillMount () {
@@ -90,9 +92,28 @@ class DesignFragmentComponent extends Component {
     connectDropTarget(root)
   }
 
+  setComponentSnapshootCloneContainerNode (el) {
+    this.componentSnapshootCloneContainerNode = el
+  }
+
   handleComponentDragStart (component, componentRef) {
-    // TODO: replicate here logic from design item but with customization about fragments
-    throw new Error('dragging a component from a fragment is not implemented yet')
+    const { design, root, fragmentId, onDragStart } = this.props
+
+    return onDragStart({
+      parentElement: design.canvasRegistry.get(fragmentId).element,
+      component,
+      componentRef,
+      containerNode: root,
+      snapshootCloneContainerNode: this.componentSnapshootCloneContainerNode
+    })
+  }
+
+  handleComponentDragEnd () {
+    const { onDragEnd } = this.props
+
+    onDragEnd({
+      snapshootCloneContainerNode: this.componentSnapshootCloneContainerNode
+    })
   }
 
   render () {
@@ -113,8 +134,21 @@ class DesignFragmentComponent extends Component {
             id={`${instanceId}.${fragComponent.id}`}
             componentTargetId={fragComponent.id}
             onDragStart={this.handleComponentDragStart}
+            onDragEnd={this.handleComponentDragEnd}
           />
         ))}
+        {/* placeholder for the DesignComponent replacement while dragging */}
+        <div
+          draggable='false'
+          key='design-component-snapshoot-clone-container'
+          ref={this.setComponentSnapshootCloneContainerNode}
+          data-design-component-snapshoot-clone-container
+          style={{
+            display: 'none',
+            pointerEvents: 'none',
+            position: 'absolute'
+          }}
+        />
       </Fragment>
     )
   }
@@ -131,7 +165,12 @@ DesignFragmentComponent.propTypes = {
   root: htmlElementPropType(),
   dropHighlight: PropTypes.bool,
   components: MobxPropTypes.observableArray,
-  connectDropTarget: PropTypes.func.isRequired
+  connectDropTarget: PropTypes.func.isRequired,
+  onDragStart: PropTypes.func,
+  // disabling because we are using the prop not in render but in other places
+  // eslint-disable-next-line react/no-unused-prop-types
+  onDragOver: PropTypes.func,
+  onDragEnd: PropTypes.func
 }
 
 export default inject((injected, props) => {
@@ -143,7 +182,9 @@ export default inject((injected, props) => {
     dropHighlight: fragment.dropHighlight,
     components: fragment.components,
     ...restProps,
-    onDragOver: injected.onDragOver
+    onDragStart: injected.onDragStart,
+    onDragOver: injected.onDragOver,
+    onDragEnd: injected.onDragEnd
   }
 })(
   DropTarget([

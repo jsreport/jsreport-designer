@@ -155,7 +155,9 @@ class Design extends Component {
         targetCanvas.elementType !== 'fragment' &&
         shouldProcessComponent === true &&
         dragType === ComponentDragTypes.COMPONENT &&
-        highlightedArea.areaBox == null
+        highlightedArea.areaBox == null &&
+        // dragged element does not come from a fragment
+        draggedEl.canvas.fragment == null
       ) {
         // but in case of dragged from component
         // (with no context item highlighting) check if the group

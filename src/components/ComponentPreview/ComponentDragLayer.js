@@ -91,6 +91,7 @@ class ComponentDragLayer extends Component {
       case ComponentDragTypes.COMPONENT:
         return (
           <ComponentDragSnapshootBox
+            dragItemType={dragItemType}
             dataInput={dataInput}
             width={colWidth * (componentMeta.consumedCols != null ? componentMeta.consumedCols : 1)}
             componentMeta={componentMeta}

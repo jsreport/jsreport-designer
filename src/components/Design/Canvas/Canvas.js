@@ -4,6 +4,7 @@ import PropTypes from 'prop-types'
 // eslint-disable-next-line no-unused-vars
 import { Provider, observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
+import getConsumedColsFromWidth from '../../../helpers/getConsumedColsFromWidth'
 import { ComponentDragTypes } from '../../../Constants'
 import DesignContainer from './DesignContainer'
 import styles from './Canvas.scss'
@@ -141,8 +142,11 @@ class Canvas extends Component {
 
     this.draggingTimeout = null
     this.dragOverContext = null
+    this.componentClone = null
 
+    this.handleDragStart = this.handleDragStart.bind(this)
     this.handleDragOver = this.handleDragOver.bind(this)
+    this.handleDragEnd = this.handleDragEnd.bind(this)
   }
 
   componentDidMount () {
@@ -195,6 +199,10 @@ class Canvas extends Component {
     this.props.nodeRef(el)
   }
 
+  getCanvasDimensions () {
+    return this.node.getBoundingClientRect()
+  }
+
   searchComponentBehind (fromFragment, x, y) {
     let elementBehind = document.elementFromPoint(x, y)
     let componentBehind
@@ -226,8 +234,107 @@ class Canvas extends Component {
     return componentBehind
   }
 
-  getCanvasDimensions () {
-    return this.node.getBoundingClientRect()
+  cloneComponent ({ containerNode, snapshootCloneContainerNode, componentNode }) {
+    const containerDimensions = containerNode.getBoundingClientRect()
+    const { top, left, width, height } = componentNode.getBoundingClientRect()
+    const componentClone = componentNode.cloneNode(true)
+
+    snapshootCloneContainerNode.style.display = 'block'
+    snapshootCloneContainerNode.style.top = `${top - containerDimensions.top}px`
+    snapshootCloneContainerNode.style.left = `${left - containerDimensions.left}px`
+    snapshootCloneContainerNode.style.width = `${width}px`
+    snapshootCloneContainerNode.style.height = `${height}px`
+
+    componentClone.dataset.draggingPlaceholder = true
+
+    this.componentClone = componentClone
+    snapshootCloneContainerNode.appendChild(componentClone)
+  }
+
+  removeComponentClone ({ snapshootCloneContainerNode }) {
+    if (snapshootCloneContainerNode) {
+      snapshootCloneContainerNode.style.display = 'none'
+    }
+
+    if (this.componentClone) {
+      if (snapshootCloneContainerNode) {
+        snapshootCloneContainerNode.removeChild(this.componentClone)
+      } else {
+        this.componentClone.parentNode && this.componentClone.parentNode.removeChild(this.componentClone)
+      }
+
+      this.componentClone = null
+    }
+  }
+
+  handleDragStart ({
+    parentElement,
+    component,
+    componentRef,
+    containerNode,
+    snapshootCloneContainerNode
+  }) {
+    const { design, clearSelection } = this.props
+    const { colWidth } = design
+    const componentNode = componentRef.node
+    let componentDimensions
+    let componentConsumedCols
+    let consumedCols
+    let canvasPayload
+
+    this.cloneComponent({
+      containerNode,
+      snapshootCloneContainerNode,
+      componentNode
+    })
+
+    clearSelection(design.id)
+
+    componentDimensions = componentNode.getBoundingClientRect()
+
+    componentConsumedCols = getConsumedColsFromWidth({
+      baseColWidth: colWidth,
+      width: componentDimensions.width
+    })
+
+    if (parentElement.elementType === 'item') {
+      // if the item containing the component only has one component
+      // then preserve design item size in the target
+      if (parentElement.components.length === 1) {
+        consumedCols = (parentElement.end - parentElement.start) + 1
+      } else {
+        consumedCols = componentConsumedCols
+      }
+
+      canvasPayload = {
+        group: parentElement.parent.id,
+        item: parentElement.id,
+        component: component.id
+      }
+    } else if (parentElement.elementType === 'fragment') {
+      consumedCols = componentConsumedCols
+
+      canvasPayload = {
+        fragment: parentElement.id,
+        component: component.id
+      }
+    } else {
+      throw new Error(`"parent ${parentElement.elementType}" element type is not supported to start a drag`)
+    }
+
+    // when dragging from component we just need to pass rawContent
+    return {
+      id: component.id,
+      name: component.type,
+      rawContent: componentRef.instance.getRawContent(),
+      size: {
+        width: componentDimensions.width,
+        height: componentDimensions.height
+      },
+      consumedCols,
+      componentConsumedCols,
+      canvas: canvasPayload
+    }
   }
 
   handleDragOver (dragOverContext) {
@@ -252,6 +359,10 @@ class Canvas extends Component {
     }
 
     this.dragOverContext = context
+  }
+
+  handleDragEnd ({ snapshootCloneContainerNode }) {
+    this.removeComponentClone({ snapshootCloneContainerNode })
   }
 
   render () {
@@ -298,7 +409,9 @@ class Canvas extends Component {
         {design.isCanvasReady && (
           <Provider
             design={design}
+            onDragStart={this.handleDragStart}
             onDragOver={this.handleDragOver}
+            onDragEnd={this.handleDragEnd}
             getCanvasDimensions={this.getCanvasDimensions}
           >
             <DesignContainer />
@@ -318,6 +431,7 @@ Canvas.propTypes = {
   canDrop: PropTypes.bool.isRequired,
   isDraggingOver: PropTypes.bool.isRequired,
   updateDesign: PropTypes.func.isRequired,
+  clearSelection: PropTypes.func.isRequired,
   onClick: PropTypes.func,
   onDragEnter: PropTypes.func,
   onDragOver: PropTypes.func,
@@ -327,7 +441,8 @@ Canvas.propTypes = {
 }
 
 export default inject((injected) => ({
-  updateDesign: injected.designsActions.update
+  updateDesign: injected.designsActions.update,
+  clearSelection: injected.designsActions.clearSelection
 }))(
   DropTarget([
     ComponentDragTypes.COMPONENT_BAR,

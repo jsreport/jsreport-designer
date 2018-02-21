@@ -7,7 +7,6 @@ import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import Selection from './Selection'
 import DesignComponent from '../../DesignComponent'
-import getConsumedColsFromWidth from '../../../helpers/getConsumedColsFromWidth'
 import { ComponentDragTypes } from '../../../Constants'
 import styles from '../../../../static/DesignElements.css'
 import interactiveStyles from './DesignElementsInteractive.scss'
@@ -51,10 +50,8 @@ class DesignItem extends Component {
     super(props)
 
     this.setNode = this.setNode.bind(this)
-    this.setComponentReplacementNode = this.setComponentReplacementNode.bind(this)
+    this.setComponentSnapshootCloneContainerNode = this.setComponentSnapshootCloneContainerNode.bind(this)
     this.setSelectionNode = this.setSelectionNode.bind(this)
-    this.cloneComponent = this.cloneComponent.bind(this)
-    this.removeComponentClone = this.removeComponentClone.bind(this)
     this.focusSelection = this.focusSelection.bind(this)
     this.handleClick = this.handleClick.bind(this)
     this.handleKeyDown = this.handleKeyDown.bind(this)
@@ -91,45 +88,12 @@ class DesignItem extends Component {
     this.node = el
   }
 
-  setComponentReplacementNode (el) {
-    this.componentReplacementNode = el
+  setComponentSnapshootCloneContainerNode (el) {
+    this.componentSnapshootCloneContainerNode = el
   }
 
   setSelectionNode (el) {
     this.selectionNode = el
-  }
-
-  cloneComponent (componentNode) {
-    let designItemDimensions = this.node.getBoundingClientRect()
-    let { top, left, width, height } = componentNode.getBoundingClientRect()
-    let componentClone = componentNode.cloneNode(true)
-
-    this.componentReplacementNode.style.display = 'block'
-    this.componentReplacementNode.style.top = `${top - designItemDimensions.top}px`
-    this.componentReplacementNode.style.left = `${left - designItemDimensions.left}px`
-    this.componentReplacementNode.style.width = `${width}px`
-    this.componentReplacementNode.style.height = `${height}px`
-
-    componentClone.dataset.draggingPlaceholder = true
-
-    this.componentClone = componentClone
-    this.componentReplacementNode.appendChild(componentClone)
-  }
-
-  removeComponentClone () {
-    if (this.componentReplacementNode) {
-      this.componentReplacementNode.style.display = 'none'
-    }
-
-    if (this.componentClone) {
-      if (this.componentReplacementNode) {
-        this.componentReplacementNode.removeChild(this.componentClone)
-      } else {
-        this.componentClone.parentNode && this.componentClone.parentNode.removeChild(this.componentClone)
-      }
-
-      this.componentClone = null
-    }
   }
 
   focusSelection () {
@@ -221,53 +185,23 @@ class DesignItem extends Component {
   }
 
   handleComponentDragStart (component, componentRef) {
-    const { design, item, clearSelection } = this.props
-    const { colWidth } = design
-    let componentDimensions
-    let componentConsumedCols
-    let consumedCols
+    const { item, onDragStart } = this.props
 
-    this.cloneComponent(componentRef.node)
-
-    clearSelection(design.id)
-
-    componentDimensions = componentRef.node.getBoundingClientRect()
-
-    componentConsumedCols = getConsumedColsFromWidth({
-      baseColWidth: colWidth,
-      width: componentDimensions.width
+    return onDragStart({
+      parentElement: item,
+      component,
+      componentRef,
+      containerNode: this.node,
+      snapshootCloneContainerNode: this.componentSnapshootCloneContainerNode
     })
-
-    // if the item containing the component only has one component
-    // then preserve design item size in the target
-    if (item.components.length === 1) {
-      consumedCols = (item.end - item.start) + 1
-    } else {
-      consumedCols = componentConsumedCols
-    }
-
-    return {
-      id: component.id,
-      name: component.type,
-      props: component.props,
-      bindings: component.bindings,
-      rawContent: componentRef.instance.getRawContent(),
-      size: {
-        width: componentDimensions.width,
-        height: componentDimensions.height
-      },
-      consumedCols,
-      componentConsumedCols,
-      canvas: {
-        group: item.parent.id,
-        item: item.id,
-        component: component.id
-      }
-    }
   }
 
   handleComponentDragEnd () {
-    this.removeComponentClone()
+    const { onDragEnd } = this.props
+
+    onDragEnd({
+      snapshootCloneContainerNode: this.componentSnapshootCloneContainerNode
+    })
   }
 
   render () {
@@ -346,9 +280,9 @@ class DesignItem extends Component {
         {/* placeholder for the DesignComponent replacement while dragging */}
         <div
           draggable='false'
-          key='DesignComponent-replacement'
-          ref={this.setComponentReplacementNode}
-          data-design-component-snapshoot-clone
+          key='design-component-snapshoot-clone-container'
+          ref={this.setComponentSnapshootCloneContainerNode}
+          data-design-component-snapshoot-clone-container
           style={{
             display: 'none',
             pointerEvents: 'none',
@@ -368,20 +302,22 @@ DesignItem.propTypes = {
   connectDropTarget: PropTypes.func.isRequired,
   isDraggingOver: PropTypes.bool.isRequired,
   setSelection: PropTypes.func.isRequired,
-  clearSelection: PropTypes.func.isRequired,
   removeComponent: PropTypes.func.isRequired,
   resizeElement: PropTypes.func.isRequired,
   startResizeElement: PropTypes.func.isRequired,
   endResizeElement: PropTypes.func.isRequired,
+  onDragStart: PropTypes.func,
+  onDragEnd: PropTypes.func,
   getContainerDimensions: PropTypes.func.isRequired
 }
 
 export default inject((injected) => ({
   design: injected.design,
   getContainerDimensions: injected.getCanvasDimensions,
+  onDragStart: injected.onDragStart,
   onDragOver: injected.onDragOver,
+  onDragEnd: injected.onDragEnd,
   setSelection: injected.designsActions.setSelection,
-  clearSelection: injected.designsActions.clearSelection,
   removeComponent: injected.designsActions.removeComponent,
   startResizeElement: injected.designsActions.startResizeElement,
   resizeElement: injected.designsActions.resizeElement,
