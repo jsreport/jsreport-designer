@@ -11,38 +11,17 @@ import styles from '../../../../static/DesignElements.css'
 import interactiveStyles from './DesignElementsInteractive.scss'
 
 const groupTarget = {
-  hover (props, monitor, component) {
-    const { design, group, updateElement, onDragOver } = props
-    let groupNode = component.node
-    let groupDimensions = groupNode.getBoundingClientRect()
+  hover (props, monitor) {
+    const { group, onDragOver } = props
 
     if (!monitor.isOver()) {
-      component.draggingOverStart = Date.now()
+      return
     }
 
-    // show dragging over styles after 200ms of beign over the group
-    if (
-      (Date.now() - component.draggingOverStart) > 200 &&
-      !group.itemsRemarked
-    ) {
-      updateElement(
-        design.id,
-        group.id,
-        { itemsRemarked: true }
-      )
-    }
-
-    if (onDragOver) {
-      if (monitor.isOver({ shallow: true })) {
-        console.log(`only group`)
-        onDragOver({
-          element: group,
-          groupDimensions,
-          componentBehind: undefined
-        })
-      } else if (monitor.isOver()) {
-        onDragOver({ groupDimensions })
-      }
+    if (onDragOver && monitor.isOver({ shallow: true })) {
+      onDragOver({
+        element: group
+      })
     }
   },
 
@@ -59,43 +38,18 @@ const groupTarget = {
 
 function collect (connect, monitor) {
   return {
-    connectDropTarget: connect.dropTarget(),
-    isDraggingOver: monitor.isOver()
+    connectDropTarget: connect.dropTarget()
   }
 }
 
 @observer
 class DesignGroup extends Component {
-  constructor (props) {
-    super(props)
-
-    this.draggingOverStart = null
-
-    this.getNode = this.getNode.bind(this)
-  }
-
-  componentWillReceiveProps (nextProps) {
-    if (this.props.isDraggingOver && !nextProps.isDraggingOver) {
-      this.draggingOverStart = null
-
-      nextProps.updateElement(
-        nextProps.design.id,
-        nextProps.group.id,
-        { itemsRemarked: false }
-      )
-    }
-  }
-
-  getNode (el) {
-    this.node = el
-  }
-
   render () {
     let { showTopBorder, connectDropTarget } = this.props
 
     const { design, group } = this.props
     const { rowHeight } = design
-    const { layoutMode, items, itemsRemarked, placeholder } = group
+    const { layoutMode, items, dropHighlight, placeholder } = group
 
     let inlineStyles = {}
     let extraProps = {}
@@ -110,13 +64,12 @@ class DesignGroup extends Component {
 
     extraProps[`data-layout-${layoutMode}-mode`] = true
 
-    if (itemsRemarked) {
-      extraProps['data-items-remarked'] = true
+    if (dropHighlight) {
+      extraProps['data-drop-highlight'] = true
     }
 
     return connectDropTarget(
       <div
-        ref={this.getNode}
         id={group.id}
         className={`${styles.designGroup} ${interactiveStyles.designGroupInteractive}`}
         style={inlineStyles}
@@ -141,15 +94,12 @@ DesignGroup.propTypes = {
   design: MobxPropTypes.observableObject.isRequired,
   group: MobxPropTypes.observableObject.isRequired,
   showTopBorder: PropTypes.bool,
-  connectDropTarget: PropTypes.func.isRequired,
-  isDraggingOver: PropTypes.bool.isRequired,
-  updateElement: PropTypes.func.isRequired
+  connectDropTarget: PropTypes.func.isRequired
 }
 
 export default inject((injected) => ({
   design: injected.design,
-  onDragOver: injected.onDragOver,
-  updateElement: injected.designsActions.updateElement
+  onDragOver: injected.onDragOver
 }))(
   DropTarget([
     ComponentDragTypes.COMPONENT_BAR,

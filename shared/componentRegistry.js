@@ -14,6 +14,8 @@ const isBrowserContext = (
   typeof window.Node === 'function'
 )
 
+const globalHelpers = {}
+
 const componentsDefinition = {}
 const components = {}
 
@@ -169,6 +171,12 @@ function loadComponents (componentsToLoad, reload = false) {
   })
 
   return componentRequires
+}
+
+function loadGlobalHelpers (helpers) {
+  Object.keys(helpers).forEach(helperName => {
+    globalHelpers[helperName] = helpers[helperName]
+  })
 }
 
 function renderComponentTemplate ({
@@ -688,6 +696,12 @@ function renderFragment (placeholdersOutput, options) {
   const tag = options.hash.tag
   const style = options.hash.style
   const placeholderTag = `<!-- jsreport-designer-fragment@mode=${mode}@name=${name}@type=${newComponentType}@instance=${instanceIndex} -->`
+  const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
+
+  const currentFragmentData = getInnerFragmentData(
+    fragmentsData,
+    fragmentsLookup
+  )
 
   // pass composed new component type to any child
   contentData.componentType = newComponentType
@@ -697,16 +711,9 @@ function renderFragment (placeholdersOutput, options) {
   }
 
   if (mode === 'inline') {
-    const fragmentsLookup = newComponentType.replace(rootComponentType, '').split('#').slice(1)
-
     // creating container for fragments
     // inside the fragment itself if any
     contentData.fragmentsPlaceholders = fragmentsPlaceholders[name].fragments || {}
-
-    const currentFragmentData = getInnerFragmentData(
-      fragmentsData,
-      fragmentsLookup
-    )
 
     let fragmentContext
 
@@ -753,10 +760,28 @@ function renderFragment (placeholdersOutput, options) {
     }
 
     if (!shouldRenderPlaceholder) {
+      let componentsContent = []
+
+      if (currentFragmentData != null && currentFragmentData.components != null && currentFragmentData.components.length > 0) {
+        componentsContent = currentFragmentData.components.map((comp) => {
+          return globalHelpers.renderDesignComponent(
+            comp.type,
+            comp.props,
+            comp.bindings,
+            comp.expressions,
+            comp.fragments,
+            comp.template,
+            {} // no options
+          )
+        })
+
+        componentsContent = componentsContent.join('')
+      }
+
       if (style != null) {
-        result = `<${tag} style="${style}"></${tag}>`
+        result = `<${tag} class="designFragmentComponent" style="${style}">${componentsContent}</${tag}>`
       } else {
-        result = `<${tag}></${tag}>`
+        result = `<${tag} class="designFragmentComponent">${componentsContent}</${tag}>`
       }
     }
 
@@ -879,6 +904,7 @@ function callInterop (context, fn) {
 
 module.exports = {
   loadComponents,
+  loadGlobalHelpers,
   getComponentsDefinition,
   getComponentDefinition,
   getComponents,

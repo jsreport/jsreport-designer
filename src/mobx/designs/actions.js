@@ -10,8 +10,8 @@ import { ComponentDragTypes } from '../../Constants'
 import {
   generateGroup,
   // generateFragmentInstance,
-  findProjectedFilledArea,
-  findProjectedFilledAreaWhenResizing,
+  findProjectedFilledAreaInGrid,
+  findProjectedFilledAreaInGridWhenResizing,
   findMarkedArea,
   addComponentToDesign,
   addFragmentInstanceToComponentInDesign,
@@ -279,8 +279,17 @@ export const setSelection = action(`${ACTION}_SET_SELECTION`, (designId, compone
   newSelection = []
 
   while (currentElement != null) {
-    currentElement.selected = true
-    newSelection.unshift(currentElement.id)
+    if (
+      currentElement.elementType === 'group' ||
+      currentElement.elementType === 'item' ||
+      currentElement.elementType === 'component' ||
+      (currentElement.elementType === 'fragment' &&
+      currentElement.mode === 'inline')
+    ) {
+      currentElement.selected = true
+      newSelection.unshift(currentElement.id)
+    }
+
     currentElement = currentElement.parent
   }
 
@@ -304,8 +313,6 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
     return
   }
 
-  const { numberOfCols, colWidth } = design
-
   const {
     dragType,
     draggedEl,
@@ -316,104 +323,40 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
   } = dragPayload
 
   const { x: cursorOffsetX } = clientOffset
-  const { height, top, left } = targetCanvas.groupDimensions
-  const targetOnItem = targetCanvas.item != null
+  const targetElementType = targetCanvas.elementType
 
-  let noConflictItem
   let highlightedArea
   let markedArea
-  let originColIndex
-  let colInCursor
+  let markTargetIsBlock = false
+  let markTargetDimensions
+  let markTargetId
+  let markMoveType
 
-  let targetColInfo = {
-    height,
-    top
-  }
+  if (targetElementType === 'fragment') {
+    const instanceDimensions = targetCanvas.instanceDimensions
 
-  colInCursor = cursorOffsetX - left
-
-  if (draggedEl.consumedCols === 1) {
-    // when only 1 col will be consumed start col should be
-    // based on cursor position for the best experience
-    originColIndex = cursorOffsetX - left
-  } else if (draggedEl.pointerPreviewPosition != null) {
-    // when pointer position has been defined in the preview
-    // start col should be based on the left corner
-    originColIndex = (cursorOffsetX - draggedEl.pointerPreviewPosition.x) - left
-  } else {
-    // when pointer position has been not defined in the preview
-    // get pointer position and then start col should be based on the left corner
-    originColIndex = (cursorOffsetX - (initialClientOffset.x - initialSourceClientOffset.x)) - left
-  }
-
-  originColIndex = Math.floor(originColIndex / colWidth)
-  colInCursor = Math.floor(colInCursor / colWidth)
-
-  if (colInCursor < 0) {
-    colInCursor = 0
-  } else if (colInCursor > numberOfCols - 1) {
-    colInCursor = numberOfCols - 1
-  }
-
-  if (originColIndex < 0) {
-    targetColInfo.startOffset = Math.abs(originColIndex)
-    targetColInfo.index = 0
-  } else if (originColIndex > numberOfCols - 1) {
-    targetColInfo.index = numberOfCols - 1
-  } else {
-    targetColInfo.index = originColIndex
-  }
-
-  targetColInfo.cursorIndex = colInCursor
-  targetColInfo.left = left + (targetColInfo.index * colWidth)
-
-  if (
-    dragType === ComponentDragTypes.COMPONENT &&
-    draggedEl.canvas.group === targetCanvas.group
-  ) {
-    const originItem = design.canvasRegistry.get(draggedEl.canvas.item).element
-
-    // only have no conflict if the origin item has
-    // only 1 component, these allows moving an item if it only
-    // has 1 component, when the item has more than one it correctly
-    // represent space conflicts if any
-    if (originItem.components.length <= 1) {
-      noConflictItem = draggedEl.canvas.item
+    highlightedArea = {
+      filled: true,
+      conflict: false
     }
-  }
-
-  highlightedArea = findProjectedFilledArea({
-    design,
-    targetGroup: targetCanvas.group,
-    targetColInfo,
-    colsToConsume: draggedEl.consumedCols,
-    noConflictItem
-  })
-
-  if (targetOnItem) {
-    let targetItem = design.canvasRegistry.get(targetCanvas.item).element
-    let markTargetIsBlock = false
-    let markTargetDimensions
-    let markTargetElementId
-    let markMoveType
 
     highlightedArea.contextBox = {
-      top: highlightedArea.areaBox.top,
-      left: left + (targetItem.start * colWidth),
-      width: ((targetItem.end - targetItem.start) + 1) * colWidth,
-      height: highlightedArea.areaBox.height
+      top: instanceDimensions.top,
+      left: instanceDimensions.left,
+      width: instanceDimensions.width,
+      height: instanceDimensions.height
     }
 
     if (targetCanvas.componentBehind != null) {
       markTargetDimensions = targetCanvas.componentBehind.dimensions
-      markTargetElementId = targetCanvas.componentBehind.id
+      markTargetId = targetCanvas.componentBehind.id
     } else {
       // when no component, make the mark a block target
       markTargetIsBlock = true
       // when no component, make the mark always after
       markMoveType = 'after'
-      markTargetElementId = targetItem.id
-      markTargetDimensions = document.getElementById(targetItem.id).getBoundingClientRect()
+      markTargetId = targetCanvas.instance
+      markTargetDimensions = instanceDimensions
     }
 
     markedArea = findMarkedArea({
@@ -425,19 +368,146 @@ export const highlightAreaFromDrag = action(`${ACTION}_HIGHLIGHT_AREA_FROM_DRAG`
       ) : undefined,
       targetDimensions: markTargetDimensions,
       targetIsBlock: markTargetIsBlock,
-      targetType: 'component',
-      targetElementId: markTargetElementId
+      targetType: 'fragment',
+      targetId: markTargetId
     })
 
     if (markedArea) {
       highlightedArea.mark = markedArea
     }
-
-    // don't show element filled area, just the context
-    delete highlightedArea.areaBox
   } else {
-    highlightedArea.contextBox = null
+    const { numberOfCols, colWidth } = design
+    const { height, top, left } = targetCanvas.groupDimensions
+    const targetOnItem = targetCanvas.item != null
+    let noConflictItem
+    let originColIndex
+    let colInCursor = cursorOffsetX - left
+
+    let targetColInfo = {
+      height,
+      top
+    }
+
+    if (draggedEl.consumedCols === 1) {
+      // when only 1 col will be consumed start col should be
+      // based on cursor position for the best experience
+      originColIndex = cursorOffsetX - left
+    } else if (draggedEl.pointerPreviewPosition != null) {
+      // when pointer position has been defined in the preview
+      // start col should be based on the left corner
+      originColIndex = (cursorOffsetX - draggedEl.pointerPreviewPosition.x) - left
+    } else {
+      // when pointer position has been not defined in the preview
+      // get pointer position and then start col should be based on the left corner
+      originColIndex = (cursorOffsetX - (initialClientOffset.x - initialSourceClientOffset.x)) - left
+    }
+
+    originColIndex = Math.floor(originColIndex / colWidth)
+    colInCursor = Math.floor(colInCursor / colWidth)
+
+    if (colInCursor < 0) {
+      colInCursor = 0
+    } else if (colInCursor > numberOfCols - 1) {
+      colInCursor = numberOfCols - 1
+    }
+
+    if (originColIndex < 0) {
+      targetColInfo.startOffset = Math.abs(originColIndex)
+      targetColInfo.index = 0
+    } else if (originColIndex > numberOfCols - 1) {
+      targetColInfo.index = numberOfCols - 1
+    } else {
+      targetColInfo.index = originColIndex
+    }
+
+    targetColInfo.cursorIndex = colInCursor
+    targetColInfo.left = left + (targetColInfo.index * colWidth)
+
+    if (
+      dragType === ComponentDragTypes.COMPONENT &&
+      draggedEl.canvas.group === targetCanvas.group
+    ) {
+      const originItem = design.canvasRegistry.get(draggedEl.canvas.item).element
+
+      // only have no conflict if the origin item has
+      // only 1 component, these allows moving an item if it only
+      // has 1 component, when the item has more than one it correctly
+      // represent space conflicts if any
+      if (originItem.components.length <= 1) {
+        noConflictItem = draggedEl.canvas.item
+      }
+    }
+
+    highlightedArea = findProjectedFilledAreaInGrid({
+      design,
+      targetGroup: targetCanvas.group,
+      targetColInfo,
+      colsToConsume: draggedEl.consumedCols,
+      noConflictItem
+    })
+
+    if (targetOnItem) {
+      let targetItem = design.canvasRegistry.get(targetCanvas.item).element
+
+      highlightedArea.contextBox = {
+        top: highlightedArea.areaBox.top,
+        left: left + (targetItem.start * colWidth),
+        width: ((targetItem.end - targetItem.start) + 1) * colWidth,
+        height: highlightedArea.areaBox.height
+      }
+
+      if (targetCanvas.componentBehind != null) {
+        markTargetDimensions = targetCanvas.componentBehind.dimensions
+        markTargetId = targetCanvas.componentBehind.id
+      } else {
+        // when no component, make the mark a block target
+        markTargetIsBlock = true
+        // when no component, make the mark always after
+        markMoveType = 'after'
+        markTargetId = targetItem.id
+        markTargetDimensions = document.getElementById(targetItem.id).getBoundingClientRect()
+      }
+
+      markedArea = findMarkedArea({
+        design,
+        referencePoint: clientOffset,
+        moveType: markMoveType,
+        originElementId: dragType === ComponentDragTypes.COMPONENT ? (
+          draggedEl.id
+        ) : undefined,
+        targetDimensions: markTargetDimensions,
+        targetIsBlock: markTargetIsBlock,
+        targetType: 'component',
+        targetId: markTargetId
+      })
+
+      if (markedArea) {
+        highlightedArea.mark = markedArea
+      }
+
+      // don't show element filled area, just the context
+      delete highlightedArea.areaBox
+    } else {
+      highlightedArea.contextBox = null
+    }
   }
+
+  let currentDropHighlightElement
+
+  if (targetElementType === 'fragment') {
+    currentDropHighlightElement = design.canvasRegistry.get(targetCanvas.fragment).element
+  } else {
+    currentDropHighlightElement = design.canvasRegistry.get(targetCanvas.group).element
+  }
+
+  if (design.currentDropHighlightElementId != null) {
+    const prevDropHighlightElement = design.canvasRegistry.get(design.currentDropHighlightElementId).element
+    prevDropHighlightElement.dropHighlight = false
+  }
+
+  currentDropHighlightElement.dropHighlight = true
+
+  design.currentDropHighlightElementId = currentDropHighlightElement.id
 
   highlightArea(design.id, highlightedArea)
 })
@@ -451,6 +521,13 @@ export const clearHighlightArea = action(`${ACTION}_CLEAR_HIGHLIGHT_AREA`, (desi
 
   if (design.highlightedArea != null) {
     design.highlightedArea = null
+  }
+
+  if (design.currentDropHighlightElementId != null) {
+    const dropHighlightElement = design.canvasRegistry.get(design.currentDropHighlightElementId).element
+
+    dropHighlightElement.dropHighlight = false
+    design.currentDropHighlightElementId = null
   }
 })
 
@@ -475,58 +552,9 @@ export const addComponent = action(`${ACTION}_ADD_COMPONENT`, (designId, payload
   }
 })
 
-// TODO: remove this if not needed in other places
-// export const addFragmentToComponent = action(`${ACTION}_ADD_FRAGMENT_TO_COMPONENT`, (designId, componentId, fragment) => {
-//   const design = store.designs.get(designId)
-//
-//   if (!design) {
-//     return
-//   }
-//
-//   let component = design.canvasRegistry.get(componentId)
-//
-//   if (!component) {
-//     return
-//   }
-//
-//   component = component.element
-//
-//   addFragmentToComponentInDesign({
-//     design,
-//     component,
-//     fragment
-//   })
-// })
-
-// TODO: remove this if not needed in other places
-/*
-export const removeFragmentFromComponent = action(`${ACTION}_REMOVE_FRAGMENT_FROM_COMPONENT`, (designId, componentId, fragmentName) => {
-  const design = store.designs.get(designId)
-
-  if (!design) {
-    return
-  }
-
-  let component = design.canvasRegistry.get(componentId)
-
-  if (!component) {
-    return
-  }
-
-  component = component.element
-
-  removeFragmentFromComponentInDesign({
-    design,
-    component,
-    fragmentName
-  })
-})
-*/
-
-// TODO: complete this to add fragment instances
 export const addOrRemoveFragmentInstanceInComponent = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, fragmentsIds, fragmentsCollectionToProcess) => {
   const design = store.designs.get(designId)
-  const staleInstances = []
+  let staleInstances = []
 
   if (!design) {
     return staleInstances
@@ -545,11 +573,13 @@ export const addOrRemoveFragmentInstanceInComponent = action(`${ACTION}_ADD_OR_R
 
     currentFragment = currentFragment.element
 
+    let newFragment = fragmentsCollectionToProcess[currentFragment.name]
+
     if (currentFragment.instances.length === 0) {
       let instancesToAdd = []
 
-      if (fragmentsCollectionToProcess[currentFragment.name] != null) {
-        instancesToAdd = fragmentsCollectionToProcess[currentFragment.name].instances
+      if (newFragment != null) {
+        instancesToAdd = newFragment.instances
       }
 
       addFragmentInstanceToComponentInDesign({
@@ -558,156 +588,72 @@ export const addOrRemoveFragmentInstanceInComponent = action(`${ACTION}_ADD_OR_R
         instance: instancesToAdd
       })
     } else {
-      // TODO: complete updating
+      let instancesToRemoveCount
+
+      if (!newFragment) {
+        instancesToRemoveCount = currentFragment.instances.length
+      } else {
+        instancesToRemoveCount = currentFragment.instances.length - newFragment.instances.length
+      }
+
+      if (instancesToRemoveCount > 0) {
+        // removing instances
+        currentFragment.instances.splice(
+          currentFragment.instances.length - instancesToRemoveCount,
+          instancesToRemoveCount
+        )
+      }
+
+      if (instancesToRemoveCount === currentFragment.instances.length) {
+        staleInstances = currentFragment.instances.map((instance) => ({
+          type: currentFragment.type,
+          id: instance.id
+        }))
+      } else {
+        newFragment.instances.forEach((newInstance, newInstanceIndex) => {
+          const currentFragmentInstance = currentFragment.instances[newInstanceIndex]
+
+          if (currentFragmentInstance != null) {
+            // update existing instance
+            const originalTag = currentFragmentInstance.tag
+
+            currentFragmentInstance.tag = newInstance.tag
+            currentFragmentInstance.style = newInstance.style
+
+            if (currentFragment.mode === 'inline') {
+              const originalSketch = currentFragmentInstance.sketch
+
+              currentFragmentInstance.sketch = newInstance.sketch
+
+              // update template when something in sketch or tag has changed
+              if (
+                `${newInstance.tag}/${newInstance.sketch}` !== `${originalTag}/${originalSketch}`
+              ) {
+                currentFragmentInstance.template = newInstance.template
+              }
+            }
+
+            if (newInstance.tag !== originalTag) {
+              staleInstances.push({
+                type: currentFragment.type,
+                id: currentFragmentInstance.id
+              })
+            }
+          } else {
+            // add new fragment instance
+            addFragmentInstanceToComponentInDesign({
+              design,
+              fragment: currentFragment,
+              instance: newInstance
+            })
+          }
+        })
+      }
     }
   })
 
   return staleInstances
 })
-
-// TODO: remove this if not needed in other places
-/*
-export const addOrRemoveFragmentInComponent = action(`${ACTION}_ADD_OR_REMOVE_FRAGMENT_IN_COMPONENT`, (designId, componentId, fragmentsCollection, getDefaultProps) => {
-  const design = store.designs.get(designId)
-  const staleFragments = []
-
-  if (!design) {
-    return
-  }
-
-  let component = design.canvasRegistry.get(componentId)
-
-  if (!component) {
-    return
-  }
-
-  component = component.element
-
-  if (
-    component.fragments.size === 0 &&
-    Object.keys(fragmentsCollection).length > 0
-  ) {
-    addFragmentToComponent(
-      designId,
-      componentId,
-      Object.keys(fragmentsCollection).map(fragName => fragmentsCollection[fragName]),
-      getDefaultProps
-    )
-  } else {
-    const currentFragmentsNames = component.fragments.keys()
-    const toAdd = []
-    const toUpdate = []
-    const toRemove = [...currentFragmentsNames]
-
-    Object.keys(fragmentsCollection).forEach((fragName) => {
-      const fragIndex = toRemove.indexOf(fragName)
-
-      if (fragIndex === -1) {
-        toAdd.push(fragName)
-      } else {
-        toUpdate.push(fragName)
-        toRemove.splice(fragIndex, 1)
-      }
-    })
-
-    if (toRemove.length > 0) {
-      removeFragmentFromComponent(
-        designId,
-        componentId,
-        toRemove
-      )
-    }
-
-    if (toAdd.length > 0) {
-      addFragmentToComponent(
-        designId,
-        componentId,
-        toAdd.map(fragName => fragmentsCollection[fragName]),
-        getDefaultProps
-      )
-    }
-
-    if (toUpdate.length > 0) {
-      toUpdate.forEach((fragName) => {
-        const currentFrag = component.fragments.get(fragName)
-        const updateInfo = fragmentsCollection[fragName]
-
-        const attrsToUpdate = [
-          'mode',
-          'type',
-          'ownerType'
-        ]
-
-        debugger
-        // updating inner fragments
-        addOrRemoveFragmentInComponent(
-          designId,
-          currentFrag.id,
-          updateInfo.fragments || {},
-          getDefaultProps
-        )
-
-        const instancesToRemoveCount = (
-          currentFrag.instances.length - updateInfo.instances.length
-        )
-
-        if (instancesToRemoveCount > 0) {
-          // removing instances
-          currentFrag.instances.splice(
-            currentFrag.instances.length - instancesToRemoveCount,
-            instancesToRemoveCount
-          )
-        }
-
-        // checking instances to update
-        updateInfo.instances.forEach((updInstance, updInstanceIndex) => {
-          const currentFragInstance = currentFrag.instances[updInstanceIndex]
-
-          if (currentFragInstance != null) {
-            const originalTag = currentFragInstance.tag
-            const originalSketch = currentFragInstance.sketch
-
-            // update fragment instance
-            currentFragInstance.tag = updInstance.tag
-            currentFragInstance.sketch = updInstance.sketch
-
-            // update template when something in sketch or tag has changed
-            if (
-              `${updInstance.tag}/${updInstance.sketch}` !== `${originalTag}/${originalSketch}`
-            ) {
-              currentFragInstance.template = updInstance.template
-            }
-
-            if (updInstance.tag !== originalTag) {
-              staleFragments.push({
-                type: currentFrag.type,
-                id: currentFragInstance.id
-              })
-            }
-          } else {
-            // add new fragment instance
-            currentFrag.instances.push(
-              generateFragmentInstance(
-                currentFrag.id,
-                updInstanceIndex,
-                updInstance
-              )
-            )
-          }
-        })
-
-        updateElement(
-          designId,
-          currentFrag.id,
-          pick(updateInfo, attrsToUpdate)
-        )
-      })
-    }
-  }
-
-  return staleFragments
-})
-*/
 
 export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, componentId, opts = {}) => {
   const design = store.designs.get(designId)
@@ -718,7 +664,8 @@ export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, c
   }
 
   const {
-    prevComponent
+    prevComponent,
+    nextComponent
   } = removeComponentInDesign({ design, componentId })
 
   // clear selection if removed component is in it
@@ -728,6 +675,8 @@ export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, c
 
   if (options.select && prevComponent) {
     setSelection(design.id, prevComponent.id)
+  } else if (options.select && nextComponent) {
+    setSelection(design.id, nextComponent.id)
   }
 })
 
@@ -742,9 +691,7 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
   const {
     dragType,
     draggedEl,
-    targetCanvas,
-    start,
-    end
+    targetCanvas
   } = dragPayload
 
   let componentToProcess
@@ -765,20 +712,21 @@ export const addOrRemoveComponentFromDrag = action(`${ACTION}_ADD_OR_REMOVE_COMP
     }
   }
 
+  let targetArea = {
+    ...targetCanvas
+  }
+
+  if (targetCanvas.elementType !== 'fragment') {
+    // always have a minSpace of 1
+    targetArea.minSpace = 1
+  }
+
   const {
     newComponent
   } = addComponent(design.id, {
     component: componentToProcess,
     componentSize: draggedEl.size,
-    targetArea: {
-      group: targetCanvas.group,
-      item: targetCanvas.item,
-      componentAt: targetCanvas.componentAt,
-      start,
-      end,
-      // always have a minSpace of 1
-      minSpace: 1
-    }
+    targetArea
   })
 
   if (options.select) {
@@ -852,7 +800,7 @@ export const startResizeElement = action(`${ACTION}_START_RESIZE_ELEMENT`, (desi
 
   resizing.limits = limits
 
-  highlightedArea = findProjectedFilledArea({
+  highlightedArea = findProjectedFilledAreaInGrid({
     design,
     targetGroup: group.id,
     targetColInfo: {
@@ -939,7 +887,7 @@ export const resizeElement = action(`${ACTION}_RESIZE_ELEMENT`, (designId, eleme
     position = maxRight
   }
 
-  const highlightedAreaWhenResizing = findProjectedFilledAreaWhenResizing({
+  const highlightedAreaWhenResizing = findProjectedFilledAreaInGridWhenResizing({
     design,
     element,
     newResizePosition: position

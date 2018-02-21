@@ -69,6 +69,8 @@ class Design {
   @observable isCanvasReady = false
   // eslint-disable-next-line no-undef
   @observable gridLinesRemarked = false
+  // eslint-disable-next-line no-undef
+  @observable currentDropHighlightElementId = null
 
   // eslint-disable-next-line no-undef
   @computed get colWidth () {
@@ -139,7 +141,7 @@ class DesignGroup {
   // eslint-disable-next-line no-undef
   @observable selected = false
   // eslint-disable-next-line no-undef
-  @observable itemsRemarked = false
+  @observable dropHighlight = false
 
   get elementType () {
     return 'group'
@@ -312,8 +314,6 @@ class DesignFragment {
   fragments = observable.map({}, 'fragments')
   // eslint-disable-next-line no-undef
   @observable parent = null
-  // eslint-disable-next-line no-undef
-  @observable selected = false
 
   get elementType () {
     return 'fragment'
@@ -359,9 +359,10 @@ class DesignFragment {
 class DesignFragmentInline extends DesignFragment {
   // eslint-disable-next-line no-undef
   @observable.ref props = null
+  // eslint-disable-next-line no-undef
+  @observable selected = false
 
   toJS (includeId) {
-    debugger
     const frag = this.generalToJS(includeId)
 
     frag.props = this.props
@@ -373,9 +374,10 @@ class DesignFragmentInline extends DesignFragment {
 class DesignFragmentComponent extends DesignFragment {
   // eslint-disable-next-line no-undef
   @observable components = []
+  // eslint-disable-next-line no-undef
+  @observable dropHighlight = false
 
   toJS (includeId) {
-    debugger
     const frag = this.generalToJS(includeId)
 
     frag.components = this.components.map((comp) => {

@@ -39,14 +39,21 @@ class Design extends Component {
       (designId, dragPayload) => {
         const cache = this.showHighlight.cache
         const { clientOffset, targetCanvas } = dragPayload
+        let key
 
-        const key = `${
-          targetCanvas.group != null ? targetCanvas.group + '/' : ''
-        }${
-          targetCanvas.item != null ? targetCanvas.item + '/' : ''
-        }${
-          targetCanvas.componentBehind != null ? '(with component)/' : ''
-        }${clientOffset.x},${clientOffset.y}`
+        if (targetCanvas.elementType === 'fragment') {
+          key = `${targetCanvas.fragment}${
+            targetCanvas.componentBehind != null ? '(with component)/' : ''
+          }${clientOffset.x},${clientOffset.y}`
+        } else {
+          key = `${
+            targetCanvas.group != null ? targetCanvas.group + '/' : ''
+          }${
+            targetCanvas.item != null ? targetCanvas.item + '/' : ''
+          }${
+            targetCanvas.componentBehind != null ? '(with component)/' : ''
+          }${clientOffset.x},${clientOffset.y}`
+        }
 
         // keeping the memoize cache in just one item
         if (
@@ -119,6 +126,7 @@ class Design extends Component {
     }
 
     if (
+      targetCanvas.elementType !== 'fragment' &&
       dragType === ComponentDragTypes.COMPONENT &&
       targetCanvas.item == null &&
       highlightedArea.item != null
@@ -128,7 +136,7 @@ class Design extends Component {
       // `highlightedArea.item` is what is detected using custom logic and math
       // so both values should be the same if item is detected as empty in dnd
       shouldProcessComponent = false
-    } else if (targetCanvas.item != null) {
+    } else if (targetCanvas.elementType !== 'fragment' && targetCanvas.item != null) {
       // in case that the target is on item then just let it pass if there is context
       // box shown and mark
       shouldProcessComponent = (
@@ -144,6 +152,7 @@ class Design extends Component {
       )
 
       if (
+        targetCanvas.elementType !== 'fragment' &&
         shouldProcessComponent === true &&
         dragType === ComponentDragTypes.COMPONENT &&
         highlightedArea.areaBox == null
@@ -163,14 +172,19 @@ class Design extends Component {
       return
     }
 
+    let targetCanvasPayload = {
+      ...dropPayload.targetCanvas,
+      componentAt: highlightedArea.mark != null ? highlightedArea.mark.move : undefined
+    }
+
+    if (targetCanvas.elementType !== 'fragment') {
+      targetCanvasPayload.start = highlightedArea.start
+      targetCanvasPayload.end = highlightedArea.end
+    }
+
     addOrRemoveComponentFromDrag(design.id, {
       ...dropPayload,
-      targetCanvas: {
-        ...dropPayload.targetCanvas,
-        componentAt: highlightedArea.mark != null ? highlightedArea.mark.move : undefined
-      },
-      start: highlightedArea.start,
-      end: highlightedArea.end
+      targetCanvas: targetCanvasPayload
     }, { select: true })
   }
 

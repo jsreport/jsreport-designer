@@ -10,7 +10,9 @@ import styles from './Canvas.scss'
 
 const canvasTarget = {
   hover (props, monitor, component) {
+    const searchComponentBehind = component.searchComponentBehind
     const { onDragOver } = props
+    const clientOffset = monitor.getClientOffset()
 
     if (!monitor.isOver()) {
       component.dragOverContext = null
@@ -22,9 +24,11 @@ const canvasTarget = {
           draggedEl: monitor.getItem(),
           initialSourceClientOffset: monitor.getInitialSourceClientOffset(),
           initialClientOffset: monitor.getInitialClientOffset(),
-          clientOffset: monitor.getClientOffset()
+          clientOffset
         })
       }
+
+      return
     }
 
     let dragOverContext = component.dragOverContext
@@ -33,7 +37,7 @@ const canvasTarget = {
       return
     }
 
-    let { element: designElement, componentBehind, groupDimensions } = dragOverContext
+    let { element: designElement } = dragOverContext
     let targetCanvas
 
     if (!designElement) {
@@ -42,22 +46,26 @@ const canvasTarget = {
 
     if (designElement.elementType === 'group') {
       targetCanvas = {
-        group: designElement.id
+        group: designElement.id,
+        groupDimensions: document.getElementById(designElement.id).getBoundingClientRect()
       }
     } else if (designElement.elementType === 'item') {
       targetCanvas = {
         group: designElement.parent.id,
-        item: designElement.id
+        groupDimensions: document.getElementById(designElement.parent.id).getBoundingClientRect(),
+        item: designElement.id,
+        componentBehind: searchComponentBehind(false, clientOffset.x, clientOffset.y)
+      }
+    } else if (designElement.elementType === 'fragment') {
+      targetCanvas = {
+        fragment: designElement.id,
+        instance: dragOverContext.instance,
+        instanceDimensions: dragOverContext.instanceNode.getBoundingClientRect(),
+        componentBehind: searchComponentBehind(true, clientOffset.x, clientOffset.y)
       }
     }
 
-    if (targetCanvas != null) {
-      targetCanvas.groupDimensions = groupDimensions
-
-      if (componentBehind != null) {
-        targetCanvas.componentBehind = componentBehind
-      }
-    }
+    targetCanvas.elementType = designElement.elementType
 
     onDragOver({
       dragType: monitor.getItemType(),
@@ -95,7 +103,13 @@ const canvasTarget = {
           group: designElement.parent.id,
           item: designElement.id
         }
+      } else if (designElement.elementType === 'fragment') {
+        targetCanvas = {
+          fragment: designElement.id
+        }
       }
+
+      targetCanvas.elementType = designElement.elementType
 
       dropResult.targetCanvas = targetCanvas
 
@@ -123,6 +137,7 @@ class Canvas extends Component {
 
     this.setNode = this.setNode.bind(this)
     this.getCanvasDimensions = this.getCanvasDimensions.bind(this)
+    this.searchComponentBehind = this.searchComponentBehind.bind(this)
 
     this.draggingTimeout = null
     this.dragOverContext = null
@@ -178,6 +193,37 @@ class Canvas extends Component {
   setNode (el) {
     this.node = el
     this.props.nodeRef(el)
+  }
+
+  searchComponentBehind (fromFragment, x, y) {
+    let elementBehind = document.elementFromPoint(x, y)
+    let componentBehind
+
+    if (
+      elementBehind &&
+      elementBehind.dataset &&
+      elementBehind.dataset.jsreportComponentId != null &&
+      elementBehind.dataset.jsreportInteractiveComponent === 'true'
+    ) {
+      const {
+        top,
+        left,
+        width,
+        height
+      } = elementBehind.getBoundingClientRect()
+
+      componentBehind = {
+        id: fromFragment ? elementBehind.id : elementBehind.dataset.jsreportComponentId,
+        dimensions: {
+          top,
+          left,
+          width,
+          height
+        }
+      }
+    }
+
+    return componentBehind
   }
 
   getCanvasDimensions () {

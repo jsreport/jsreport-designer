@@ -122,7 +122,7 @@ function generateFragmentInstance (fragmentId, index, data) {
   return new DesignFragmentInstance(insData)
 }
 
-function findProjectedFilledArea ({
+function findProjectedFilledAreaInGrid ({
   design,
   targetGroup,
   targetColInfo,
@@ -216,7 +216,7 @@ function findProjectedFilledArea ({
   }
 }
 
-function findProjectedFilledAreaWhenResizing ({
+function findProjectedFilledAreaInGridWhenResizing ({
   design,
   element,
   newResizePosition
@@ -454,7 +454,7 @@ function findMarkedArea ({
   targetDimensions,
   targetIsBlock,
   targetType,
-  targetElementId
+  targetId
 }) {
   const { canvasRegistry } = design
 
@@ -472,21 +472,12 @@ function findMarkedArea ({
   }
 
   // don't show mark when over the same component origin
-  if (originElementId != null && originElementId === targetElementId) {
+  if (originElementId != null && originElementId === targetId) {
     return
   }
 
   const targetXCenter = targetDimensions.left + (targetDimensions.width / 2)
   const targetYCenter = targetDimensions.top + (targetDimensions.height / 2)
-  const targetElementRecord = canvasRegistry.get(targetElementId)
-
-  const targetElement = targetElementRecord != null ? (
-    targetElementRecord.element
-  ) : undefined
-
-  if (!targetElement) {
-    return
-  }
 
   if (moveType == null) {
     if (targetIsBlock === true) {
@@ -507,6 +498,16 @@ function findMarkedArea ({
   }
 
   if (targetType === 'component') {
+    const targetElementRecord = canvasRegistry.get(targetId)
+
+    const targetElement = targetElementRecord != null ? (
+      targetElementRecord.element
+    ) : undefined
+
+    if (!targetElement) {
+      return
+    }
+
     if (targetElement.elementType === 'component') {
       move.id = targetElement.id
       targetReferenceNode = document.getElementById(targetElement.id)
@@ -538,25 +539,80 @@ function findMarkedArea ({
       containerNode = itemNode
     }
 
-    if (!containerNode || !targetReferenceNode) {
+    if (move.id == null) {
       return
     }
+  } else if (targetType === 'fragment') {
+    const targetElementRecord = canvasRegistry.get(targetId)
+    let fromElement = false
 
-    targetReferenceNodeDimensions = targetReferenceNode.getBoundingClientRect()
-    containerNodeDimensions = containerNode.getBoundingClientRect()
+    let target = targetElementRecord != null ? (
+      targetElementRecord.element
+    ) : undefined
 
-    markSize = targetIsBlock ? containerNodeDimensions.width : targetReferenceNodeDimensions.height
+    let elementType
 
-    if (move.type === 'before') {
-      markTop = targetReferenceNodeDimensions.top
-      markLeft = targetIsBlock ? containerNodeDimensions.left : targetReferenceNodeDimensions.left
+    if (target != null) {
+      fromElement = true
+      elementType = target.elementType
     } else {
-      markTop = targetReferenceNodeDimensions.top + (targetIsBlock ? targetReferenceNodeDimensions.height : 0)
-      markLeft = targetIsBlock ? containerNodeDimensions.left : targetReferenceNodeDimensions.left + targetReferenceNodeDimensions.width
+      target = document.getElementById(targetId)
+
+      if (target && target.dataset.jsreportComponent) {
+        elementType = 'component'
+      }
+    }
+
+    if (elementType != null) {
+      const targetElementId = fromElement ? target.id : target.dataset.jsreportComponentId
+
+      move.id = targetElementId
+      targetReferenceNode = document.getElementById(targetId)
+
+      // extract container node from the id
+      containerNode = document.getElementById(
+        targetId.replace(targetElementId, '').slice(0, -1)
+      )
+    } else {
+      // target is on white space of fragment
+      const fragmentInstanceNode = document.getElementById(targetId)
+      const fragment = design.canvasRegistry.get(fragmentInstanceNode.dataset.jsreportFragmentId).element
+      let componentInFragment
+
+      if (move.type === 'before') {
+        componentInFragment = fragment.components[0]
+      } else {
+        componentInFragment = fragment.components[fragment.components.length - 1]
+      }
+
+      if (targetIsBlock === true || !componentInFragment) {
+        targetReferenceNode = fragmentInstanceNode
+      } else {
+        targetReferenceNode = document.getElementById(componentInFragment.id)
+      }
+
+      containerNode = fragmentInstanceNode
     }
   }
 
-  if (move.id == null || markSize == null) {
+  if (!containerNode || !targetReferenceNode) {
+    return
+  }
+
+  targetReferenceNodeDimensions = targetReferenceNode.getBoundingClientRect()
+  containerNodeDimensions = containerNode.getBoundingClientRect()
+
+  markSize = targetIsBlock ? containerNodeDimensions.width : targetReferenceNodeDimensions.height
+
+  if (move.type === 'before') {
+    markTop = targetReferenceNodeDimensions.top
+    markLeft = targetIsBlock ? containerNodeDimensions.left : targetReferenceNodeDimensions.left
+  } else {
+    markTop = targetReferenceNodeDimensions.top + (targetIsBlock ? targetReferenceNodeDimensions.height : 0)
+    markLeft = targetIsBlock ? containerNodeDimensions.left : targetReferenceNodeDimensions.left + targetReferenceNodeDimensions.width
+  }
+
+  if (markSize == null) {
     return
   }
 
@@ -575,27 +631,12 @@ function addComponentToDesign ({
   componentSize,
   targetArea
 }) {
-  const {
-    canvasRegistry,
-    groups,
-    colWidth
-  } = design
+  const { canvasRegistry } = design
 
-  let targetGroupRecord = canvasRegistry.get(targetArea.group)
-  let targetGroupIndex = targetGroupRecord.index
-  let layoutMode = targetGroupRecord.element.layoutMode
   let compProps = component.props || {}
   let newRecordForComponent = {}
-  let newComponent
-  let placeholderGroupIndex
 
-  // get placeholder group (last one)
-  if (groups.length > 0 && groups[groups.length - 1].placeholder === true) {
-    placeholderGroupIndex = groups.length - 1
-  }
-
-  // component information
-  newComponent = generateComponent({
+  const newComponent = generateComponent({
     // omit fragments because we are adding by calling
     // a method above
     ...omit(component, ['fragments']),
@@ -616,104 +657,227 @@ function addComponentToDesign ({
 
   newRecordForComponent.element = newComponent
 
-  // check to see if we should create a new group or update an existing one
-  if (placeholderGroupIndex != null && placeholderGroupIndex === targetGroupIndex) {
-    let newGroup
-    let newItem
-    let leftSpaceBeforeItem
+  if (targetArea.elementType !== 'fragment') {
+    const { groups, colWidth } = design
+    let targetGroupRecord = canvasRegistry.get(targetArea.group)
+    let targetGroupIndex = targetGroupRecord.index
+    let layoutMode = targetGroupRecord.element.layoutMode
 
-    // creating new item with component
-    newItem = generateItem({
-      colWidth,
-      baseSize: componentSize,
-      layoutMode,
-      start: targetArea.start,
-      end: targetArea.end,
-      minSpace: targetArea.minSpace,
-      components: [newComponent]
-    })
+    let placeholderGroupIndex
 
-    newComponent.parent = newItem
-
-    if (layoutMode === 'grid') {
-      leftSpaceBeforeItem = targetArea.start
-    } else {
-      leftSpaceBeforeItem = targetArea.start * colWidth
+    // get placeholder group (last one)
+    if (groups.length > 0 && groups[groups.length - 1].placeholder === true) {
+      placeholderGroupIndex = groups.length - 1
     }
 
-    if (leftSpaceBeforeItem > 0) {
-      newItem.leftSpace = leftSpaceBeforeItem
-    }
+    // check to see if we should create a new group or update an existing one
+    if (placeholderGroupIndex != null && placeholderGroupIndex === targetGroupIndex) {
+      let leftSpaceBeforeItem
 
-    // creating a new group with item
-    newGroup = generateGroup({
-      layoutMode,
-      items: [newItem]
-    })
-
-    newItem.parent = newGroup
-
-    canvasRegistry.set(newItem.id, {
-      index: 0,
-      element: newItem
-    })
-
-    canvasRegistry.set(newGroup.id, {
-      index: targetGroupIndex,
-      element: newGroup
-    })
-
-    newRecordForComponent.index = 0
-
-    // adding group before placeholder (before the last group)
-    groups.splice(Math.max(0, groups.length - 1), 0, newGroup)
-
-    // updating index of placeholder group
-    canvasRegistry.get(groups[groups.length - 1].id).index = groups.length - 1
-  } else {
-    let currentGroup
-    let currentItem
-    let itemBeforeNewIndex
-    let itemAfterNewIndex
-    let existingItemIndex
-
-    // getting existing group
-    currentGroup = targetGroupRecord.element
-
-    if (targetArea.item == null) {
-      // if an existing item was not the target then
-      // search for a item before/after the new one
-      currentGroup.items.forEach((item, index) => {
-        if (
-          existingItemIndex == null &&
-          item.start <= targetArea.start &&
-          item.end >= targetArea.start
-        ) {
-          // getting the index of the first item
-          existingItemIndex = index
-        }
-
-        if (itemAfterNewIndex == null && targetArea.end < item.start) {
-          // getting the index of the first item after
-          itemAfterNewIndex = index
-        }
-
-        if (item.end < targetArea.start) {
-          // getting the index of the last item before
-          itemBeforeNewIndex = index
-        }
+      // creating new item with component
+      const newItem = generateItem({
+        colWidth,
+        baseSize: componentSize,
+        layoutMode,
+        start: targetArea.start,
+        end: targetArea.end,
+        minSpace: targetArea.minSpace,
+        components: [newComponent]
       })
-    } else {
-      // if item was the target then just find the
-      // before/after item more easily
-      existingItemIndex = canvasRegistry.get(targetArea.item).index
-    }
 
-    if (existingItemIndex != null) {
+      newComponent.parent = newItem
+
+      if (layoutMode === 'grid') {
+        leftSpaceBeforeItem = targetArea.start
+      } else {
+        leftSpaceBeforeItem = targetArea.start * colWidth
+      }
+
+      if (leftSpaceBeforeItem > 0) {
+        newItem.leftSpace = leftSpaceBeforeItem
+      }
+
+      // creating a new group with item
+      const newGroup = generateGroup({
+        layoutMode,
+        items: [newItem]
+      })
+
+      newItem.parent = newGroup
+
+      canvasRegistry.set(newItem.id, {
+        index: 0,
+        element: newItem
+      })
+
+      canvasRegistry.set(newGroup.id, {
+        index: targetGroupIndex,
+        element: newGroup
+      })
+
+      newRecordForComponent.index = 0
+
+      // adding group before placeholder (before the last group)
+      groups.splice(Math.max(0, groups.length - 1), 0, newGroup)
+
+      // updating index of placeholder group
+      canvasRegistry.get(groups[groups.length - 1].id).index = groups.length - 1
+    } else {
+      let currentGroup
+      let currentItem
+      let itemBeforeNewIndex
+      let itemAfterNewIndex
+      let existingItemIndex
+
+      // getting existing group
+      currentGroup = targetGroupRecord.element
+
+      if (targetArea.item == null) {
+        // if an existing item was not the target then
+        // search for a item before/after the new one
+        currentGroup.items.forEach((item, index) => {
+          if (
+            existingItemIndex == null &&
+            item.start <= targetArea.start &&
+            item.end >= targetArea.start
+          ) {
+            // getting the index of the first item
+            existingItemIndex = index
+          }
+
+          if (itemAfterNewIndex == null && targetArea.end < item.start) {
+            // getting the index of the first item after
+            itemAfterNewIndex = index
+          }
+
+          if (item.end < targetArea.start) {
+            // getting the index of the last item before
+            itemBeforeNewIndex = index
+          }
+        })
+      } else {
+        // if item was the target then just find the
+        // before/after item more easily
+        existingItemIndex = canvasRegistry.get(targetArea.item).index
+      }
+
+      if (existingItemIndex != null) {
+        const componentReferenceIndex = canvasRegistry.get(targetArea.componentAt.id).index
+        let newComponentIndex
+
+        currentItem = currentGroup.items[existingItemIndex]
+
+        if (targetArea.componentAt.type === 'before') {
+          newComponentIndex = componentReferenceIndex
+        } else {
+          newComponentIndex = componentReferenceIndex + 1
+        }
+
+        newRecordForComponent.index = newComponentIndex
+
+        newComponent.parent = currentItem
+
+        // adding component to existing item
+        currentItem.components.splice(newComponentIndex, 0, newComponent)
+
+        // updating indexes in registry
+        for (let i = newComponentIndex + 1; i < currentItem.components.length; i++) {
+          const componentToUpdate = currentItem.components[i]
+          const componentToUpdateRecord = canvasRegistry.get(componentToUpdate.id)
+
+          componentToUpdateRecord.index = componentToUpdateRecord.index + 1
+        }
+      } else {
+        let leftSpaceBeforeItem
+
+        // creating new item
+        currentItem = generateItem({
+          colWidth,
+          baseSize: componentSize,
+          layoutMode,
+          start: targetArea.start,
+          end: targetArea.end,
+          minSpace: targetArea.minSpace,
+          components: [newComponent],
+          parent: currentGroup
+        })
+
+        newComponent.parent = currentItem
+
+        newRecordForComponent.index = 0
+
+        if (layoutMode === 'grid') {
+          if (itemBeforeNewIndex != null) {
+            leftSpaceBeforeItem = (targetArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1
+          } else {
+            leftSpaceBeforeItem = targetArea.start
+          }
+        } else {
+          if (itemBeforeNewIndex != null) {
+            leftSpaceBeforeItem = ((targetArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1) * colWidth
+          } else {
+            leftSpaceBeforeItem = targetArea.start * colWidth
+          }
+        }
+
+        if (leftSpaceBeforeItem > 0) {
+          currentItem.leftSpace = leftSpaceBeforeItem
+        }
+
+        if (itemAfterNewIndex == null) {
+          canvasRegistry.set(currentItem.id, {
+            index: currentGroup.items.length,
+            element: currentItem
+          })
+
+          // if there is no item after the new item, insert it as the last
+          currentGroup.items.push(currentItem)
+        } else {
+          let nextItem = currentGroup.items[itemAfterNewIndex]
+          let newLeftSpaceForNextItem
+
+          canvasRegistry.set(currentItem.id, {
+            index: itemAfterNewIndex,
+            element: currentItem
+          })
+
+          // first updating item indexes that are next of the item of the added component
+          for (let i = itemAfterNewIndex, last = currentGroup.items.length - 1; i <= last; i++) {
+            let itemEvaluated = currentGroup.items[i]
+
+            canvasRegistry.get(itemEvaluated.id).index = canvasRegistry.get(itemEvaluated.id).index + 1
+
+            itemEvaluated.components.forEach((comp) => {
+              let currentRecord = canvasRegistry.get(comp.id)
+              currentRecord.itemIndex = currentRecord.itemIndex + 1
+            })
+          }
+
+          if (layoutMode === 'grid') {
+            newLeftSpaceForNextItem = (nextItem.start - targetArea.end) - 1
+          } else {
+            newLeftSpaceForNextItem = ((nextItem.start - targetArea.end) - 1) * colWidth
+          }
+
+          // updating left space (if necessary) of item after the new one
+          if (
+            (nextItem.leftSpace == null && newLeftSpaceForNextItem !== 0) ||
+            (nextItem.leftSpace != null && nextItem.leftSpace !== newLeftSpaceForNextItem)
+          ) {
+            nextItem.leftSpace = newLeftSpaceForNextItem
+          }
+
+          // then updating items order with the new item
+          currentGroup.items.splice(itemAfterNewIndex, 0, currentItem)
+        }
+      }
+    }
+  } else {
+    const fragment = canvasRegistry.get(targetArea.fragment).element
+
+    if (targetArea.componentAt != null && targetArea.componentAt.id != null) {
       const componentReferenceIndex = canvasRegistry.get(targetArea.componentAt.id).index
       let newComponentIndex
-
-      currentItem = currentGroup.items[existingItemIndex]
 
       if (targetArea.componentAt.type === 'before') {
         newComponentIndex = componentReferenceIndex
@@ -723,102 +887,34 @@ function addComponentToDesign ({
 
       newRecordForComponent.index = newComponentIndex
 
-      newComponent.parent = currentItem
-
-      // adding component to existing item
-      currentItem.components.splice(newComponentIndex, 0, newComponent)
+      // adding component to existing fragment
+      fragment.components.splice(newComponentIndex, 0, newComponent)
 
       // updating indexes in registry
-      for (let i = newComponentIndex + 1; i < currentItem.components.length; i++) {
-        const componentToUpdate = currentItem.components[i]
+      for (let i = newComponentIndex + 1; i < fragment.components.length; i++) {
+        const componentToUpdate = fragment.components[i]
         const componentToUpdateRecord = canvasRegistry.get(componentToUpdate.id)
 
         componentToUpdateRecord.index = componentToUpdateRecord.index + 1
       }
     } else {
-      let leftSpaceBeforeItem
+      if (targetArea.componentAt.type === 'before') {
+        fragment.components.splice(0, 0, newComponent)
+        newRecordForComponent.index = 0
 
-      // creating new item
-      currentItem = generateItem({
-        colWidth,
-        baseSize: componentSize,
-        layoutMode,
-        start: targetArea.start,
-        end: targetArea.end,
-        minSpace: targetArea.minSpace,
-        components: [newComponent],
-        parent: currentGroup
-      })
+        for (let i = 1; i < fragment.components.length; i++) {
+          const componentToUpdate = fragment.components[i]
+          const componentToUpdateRecord = canvasRegistry.get(componentToUpdate.id)
 
-      newComponent.parent = currentItem
-
-      newRecordForComponent.index = 0
-
-      if (layoutMode === 'grid') {
-        if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = (targetArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1
-        } else {
-          leftSpaceBeforeItem = targetArea.start
+          componentToUpdateRecord.index = componentToUpdateRecord.index + 1
         }
       } else {
-        if (itemBeforeNewIndex != null) {
-          leftSpaceBeforeItem = ((targetArea.start - currentGroup.items[itemBeforeNewIndex].end) - 1) * colWidth
-        } else {
-          leftSpaceBeforeItem = targetArea.start * colWidth
-        }
-      }
-
-      if (leftSpaceBeforeItem > 0) {
-        currentItem.leftSpace = leftSpaceBeforeItem
-      }
-
-      if (itemAfterNewIndex == null) {
-        canvasRegistry.set(currentItem.id, {
-          index: currentGroup.items.length,
-          element: currentItem
-        })
-
-        // if there is no item after the new item, insert it as the last
-        currentGroup.items.push(currentItem)
-      } else {
-        let nextItem = currentGroup.items[itemAfterNewIndex]
-        let newLeftSpaceForNextItem
-
-        canvasRegistry.set(currentItem.id, {
-          index: itemAfterNewIndex,
-          element: currentItem
-        })
-
-        // first updating item indexes that are next of the item of the added component
-        for (let i = itemAfterNewIndex, last = currentGroup.items.length - 1; i <= last; i++) {
-          let itemEvaluated = currentGroup.items[i]
-
-          canvasRegistry.get(itemEvaluated.id).index = canvasRegistry.get(itemEvaluated.id).index + 1
-
-          itemEvaluated.components.forEach((comp) => {
-            let currentRecord = canvasRegistry.get(comp.id)
-            currentRecord.itemIndex = currentRecord.itemIndex + 1
-          })
-        }
-
-        if (layoutMode === 'grid') {
-          newLeftSpaceForNextItem = (nextItem.start - targetArea.end) - 1
-        } else {
-          newLeftSpaceForNextItem = ((nextItem.start - targetArea.end) - 1) * colWidth
-        }
-
-        // updating left space (if necessary) of item after the new one
-        if (
-          (nextItem.leftSpace == null && newLeftSpaceForNextItem !== 0) ||
-          (nextItem.leftSpace != null && nextItem.leftSpace !== newLeftSpaceForNextItem)
-        ) {
-          nextItem.leftSpace = newLeftSpaceForNextItem
-        }
-
-        // then updating items order with the new item
-        currentGroup.items.splice(itemAfterNewIndex, 0, currentItem)
+        newRecordForComponent.index = fragment.components.length
+        fragment.components.push(newComponent)
       }
     }
+
+    newComponent.parent = fragment
   }
 
   canvasRegistry.set(newComponent.id, newRecordForComponent)
@@ -878,58 +974,23 @@ function addFragmentInstanceToComponentInDesign ({
   })
 }
 
-// function removeFragmentFromComponentInDesign ({
-//   design,
-//   component,
-//   fragmentName
-// }) {
-//   const { canvasRegistry } = design
-//   const fragmentsNames = !Array.isArray(fragmentName) ? [fragmentName] : fragmentName
-//
-//   fragmentsNames.forEach((currentFragName) => {
-//     const currentFragment = component.fragments.get(currentFragName)
-//
-//     if (!currentFragment) {
-//       return
-//     }
-//
-//     if (currentFragment.fragments.size > 0) {
-//       removeFragmentFromComponentInDesign({
-//         design,
-//         currentFragment,
-//         fragmentName: currentFragment.fragments.keys()
-//       })
-//     }
-//
-//     canvasRegistry.delete(currentFragment.id)
-//     component.fragments.delete(currentFragment.name)
-//   })
-// }
-
 function removeComponentInDesign ({
   design,
   componentId
 }) {
   const { canvasRegistry } = design
-  let componentToRemoveIndex = canvasRegistry.get(componentId).index
-  let componentToRemove = canvasRegistry.get(componentId).element
-  let parentItem = componentToRemove.parent
-  let parentItemIndex = canvasRegistry.get(parentItem.id).index
-  let parentGroup = parentItem.parent
-  let nextItem
+  const componentToRemoveIndex = canvasRegistry.get(componentId).index
+  const componentToRemove = canvasRegistry.get(componentId).element
+  const parent = componentToRemove.parent
   let prevComponent
   let nextComponent
 
-  if (parentItemIndex < parentGroup.items.length - 1) {
-    nextItem = parentGroup.items[parentItemIndex + 1]
-  }
-
   if (componentToRemoveIndex > 0) {
-    prevComponent = parentItem.components[componentToRemoveIndex - 1]
+    prevComponent = parent.components[componentToRemoveIndex - 1]
   }
 
-  if (componentToRemoveIndex < parentItem.components.length - 1) {
-    nextComponent = parentItem.components[componentToRemoveIndex + 1]
+  if (componentToRemoveIndex < parent.components.length - 1) {
+    nextComponent = parent.components[componentToRemoveIndex + 1]
   }
 
   // removing fragments from canvas registry
@@ -942,35 +1003,50 @@ function removeComponentInDesign ({
   })
 
   // first updating component indexes that are next of the removed component
-  for (let i = componentToRemoveIndex + 1, last = parentItem.components.length - 1; i <= last; i++) {
-    let componentToUpdate = parentItem.components[i]
+  for (let i = componentToRemoveIndex + 1, last = parent.components.length - 1; i <= last; i++) {
+    let componentToUpdate = parent.components[i]
     canvasRegistry.get(componentToUpdate.id).index = canvasRegistry.get(componentToUpdate.id).index - 1
   }
 
   // removing the component
-  parentItem.components.splice(componentToRemoveIndex, 1)
+  parent.components.splice(componentToRemoveIndex, 1)
   canvasRegistry.delete(componentId)
 
-  // if item is left empty then we should remove it
-  if (parentItem.components.length === 0) {
-    if (nextItem) {
-      // since we will remove the item we need to
-      // re-calculate the leftSpace of next item
-      nextItem.leftSpace = nextItem.leftSpace == null ? 0 : nextItem.leftSpace
-      nextItem.leftSpace += parentItem.space
-      nextItem.leftSpace += parentItem.leftSpace == null ? 0 : parentItem.leftSpace
+  if (parent.elementType !== 'fragment') {
+    let parentItem = parent
+    let parentItemIndex = canvasRegistry.get(parentItem.id).index
+    let parentGroup = parentItem.parent
+    let nextItem
+
+    if (parentItemIndex < parentGroup.items.length - 1) {
+      nextItem = parentGroup.items[parentItemIndex + 1]
     }
 
-    // before removing the item we need to update the
-    // indexes of the items that are next
-    for (let i = parentItemIndex + 1, last = parentGroup.items.length - 1; i <= last; i++) {
-      let itemToUpdate = parentGroup.items[i]
-      canvasRegistry.get(itemToUpdate.id).index = canvasRegistry.get(itemToUpdate.id).index - 1
-    }
+    // if item is left empty then we should remove it
+    if (parentItem.components.length === 0) {
+      if (nextItem) {
+        // since we will remove the item we need to
+        // re-calculate the leftSpace of next item
+        nextItem.leftSpace = nextItem.leftSpace == null ? 0 : nextItem.leftSpace
+        nextItem.leftSpace += parentItem.space
+        nextItem.leftSpace += parentItem.leftSpace == null ? 0 : parentItem.leftSpace
+      }
 
-    // removing the item if there is no more components in there
-    parentGroup.items.splice(parentItemIndex, 1)
-    canvasRegistry.delete(parentItem.id)
+      // before removing the item we need to update the
+      // indexes of the items that are next
+      for (let i = parentItemIndex + 1, last = parentGroup.items.length - 1; i <= last; i++) {
+        let itemToUpdate = parentGroup.items[i]
+        canvasRegistry.get(itemToUpdate.id).index = canvasRegistry.get(itemToUpdate.id).index - 1
+      }
+
+      // removing the item if there is no more components in there
+      parentGroup.items.splice(parentItemIndex, 1)
+      canvasRegistry.delete(parentItem.id)
+    }
+  } else {
+    if (parent.components.length === 0) {
+      prevComponent = parent.parent
+    }
   }
 
   return {
@@ -1057,12 +1133,11 @@ export { generateItem }
 export { generateComponent }
 export { generateFragment }
 export { generateFragmentInstance }
-export { findProjectedFilledArea }
-export { findProjectedFilledAreaWhenResizing }
+export { findProjectedFilledAreaInGrid }
+export { findProjectedFilledAreaInGridWhenResizing }
 export { findMarkedArea }
 export { addComponentToDesign }
 export { addFragmentInstanceToComponentInDesign }
-// export { removeFragmentFromComponentInDesign }
 export { removeComponentInDesign }
 export { updateComponentInDesign }
 export { updateItemSize }

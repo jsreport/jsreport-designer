@@ -13,41 +13,16 @@ import styles from '../../../../static/DesignElements.css'
 import interactiveStyles from './DesignElementsInteractive.scss'
 
 const itemTarget = {
-  hover (props, monitor, component) {
+  hover (props, monitor) {
     const { item, onDragOver } = props
 
+    if (!monitor.isOver()) {
+      return
+    }
+
     if (monitor.isOver({ shallow: true })) {
-      const clientOffset = monitor.getClientOffset()
-      let elementBehind = document.elementFromPoint(clientOffset.x, clientOffset.y)
-      let componentBehind
-
-      if (
-        elementBehind &&
-        elementBehind.dataset &&
-        elementBehind.dataset.jsreportComponentId != null &&
-        elementBehind.dataset.jsreportInteractiveComponent === 'true'
-      ) {
-        const {
-          top,
-          left,
-          width,
-          height
-        } = elementBehind.getBoundingClientRect()
-
-        componentBehind = {
-          id: elementBehind.dataset.jsreportComponentId,
-          dimensions: {
-            top,
-            left,
-            width,
-            height
-          }
-        }
-      }
-
       onDragOver({
-        element: item,
-        componentBehind
+        element: item
       })
     }
   },
@@ -373,6 +348,7 @@ class DesignItem extends Component {
           draggable='false'
           key='DesignComponent-replacement'
           ref={this.setComponentReplacementNode}
+          data-design-component-snapshoot-clone
           style={{
             display: 'none',
             pointerEvents: 'none',

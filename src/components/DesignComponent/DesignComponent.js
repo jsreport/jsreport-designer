@@ -68,8 +68,6 @@ class DesignComponent extends Component {
   componentWillMount () {
     const {
       design,
-      id,
-      fragmentId,
       template,
       fragments,
       rawContent,
@@ -80,17 +78,10 @@ class DesignComponent extends Component {
 
     const hasRawContent = rawContent != null
     const componentCache = this.getComponentCache()
-    let hasFragments = false
+    const hasFragments = fragments != null && fragments.size > 0
 
     if (template != null && !hasRawContent) {
       this.customCompiledTemplate = componentRegistry.compileTemplate(template)
-    }
-
-    if (
-      fragments != null &&
-      fragments.size > 0
-    ) {
-      hasFragments = true
     }
 
     if (componentCache) {
@@ -116,33 +107,12 @@ class DesignComponent extends Component {
       snapshoot !== true &&
       preview !== true
     ) {
-      // debugger
       addOrRemoveFragmentInstanceInComponent(
         design.id,
         fragments.values().map(frag => frag.id),
         renderedResult.fragments
       )
     }
-
-    /*
-    if (
-      design != null &&
-      renderedResult != null &&
-      renderedResult.fragments != null &&
-      // we only need to add the fragments to the store
-      // if the store does not have them yet
-      !hasFragments &&
-      snapshoot !== true &&
-      preview !== true
-    ) {
-      addOrRemoveFragmentInComponent(
-        design.id,
-        fragmentId != null ? fragmentId : id,
-        renderedResult.fragments,
-        componentRegistry.getDefaultProps
-      )
-    }
-    */
 
     this.renderedContent = renderedResult.content
   }
@@ -176,21 +146,20 @@ class DesignComponent extends Component {
       return
     }
 
-
     mountFragments(this.node, this.fragmentsRefs)
   }
 
   componentWillReceiveProps (nextProps) {
     const {
       design,
-      id,
-      fragmentId,
+      fragments,
       snapshoot,
       preview,
-      addOrRemoveFragmentInComponent
+      addOrRemoveFragmentInstanceInComponent
     } = nextProps
 
     const hasRawContent = nextProps.rawContent != null
+    const hasFragments = fragments != null && fragments.size > 0
     let renderedResult
 
     if (this.props.type !== nextProps.type) {
@@ -240,22 +209,26 @@ class DesignComponent extends Component {
 
     if (
       design != null &&
+      hasFragments &&
+      renderedResult != null &&
+      renderedResult.fragments != null &&
+      // don't try to update fragment instances when the component is just a preview or
+      // snapshoot
       snapshoot !== true &&
       preview !== true
     ) {
-      // const staleFragmentsInstances = addOrRemoveFragmentInComponent(
-      //   design.id,
-      //   fragmentId != null ? fragmentId : id,
-      //   renderedResult.fragments || {},
-      //   componentRegistry.getDefaultProps
-      // )
-      //
-      // // stale fragments instances are those whom tag has been changed and will be
-      // // re-mounted, so we need to clear the cache in order for them to
-      // // get fresh data on first mount
-      // if (staleFragmentsInstances.length > 0) {
-      //   staleFragmentsInstances.forEach(stale => this.clearComponentCache(stale.type, stale.id))
-      // }
+      const staleFragmentsInstances = addOrRemoveFragmentInstanceInComponent(
+        design.id,
+        fragments.values().map(frag => frag.id),
+        renderedResult.fragments
+      )
+
+      // stale fragments instances are those whom tag has been changed and will be
+      // re-mounted, so we need to clear the cache in order for them to
+      // get fresh data on first mount
+      if (staleFragmentsInstances.length > 0) {
+        staleFragmentsInstances.forEach(stale => this.clearComponentCache(stale.type, stale.id))
+      }
     }
   }
 
@@ -267,8 +240,6 @@ class DesignComponent extends Component {
     if (hasRawContent) {
       return
     }
-
-    console.log(`${this.props.type}.${this.props.id} (didUpdate)`)
 
     if (this.fragmentsRefs == null || Object.keys(this.fragmentsRefs).length === 0) {
       return
@@ -481,7 +452,7 @@ class DesignComponent extends Component {
     const {
       root,
       id,
-      fragmentId,
+      componentTargetId,
       type,
       rawContent,
       fragments,
@@ -512,7 +483,7 @@ class DesignComponent extends Component {
         key={`${type}-${id}(${root != null ? 'node' : 'relement'})`}
         nodeRef={this.setComponentRef}
         id={id}
-        componentId={fragmentId != null ? fragmentId : undefined}
+        componentId={componentTargetId != null ? componentTargetId : undefined}
         type={type}
         root={root != null ? root : 'div'}
         content={content}
@@ -571,7 +542,7 @@ DesignComponent.propTypes = {
   // eslint-disable-next-line react/no-unused-prop-types
   expressions: PropTypes.object,
   fragments: MobxPropTypes.observableMap,
-  fragmentId: PropTypes.string,
+  componentTargetId: PropTypes.string,
   rawContent: PropTypes.string,
   selected: PropTypes.bool,
   snapshoot: PropTypes.bool,
@@ -624,7 +595,7 @@ class ObservableDesignComponent extends Component {
 }
 
 export default inject((injected, props) => {
-  let { source, id, template, ...restProps } = props
+  const { source, id, template, ...restProps } = props
 
   return {
     design: injected.design,

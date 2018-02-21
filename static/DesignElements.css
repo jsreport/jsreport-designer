@@ -48,3 +48,7 @@
   -ms-user-select: none;
   user-select: none;
 }
+
+.designFragmentComponent {
+  position: relative;
+}

@@ -1,17 +1,14 @@
 
 .designItemInteractive {
   outline: 1px dashed rgba(107, 103, 103, 0.7);
-}
-
-.designGroupInteractive[data-items-remarked] > .designItemInteractive {
   z-index: 1;
 }
 
-.designGroupInteractive[data-items-remarked] > .designItemInteractive {
+.designGroupInteractive[data-drop-highlight] > .designItemInteractive {
   opacity: 0.85;
 }
 
-.designGroupInteractive[data-items-remarked] > .designItemInteractive:before {
+.designGroupInteractive[data-drop-highlight] > .designItemInteractive:before {
   content: "";
   position: absolute;
   top: -1px;
@@ -21,10 +18,40 @@
   box-shadow: 0px 0px 5px 1px rgba(228, 228, 23, 0.7);
 }
 
-.designGroupInteractive[data-items-remarked] > .designItemInteractive[data-dragging-over]:before {
+.designGroupInteractive[data-drop-highlight] > .designItemInteractive[data-dragging-over]:before {
   box-shadow: 0px 0px 5px 2px rgba(134, 206, 31, 0.75);
 }
 
 .designItemInteractive[data-selected] {
   z-index: 2;
+}
+
+.designFragmentComponentInteractive {
+  outline: 1px dashed rgba(147, 37, 218, 0.4);
+  outline-offset: -2px;
+}
+
+.designFragmentComponentInteractive[data-drop-highlight]:before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  box-shadow: 0px 0px 5px 2px rgba(134, 206, 31, 0.75);
+}
+
+.designFragmentComponentEmptyInteractive {
+  position: absolute;
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #fff;
+  top: 0px;
+  bottom: 0px;
+  left: 0px;
+  right: 0px;
+  justify-content: center;
+  align-items: center;
+  font-style: italic;
+  overflow: hidden;
 }
