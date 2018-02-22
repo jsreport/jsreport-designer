@@ -40,6 +40,10 @@ module.exports = {
     return (
       `
       <style>
+        .Table {
+          width: 100%;
+        }
+
         .Table th, .Table td {
           border: 1px solid black;
         }
