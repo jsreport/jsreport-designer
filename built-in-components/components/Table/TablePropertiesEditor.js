@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import Designer from 'jsreport-designer'
 
+const generalPropName = Designer.generalPropName
 const PropertyControl = Designer.PropertyControl
 const PropertiesGroup = Designer.PropertiesGroup
 
@@ -282,6 +283,19 @@ class TablePropertiesEditor extends PureComponent {
 
     return (
       <div className='propertiesEditor'>
+        <PropertyControl
+          key={generalPropName}
+          componentType={componentType}
+          name={generalPropName}
+          binding={null}
+          value={properties.style}
+          bindingEnabled={dataInput != null}
+          getComponent={getComponent}
+          getPropMeta={getPropMeta}
+          getBindingMeta={getBindingMeta}
+          onBindingEditorOpen={onBindingEditorOpen}
+          onChange={(generalPropsChanges) => onChange(generalPropsChanges)}
+        />
         <PropertyControl
           key='data'
           componentType={componentType}

@@ -8,6 +8,7 @@ import DesignComponentHost from './DesignComponentContentHost'
 import * as configuration from '../../lib/configuration'
 import { getFragmentsNodes, mountFragmentsNodes } from '../../helpers/fragments'
 import htmlElementPropType from '../../helpers/htmlElementPropType'
+import generalProps from '../../../shared/generalProps'
 import componentRegistry from '../../../shared/componentRegistry'
 import { ComponentDragTypes } from '../../Constants'
 
@@ -457,6 +458,7 @@ class DesignComponent extends Component {
       id,
       componentTargetId,
       type,
+      componentProps,
       rawContent,
       fragments,
       selected,
@@ -474,6 +476,14 @@ class DesignComponent extends Component {
     )
 
     let content
+    let isBlock = false
+
+    if (
+      componentProps[generalProps.generalPropName] != null &&
+      componentProps[generalProps.generalPropName].block === true
+    ) {
+      isBlock = true
+    }
 
     if (rawContent == null) {
       content = this.renderedContent
@@ -490,6 +500,7 @@ class DesignComponent extends Component {
         type={type}
         root={root != null ? root : 'div'}
         content={content}
+        block={isBlock}
         selected={selected}
         snapshoot={snapshoot}
         isDragging={isDragging}

@@ -7,6 +7,7 @@ import handlebars from 'handlebars'
 import babelRuntime from './lib/babelRuntime.js'
 import * as configuration from './lib/configuration.js'
 import api, { methods } from './helpers/api.js'
+import generalProps from '../shared/generalProps'
 import expressionUtils from '../shared/expressionUtils'
 import DataFieldsViewer from './components/DataFieldsViewer'
 
@@ -102,6 +103,14 @@ class Designer {
    */
   get extensions () {
     return configuration.extensions
+  }
+
+  /**
+   * Get name of the prop that contains all the general props
+   * @returns {String}
+   */
+  get generalPropName () {
+    return generalProps.generalPropName
   }
 
   /** /runtime helpers **/

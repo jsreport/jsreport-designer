@@ -6,7 +6,7 @@ import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import { ComponentDragTypes } from '../../../Constants'
 import Grid from '../Grid'
-import DesignItem from './DesignItem'
+import * as configuration from '../../../lib/configuration'
 import styles from '../../../../static/DesignElements.css'
 import interactiveStyles from './DesignElementsInteractive.scss'
 
@@ -45,6 +45,7 @@ function collect (connect, monitor) {
 @observer
 class DesignGroup extends Component {
   render () {
+    const DesignItem = configuration.elementClasses.item
     let { showTopBorder, connectDropTarget } = this.props
 
     const { design, group } = this.props

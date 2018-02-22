@@ -4,6 +4,7 @@ const inlineTemplate = require('lodash/template')
 const htmlParser = require('posthtml-parser')
 const htmlRender = require('posthtml-render')
 const Handlebars = require('handlebars')
+const generalProps = require('./generalProps')
 const evaluateScript = require('./evaluateScript')
 const expressionUtils = require('./expressionUtils')
 const generalStyles = require('./generalStyles')
@@ -137,7 +138,10 @@ function loadComponents (componentsToLoad, reload = false) {
 
     componentModule = Object.assign({}, originalComponentModule, {
       getDefaultProps: () => {
-        return callInterop(originalComponentModule, originalComponentModule.getDefaultProps)
+        const defaultGeneralProps = generalProps.getDefaultGeneralProps()
+        const defaultCompProps = callInterop(originalComponentModule, originalComponentModule.getDefaultProps)
+
+        return Object.assign(defaultGeneralProps, defaultCompProps)
       },
       getStyleProps: () => styleProps,
       template: () => {

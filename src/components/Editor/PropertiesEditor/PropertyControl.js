@@ -1,6 +1,8 @@
 import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
+import generalProps from '../../../../shared/generalProps'
 import isStyleProp from '../../../../shared/isStyleProp'
+import GeneralPropsControl from './GeneralPropsControl'
 import StylesControl from '../StylesControl'
 
 class PropertyControl extends PureComponent {
@@ -65,6 +67,14 @@ class PropertyControl extends PureComponent {
 
     if (!isSpecialValue) {
       currentValue = value
+    }
+
+    if (generalProps.isGeneralProp(name)) {
+      return (
+        <GeneralPropsControl
+          {...propsForCustomControl}
+        />
+      )
     }
 
     // if prop is a style prop then render style control

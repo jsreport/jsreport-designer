@@ -49,6 +49,10 @@
   user-select: none;
 }
 
+.designComponentBlock {
+  display: block;
+}
+
 .designFragmentComponent {
   position: relative;
 }

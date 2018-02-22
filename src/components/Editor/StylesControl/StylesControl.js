@@ -92,7 +92,6 @@ class StylesControl extends PureComponent {
             type='text'
             readOnly
             value={getBindingMeta(bindingName, 'displayName')}
-            onChange={(ev) => this.handleChange(ev.target.value)}
           />
         ) : (
           React.createElement(control, {

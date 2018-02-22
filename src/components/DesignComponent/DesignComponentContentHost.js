@@ -51,6 +51,8 @@ class DesignComponentHost extends Component {
       return
     }
 
+    root.className = this.getClassName()
+
     if (this.props.componentId !== nextProps.componentId) {
       if (nextProps.componentId == null) {
         root.dataset.jsreportComponentId = nextProps.id
@@ -82,7 +84,14 @@ class DesignComponentHost extends Component {
   }
 
   getClassName () {
-    return `${styles.designComponent} ${interactiveStyles.designComponentInteractive}`
+    const { block } = this.props
+    let className = `${styles.designComponent} ${interactiveStyles.designComponentInteractive}`
+
+    if (block === true) {
+      className += ` ${styles.designComponentBlock}`
+    }
+
+    return className
   }
 
   render () {
@@ -154,6 +163,7 @@ DesignComponentHost.propTypes = {
     htmlElementPropType()
   ]).isRequired,
   content: PropTypes.string,
+  block: PropTypes.bool,
   selected: PropTypes.bool,
   snapshoot: PropTypes.bool,
   isDragging: PropTypes.bool

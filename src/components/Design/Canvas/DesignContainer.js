@@ -3,7 +3,7 @@ import React, { Component } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import HighlightedArea from './HighlightedArea'
-import DesignGroup from './DesignGroup'
+import * as configuration from '../../../lib/configuration'
 import styles from '../../../../static/DesignElements.css'
 
 @inject((injected) => ({
@@ -12,6 +12,7 @@ import styles from '../../../../static/DesignElements.css'
 @observer
 class DesignContainer extends Component {
   render () {
+    const DesignGroup = configuration.elementClasses.group
     const { design } = this.props
     const { baseWidth, groups } = design
 

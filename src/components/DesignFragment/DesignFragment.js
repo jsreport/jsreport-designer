@@ -49,8 +49,6 @@ class DesignFragment extends Component {
   }
 
   render () {
-    // TODO: refactor rest of components (Group, Item) to use components
-    // from configuration
     const DesignComponent = configuration.elementClasses.component
     const { fragment } = this.props
     const mountNodes = this.mountNodes

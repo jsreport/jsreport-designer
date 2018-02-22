@@ -6,7 +6,7 @@ import PropTypes from 'prop-types'
 import { observer, inject, PropTypes as MobxPropTypes } from 'mobx-react'
 import { DropTarget } from 'react-dnd'
 import Selection from './Selection'
-import DesignComponent from '../../DesignComponent'
+import * as configuration from '../../../lib/configuration'
 import { ComponentDragTypes } from '../../../Constants'
 import styles from '../../../../static/DesignElements.css'
 import interactiveStyles from './DesignElementsInteractive.scss'
@@ -205,6 +205,7 @@ class DesignItem extends Component {
   }
 
   render () {
+    const DesignComponent = configuration.elementClasses.component
     const {
       layoutMode,
       connectDropTarget,
