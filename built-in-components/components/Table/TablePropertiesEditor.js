@@ -288,7 +288,7 @@ class TablePropertiesEditor extends PureComponent {
           componentType={componentType}
           name={generalPropName}
           binding={null}
-          value={properties.style}
+          value={properties[generalPropName]}
           bindingEnabled={dataInput != null}
           getComponent={getComponent}
           getPropMeta={getPropMeta}
