@@ -29,6 +29,8 @@
 .designFragmentComponentInteractive {
   outline: 1px dashed rgba(147, 37, 218, 0.4);
   outline-offset: -2px;
+  min-width: 5px;
+  min-height: 5px;
 }
 
 .designFragmentComponentInteractive[data-drop-highlight]:before {
