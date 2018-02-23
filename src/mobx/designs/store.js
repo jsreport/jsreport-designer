@@ -311,8 +311,6 @@ class DesignFragment {
   // eslint-disable-next-line no-undef
   @observable instances = []
   // eslint-disable-next-line no-undef
-  fragments = observable.map({}, 'fragments')
-  // eslint-disable-next-line no-undef
   @observable parent = null
 
   get elementType () {
@@ -330,13 +328,6 @@ class DesignFragment {
     }
 
     frag.mode = this.mode
-
-    if (this.fragments.size > 0) {
-      frag.fragments = this.fragments.values().reduce((acu, currentFrag) => {
-        acu[currentFrag.name] = currentFrag.toJS(includeId)
-        return acu
-      }, {})
-    }
 
     if (includeId === true) {
       frag.instances = this.instances.map((ins) => {
@@ -358,6 +349,8 @@ class DesignFragment {
 
 class DesignFragmentInline extends DesignFragment {
   // eslint-disable-next-line no-undef
+  fragments = observable.map({}, 'fragments')
+  // eslint-disable-next-line no-undef
   @observable.ref props = null
   // eslint-disable-next-line no-undef
   @observable selected = false
@@ -366,6 +359,13 @@ class DesignFragmentInline extends DesignFragment {
     const frag = this.generalToJS(includeId)
 
     frag.props = this.props
+
+    if (this.fragments.size > 0) {
+      frag.fragments = this.fragments.values().reduce((acu, currentFrag) => {
+        acu[currentFrag.name] = currentFrag.toJS(includeId)
+        return acu
+      }, {})
+    }
 
     return frag
   }

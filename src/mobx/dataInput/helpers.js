@@ -152,7 +152,15 @@ function getComputedResults (computedFunctions, data) {
     if (data == null) {
       result[computedName] = undefined
     } else {
-      result[computedName] = computedFunction(data)
+      try {
+        result[computedName] = computedFunction(data)
+      } catch (e) {
+        // TODO: decide if just logging the error is enough or if we
+        // need to show it in some UI
+        console.error('Error while executing computed function:', e)
+
+        result[computedName] = undefined
+      }
     }
 
     return result

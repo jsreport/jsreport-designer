@@ -1,15 +1,14 @@
 import pick from 'lodash/pick'
 import { action } from 'mobx'
 import { store as editorStore } from '../editor'
+import { actions as dataInputActions } from '../dataInput'
 import store, {
   Design,
-  DesignItem,
-  DesignComponent
+  DesignItem
 } from './store'
 import { ComponentDragTypes } from '../../Constants'
 import {
   generateGroup,
-  // generateFragmentInstance,
   findProjectedFilledAreaInGrid,
   findProjectedFilledAreaInGridWhenResizing,
   findMarkedArea,
@@ -17,24 +16,27 @@ import {
   addFragmentInstanceToComponentInDesign,
   removeComponentInDesign,
   updateComponentInDesign,
+  importComponentOrFragment,
   updateItemSize
 } from './helpers'
 
 const ACTION = 'DESIGNS'
 
-export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
-  let newDesign
-  let elementRecords = []
-
-  let designDefaults = {
+function getDesignDefaults () {
+  return {
     baseWidth: editorStore.defaultBaseWidth,
     defaultNumberOfRows: editorStore.defaultNumberOfRows,
     numberOfCols: editorStore.defaultNumberOfCols,
     rowHeight: editorStore.defaultRowHeight,
     groups: [],
-    selection: null,
-    highlightedArea: null
+    selection: null
   }
+}
+
+export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
+  let newDesign
+  let designDefaults = getDesignDefaults()
+  let elementRecords = []
 
   if (config) {
     designDefaults = Object.assign(designDefaults, pick(
@@ -44,121 +46,9 @@ export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
   }
 
   if (definition) {
-    designDefaults = Object.assign(designDefaults, pick(
-      definition,
-      ['baseWidth', 'defaultNumberOfRows', 'numberOfCols', 'rowHeight']
-    ))
-  }
-
-  if (definition && Array.isArray(definition.groups)) {
-    let originalGroups = []
-    let lastGroupIndex = null
-
-    definition.groups.forEach((group) => {
-      let currentGroupIndex
-      let lastItemEnd = null
-
-      if (group.topSpace != null) {
-        for (let i = 1; i <= group.topSpace; i++) {
-          let newEmptyGroup = generateGroup({
-            layoutMode: 'grid'
-          })
-
-          elementRecords.push([newEmptyGroup, lastGroupIndex == null ? i - 1 : lastGroupIndex + i])
-          originalGroups.push(newEmptyGroup)
-        }
-
-        lastGroupIndex += group.topSpace
-        lastGroupIndex -= 1
-      }
-
-      const newGroup = generateGroup({
-        layoutMode: group.layoutMode
-        // NOTE: for now we intentionally don't add "topSpace"
-        // to the group because this field is not being kept in sync
-        // while using the designer, it is calculted in the end when the design
-        // json is exported, so it does not makes sense to have it in the store for now
-      })
-
-      currentGroupIndex = lastGroupIndex == null ? 0 : lastGroupIndex + 1
-
-      newGroup.items = group.items.map((item, itemIndex) => {
-        let newItem
-        let start = lastItemEnd == null ? 0 : lastItemEnd
-
-        start = start + item.leftSpace == null ? 0 : item.leftSpace
-
-        let itemDefaults = {
-          leftSpace: item.leftSpace,
-          start,
-          end: (start + item.space) - 1,
-          minSpace: item.minSpace,
-          space: item.space,
-          parent: newGroup
-        }
-
-        lastItemEnd = itemDefaults.end
-
-        newItem = new DesignItem(itemDefaults)
-
-        elementRecords.push([newItem, itemIndex])
-
-        newItem.components = item.components.map((comp, compIndex) => {
-          let newComp = new DesignComponent({
-            type: comp.type,
-            props: comp.props,
-            bindings: comp.bindings,
-            expressions: comp.expressions,
-            template: comp.template,
-            parent: newItem
-          })
-
-          elementRecords.push([newComp, compIndex, {
-            groupId: newGroup.id,
-            groupIndex: currentGroupIndex,
-            itemId: newItem.id,
-            itemIndex
-          }])
-
-          return newComp
-        })
-
-        return newItem
-      })
-
-      elementRecords.push([newGroup, currentGroupIndex])
-      lastGroupIndex += 1
-
-      originalGroups.push(newGroup)
-    })
-
-    // filling rest to match default number of rows in design
-    if (designDefaults.defaultNumberOfRows - 1 > originalGroups.length) {
-      const rest = (designDefaults.defaultNumberOfRows - 1) - originalGroups.length
-
-      for (let i = 1; i <= rest; i++) {
-        const newGroup = generateGroup({
-          layoutMode: 'grid'
-        })
-
-        elementRecords.push([newGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
-        lastGroupIndex += 1
-
-        originalGroups.push(newGroup)
-      }
-    }
-
-    const placeholderGroup = generateGroup({
-      layoutMode: 'grid',
-      placeholder: true
-    })
-
-    elementRecords.push([placeholderGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
-    lastGroupIndex += 1
-
-    originalGroups.push(placeholderGroup)
-
-    designDefaults.groups = originalGroups
+    const importResult = importDefinition(null, definition, designDefaults)
+    designDefaults = importResult.design
+    elementRecords = importResult.elementRecords
   } else {
     for (let i = 0, max = designDefaults.defaultNumberOfRows - 1; i <= max; i++) {
       let groupDefaults = {
@@ -182,13 +72,11 @@ export const add = action(`${ACTION}_ADD`, ({ config, definition }) => {
   newDesign = new Design(designDefaults)
 
   elementRecords.forEach((item) => {
-    let [ el, index, extra ] = item
+    let [ el, index ] = item
 
-    if (extra) {
+    if (el.elementType === 'fragment') {
       newDesign.canvasRegistry.set(el.id, {
-        index,
-        element: el,
-        ...extra
+        element: el
       })
     } else {
       newDesign.canvasRegistry.set(el.id, {
@@ -210,6 +98,170 @@ export const update = action(`${ACTION}_UPDATE`, (designId, changes) => {
 
   // TODO: check here to only update observable properties?
   Object.keys(changes).forEach((key) => { design[key] = changes[key] })
+})
+
+export const importDefinition = action(`${ACTION}_IMPORT_DEFINITION`, (designId, definition, defaults) => {
+  let design = store.designs.get(designId)
+  let existingDesign = true
+  const elementRecords = []
+
+  if (!design) {
+    existingDesign = false
+    design = {}
+  } else {
+    design.canvasRegistry.clear()
+  }
+
+  design.selection = null
+  design.highlightedArea = null
+  design.isDragging = false
+  design.isResizing = false
+  design.gridLinesRemarked = false
+  design.currentDropHighlightElementId = null
+
+  let designDefaults
+
+  if (defaults == null) {
+    designDefaults = getDesignDefaults()
+  }
+
+  designDefaults = Object.assign(designDefaults, pick(
+    definition.canvas || {},
+    ['baseWidth', 'defaultNumberOfRows', 'numberOfCols', 'rowHeight']
+  ))
+
+  if (definition.computedFields != null) {
+    dataInputActions.update({
+      computedFields: definition.computedFields
+    })
+  }
+
+  Object.keys(designDefaults).forEach((defKey) => {
+    design[defKey] = designDefaults[defKey]
+  })
+
+  let originalGroups = []
+  let lastGroupIndex = null
+
+  definition.groups.forEach((group) => {
+    let currentGroupIndex
+    let lastItemEnd = null
+
+    if (group.topSpace != null) {
+      for (let i = 1; i <= group.topSpace; i++) {
+        let newEmptyGroup = generateGroup({
+          layoutMode: 'grid'
+        })
+
+        elementRecords.push([newEmptyGroup, lastGroupIndex == null ? i - 1 : lastGroupIndex + i])
+        originalGroups.push(newEmptyGroup)
+      }
+
+      lastGroupIndex += group.topSpace
+      lastGroupIndex -= 1
+    }
+
+    const newGroup = generateGroup({
+      layoutMode: group.layoutMode
+      // NOTE: for now we intentionally don't add "topSpace"
+      // to the group because this field is not being kept in sync
+      // while using the designer, it is calculted in the end when the design
+      // json is exported, so it does not makes sense to have it in the store for now
+    })
+
+    currentGroupIndex = lastGroupIndex == null ? 0 : lastGroupIndex + 1
+
+    newGroup.items = group.items.map((item, itemIndex) => {
+      let newItem
+      let start = lastItemEnd == null ? 0 : lastItemEnd
+
+      start = start + item.leftSpace == null ? 0 : item.leftSpace
+
+      let itemDefaults = {
+        leftSpace: item.leftSpace,
+        start,
+        end: (start + item.space) - 1,
+        minSpace: item.minSpace,
+        space: item.space,
+        parent: newGroup
+      }
+
+      lastItemEnd = itemDefaults.end
+
+      newItem = new DesignItem(itemDefaults)
+
+      elementRecords.push([newItem, itemIndex])
+
+      newItem.components = importComponentOrFragment({
+        parent: newItem,
+        component: item.components,
+        onNew: (newElement, newElementIndex) => {
+          if (newElement.elementType !== 'fragment') {
+            elementRecords.push([newElement, newElementIndex])
+          } else {
+            elementRecords.push([newElement])
+          }
+        }
+      })
+
+      return newItem
+    })
+
+    elementRecords.push([newGroup, currentGroupIndex])
+    lastGroupIndex += 1
+
+    originalGroups.push(newGroup)
+  })
+
+  // filling rest to match default number of rows in design
+  if (design.defaultNumberOfRows - 1 > originalGroups.length) {
+    const rest = (design.defaultNumberOfRows - 1) - originalGroups.length
+
+    for (let i = 1; i <= rest; i++) {
+      const newGroup = generateGroup({
+        layoutMode: 'grid'
+      })
+
+      elementRecords.push([newGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
+      lastGroupIndex += 1
+
+      originalGroups.push(newGroup)
+    }
+  }
+
+  const placeholderGroup = generateGroup({
+    layoutMode: 'grid',
+    placeholder: true
+  })
+
+  elementRecords.push([placeholderGroup, lastGroupIndex == null ? 0 : lastGroupIndex + 1])
+  lastGroupIndex += 1
+
+  originalGroups.push(placeholderGroup)
+
+  design.groups = originalGroups
+
+  if (existingDesign) {
+    elementRecords.forEach((item) => {
+      let [ el, index ] = item
+
+      if (el.elementType === 'fragment') {
+        design.canvasRegistry.set(el.id, {
+          element: el
+        })
+      } else {
+        design.canvasRegistry.set(el.id, {
+          index,
+          element: el
+        })
+      }
+    })
+  }
+
+  return {
+    design,
+    elementRecords
+  }
 })
 
 export const updateElement = action(`${ACTION}_UPDATE_ELEMENT`, (designId, elementId, changes) => {

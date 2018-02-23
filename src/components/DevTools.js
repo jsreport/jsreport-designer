@@ -25,7 +25,8 @@ configureDevtool({
 
 @inject((injected) => ({
   data: injected.dataInputStore.value ? injected.dataInputStore.value : undefined,
-  computedFields: injected.dataInputStore.computedFields ? injected.dataInputStore.computedFields : undefined
+  computedFields: injected.dataInputStore.computedFields ? injected.dataInputStore.computedFields : undefined,
+  importDefinition: injected.designsActions.importDefinition
 }))
 @observer
 class DevTools extends Component {
@@ -33,7 +34,7 @@ class DevTools extends Component {
     super(props)
 
     this.state = {
-      inspectDesignGroups: null,
+      importDesignPayload: null,
       inspectDesignPayload: null
     }
   }
@@ -86,13 +87,61 @@ class DevTools extends Component {
     return payload
   }
 
-  onInspectPayloadClick () {
+  handleImportInputChange (value) {
+    const { importDesignPayload } = this.state
+
+    const newImportState = {
+      ...importDesignPayload,
+      error: null,
+      value
+    }
+
+    if (value == null || value.trim() === '') {
+      newImportState.enabled = false
+    } else {
+      newImportState.enabled = true
+    }
+
+    this.setState({
+      importDesignPayload: newImportState
+    })
+  }
+
+  handleImportClick () {
+    const { importDesignPayload } = this.state
+    const { design, importDefinition } = this.props
+
+    if (!importDesignPayload) {
+      return
+    }
+
+    let designPayload
+
+    try {
+      designPayload = JSON.parse(importDesignPayload.value)
+    } catch (e) {
+      return this.setState({
+        importDesignPayload: {
+          ...importDesignPayload,
+          error: `Invalid payload. ${e.message}`
+        }
+      })
+    }
+
+    importDefinition(design.id, designPayload)
+
+    this.setState({
+      inspectDesignPayload: null
+    })
+  }
+
+  handlePayloadClick () {
     this.setState({
       inspectDesignPayload: JSON.stringify(this.getDesignPayload(), null, 2)
     })
   }
 
-  onPreviewClick (recipe) {
+  handlePreviewClick (recipe) {
     jsreportClient.render('_blank', {
       template: {
         design: this.getDesignPayload(),
@@ -104,7 +153,7 @@ class DevTools extends Component {
 
   render () {
     const {
-      inspectDesignGroups,
+      importDesignPayload,
       inspectDesignPayload
     } = this.state
 
@@ -117,19 +166,26 @@ class DevTools extends Component {
       <div style={{ position: 'absolute', top: '8px', right: '200px', zIndex: 100 }}>
         <b>CANVAS: {numberOfCols} x {groups.length}, TOTAL ROWS: {groups.length}</b>
         {' '}
-        <button onClick={() => this.onInspectPayloadClick()}>Inspect Design payload</button>
-        <button onClick={() => this.onPreviewClick('phantom-pdf')}>Preview pdf</button>
-        <button onClick={() => this.onPreviewClick('html')}>Preview html</button>
+        <button onClick={() => this.setState({ importDesignPayload: { value: '', enabled: false } })}>Import Design payload</button>
+        <button onClick={() => this.handlePayloadClick()}>Inspect Design payload</button>
+        <button onClick={() => this.handlePreviewClick('phantom-pdf')}>Preview pdf</button>
+        <button onClick={() => this.handlePreviewClick('html')}>Preview html</button>
         {
-          inspectDesignGroups && (
+          importDesignPayload && (
             <div style={{ backgroundColor: 'yellow', padding: '8px', position: 'absolute', top: '22px', right: '360px', zIndex: 100 }}>
-              <b>Design groups</b>
+              <b>Paste here Design payload</b>
               <br />
-              <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
+              <button onClick={() => this.setState({ importDesignPayload: null })}>Close</button>
               <br />
-              <textarea rows='25' cols='40' defaultValue={inspectDesignGroups} />
+              <textarea rows='25' cols='40' value={importDesignPayload ? importDesignPayload.value : ''} onChange={(ev) => this.handleImportInputChange(ev.target.value)} />
               <br />
-              <button onClick={() => this.setState({ inspectDesignGroups: null })}>Close</button>
+              <span style={{ color: 'red' }}>
+                {importDesignPayload ? importDesignPayload.error : null}
+              </span>
+              <br />
+              <button disabled={importDesignPayload ? !importDesignPayload.enabled : true} onClick={() => this.handleImportClick()}>Import</button>
+              {' '}
+              <button onClick={() => this.setState({ importDesignPayload: null })}>Close</button>
             </div>
           )
         }
@@ -141,6 +197,7 @@ class DevTools extends Component {
               <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
               <br />
               <textarea rows='25' cols='40' defaultValue={inspectDesignPayload} />
+              <br />
               <br />
               <button onClick={() => this.setState({ inspectDesignPayload: null })}>Close</button>
             </div>
@@ -158,7 +215,8 @@ DevTools.wrappedComponent.propTypes = {
   data: PropTypes.oneOfType([
     PropTypes.object,
     PropTypes.array
-  ])
+  ]),
+  importDefinition: PropTypes.func
 }
 
 export default DevTools

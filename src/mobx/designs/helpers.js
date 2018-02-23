@@ -1092,6 +1092,94 @@ function updateComponentInDesign ({
   }
 }
 
+function importComponentOrFragment ({
+  parent,
+  component,
+  fragment,
+  onNew = () => {}
+}) {
+  const components = component != null ? (!Array.isArray(component) ? [component] : component) : null
+  const fragments = fragment != null ? (!Array.isArray(fragment) ? [fragment] : fragment) : null
+  const newElements = []
+
+  if (components != null) {
+    components.forEach((comp, compIndex) => {
+      let newComp = new DesignComponent({
+        type: comp.type,
+        props: comp.props,
+        bindings: comp.bindings,
+        expressions: comp.expressions,
+        template: comp.template,
+        parent
+      })
+
+      onNew(newComp, compIndex)
+
+      if (comp.fragments != null) {
+        Object.keys(comp.fragments).forEach((fragName) => {
+          importComponentOrFragment({
+            parent: newComp,
+            fragment: {
+              ...comp.fragments[fragName],
+              name: fragName,
+              ownerType: newComp.type
+            },
+            onNew
+          })
+        })
+      }
+
+      newElements.push(newComp)
+    })
+  } else if (fragments != null) {
+    fragments.forEach((frag) => {
+      let newFragment
+
+      const fragData = {
+        name: frag.name,
+        type: `${parent.type}#${frag.name}`,
+        ownerType: frag.ownerType,
+        mode: frag.mode,
+        parent
+      }
+
+      if (fragData.mode === 'inline') {
+        fragData.props = frag.props
+      }
+
+      newFragment = generateFragment(fragData)
+
+      onNew(newFragment)
+
+      if (fragData.mode === 'inline' && frag.fragments != null) {
+        Object.keys(frag.fragments).forEach((innerFragName) => {
+          importComponentOrFragment({
+            parent: newFragment,
+            fragment: {
+              ...frag.fragments[innerFragName],
+              name: innerFragName,
+              ownerType: newFragment.ownerType
+            },
+            onNew
+          })
+        })
+      } else if (fragData.mode === 'component') {
+        newFragment.components = importComponentOrFragment({
+          parent: newFragment,
+          component: frag.components,
+          onNew
+        })
+      }
+
+      newElements.push(newFragment)
+
+      parent.fragments.set(frag.name, newFragment)
+    })
+  }
+
+  return newElements
+}
+
 function updateItemSize ({
   design,
   item,
@@ -1132,7 +1220,6 @@ export { generateGroup }
 export { generateItem }
 export { generateComponent }
 export { generateFragment }
-export { generateFragmentInstance }
 export { findProjectedFilledAreaInGrid }
 export { findProjectedFilledAreaInGridWhenResizing }
 export { findMarkedArea }
@@ -1140,4 +1227,5 @@ export { addComponentToDesign }
 export { addFragmentInstanceToComponentInDesign }
 export { removeComponentInDesign }
 export { updateComponentInDesign }
+export { importComponentOrFragment }
 export { updateItemSize }
