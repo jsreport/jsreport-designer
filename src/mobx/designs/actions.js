@@ -14,7 +14,7 @@ import {
   findMarkedArea,
   addComponentToDesign,
   addFragmentInstanceToComponentInDesign,
-  removeComponentInDesign,
+  removeComponentOrFragmentInDesign,
   updateComponentInDesign,
   importComponentOrFragment,
   updateItemSize
@@ -718,7 +718,7 @@ export const removeComponent = action(`${ACTION}_REMOVE_COMPONENT`, (designId, c
   const {
     prevComponent,
     nextComponent
-  } = removeComponentInDesign({ design, componentId })
+  } = removeComponentOrFragmentInDesign({ design, componentId })
 
   // clear selection if removed component is in it
   if (Array.isArray(design.selection) && design.selection.indexOf(componentId) !== -1) {

@@ -51,12 +51,16 @@ function generateItem ({
   if (layoutMode === 'grid') {
     space = (end - start) + 1
 
+    // set min space only if it is still empty at
+    // this point
     if (currentMinSpace == null) {
       currentMinSpace = space
     }
   } else {
     space = ((end - start) + 1) * colWidth
 
+    // set min space only if it is still empty at
+    // this point
     if (currentMinSpace == null) {
       currentMinSpace = Math.ceil(baseSize.width)
     }
@@ -648,9 +652,9 @@ function addComponentToDesign ({
     Object.keys(component.fragments).length > 0
   ) {
     // adding fragments to the component instance
-    addFragmentToComponentInDesign({
+    addFragmentToParentInDesign({
       design,
-      component: newComponent,
+      parent: newComponent,
       fragment: Object.keys(component.fragments).map(fragName => component.fragments[fragName])
     })
   }
@@ -924,35 +928,69 @@ function addComponentToDesign ({
   }
 }
 
-function addFragmentToComponentInDesign ({
+function addFragmentToParentInDesign ({
   design,
-  component,
+  parent,
   fragment
 }) {
   const fragments = !Array.isArray(fragment) ? [fragment] : fragment
 
   fragments.forEach((currentFrag) => {
-    // we omit fragments from the data because we are going
-    // to insert them as special instances
-    const newFragmentData = omit(currentFrag, ['fragments'])
-    const innerFragments = currentFrag.fragments
-    const newFragment = generateFragment(newFragmentData)
+    let newFragment
 
-    if (innerFragments != null) {
-      addFragmentToComponentInDesign({
-        design,
-        component: newFragment,
-        fragment: Object.keys(innerFragments).map(fragName => innerFragments[fragName])
+    if (currentFrag.mode === 'inline') {
+      // we omit fragments from the data because we are going
+      // to insert them as special instances
+      const newFragmentData = omit(currentFrag, ['fragments'])
+      const innerFragments = currentFrag.fragments
+
+      newFragment = generateFragment(newFragmentData)
+
+      if (innerFragments != null) {
+        addFragmentToParentInDesign({
+          design,
+          parent: newFragment,
+          fragment: Object.keys(innerFragments).map(fragName => innerFragments[fragName])
+        })
+      }
+    } else if (currentFrag.mode === 'component') {
+      // we omit components from the data because we are going
+      // to insert them as special instances
+      const newFragmentData = omit(currentFrag, ['components'])
+      const innerComponents = currentFrag.components
+
+      newFragment = generateFragment(newFragmentData)
+
+      newFragment.parent = parent
+
+      // insert the fragment into registry first before processing
+      // components
+      design.canvasRegistry.set(newFragment.id, {
+        element: newFragment
       })
+
+      if (innerComponents != null) {
+        innerComponents.forEach((innerComp) => {
+          addComponentToDesign({
+            design,
+            component: innerComp,
+            componentSize: {},
+            targetArea: {
+              elementType: 'fragment',
+              fragment: newFragment.id,
+              componentAt: {
+                id: null,
+                type: 'after'
+              }
+            }
+          })
+        })
+      }
     }
 
-    newFragment.parent = component
-
-    design.canvasRegistry.set(newFragment.id, {
-      element: newFragment
-    })
-
-    component.fragments.set(newFragment.name, newFragment)
+    if (newFragment) {
+      parent.fragments.set(newFragment.name, newFragment)
+    }
   })
 }
 
@@ -974,79 +1012,109 @@ function addFragmentInstanceToComponentInDesign ({
   })
 }
 
-function removeComponentInDesign ({
+function removeComponentOrFragmentInDesign ({
   design,
-  componentId
+  componentId,
+  fragmentId
 }) {
   const { canvasRegistry } = design
-  const componentToRemoveIndex = canvasRegistry.get(componentId).index
-  const componentToRemove = canvasRegistry.get(componentId).element
-  const parent = componentToRemove.parent
   let prevComponent
   let nextComponent
 
-  if (componentToRemoveIndex > 0) {
-    prevComponent = parent.components[componentToRemoveIndex - 1]
-  }
+  if (componentId != null) {
+    const componentToRemoveIndex = canvasRegistry.get(componentId).index
+    const componentToRemove = canvasRegistry.get(componentId).element
+    const parent = componentToRemove.parent
 
-  if (componentToRemoveIndex < parent.components.length - 1) {
-    nextComponent = parent.components[componentToRemoveIndex + 1]
-  }
+    if (componentToRemoveIndex > 0) {
+      prevComponent = parent.components[componentToRemoveIndex - 1]
+    }
 
-  // removing fragments from canvas registry
-  componentToRemove.fragments.values().forEach((fragment) => {
-    if (!canvasRegistry.has(fragment.id)) {
+    if (componentToRemoveIndex < parent.components.length - 1) {
+      nextComponent = parent.components[componentToRemoveIndex + 1]
+    }
+
+    // removing fragments from canvas registry
+    componentToRemove.fragments.values().forEach((fragment) => {
+      removeComponentOrFragmentInDesign({
+        design,
+        fragmentId: fragment.id
+      })
+    })
+
+    // first updating component indexes that are next of the removed component
+    for (let i = componentToRemoveIndex + 1, last = parent.components.length - 1; i <= last; i++) {
+      let componentToUpdate = parent.components[i]
+      canvasRegistry.get(componentToUpdate.id).index = canvasRegistry.get(componentToUpdate.id).index - 1
+    }
+
+    // removing the component
+    parent.components.splice(componentToRemoveIndex, 1)
+    canvasRegistry.delete(componentId)
+
+    if (parent.elementType !== 'fragment') {
+      let parentItem = parent
+      let parentItemIndex = canvasRegistry.get(parentItem.id).index
+      let parentGroup = parentItem.parent
+      let nextItem
+
+      if (parentItemIndex < parentGroup.items.length - 1) {
+        nextItem = parentGroup.items[parentItemIndex + 1]
+      }
+
+      // if item is left empty then we should remove it
+      if (parentItem.components.length === 0) {
+        if (nextItem) {
+          // since we will remove the item we need to
+          // re-calculate the leftSpace of next item
+          nextItem.leftSpace = nextItem.leftSpace == null ? 0 : nextItem.leftSpace
+          nextItem.leftSpace += parentItem.space
+          nextItem.leftSpace += parentItem.leftSpace == null ? 0 : parentItem.leftSpace
+        }
+
+        // before removing the item we need to update the
+        // indexes of the items that are next
+        for (let i = parentItemIndex + 1, last = parentGroup.items.length - 1; i <= last; i++) {
+          let itemToUpdate = parentGroup.items[i]
+          canvasRegistry.get(itemToUpdate.id).index = canvasRegistry.get(itemToUpdate.id).index - 1
+        }
+
+        // removing the item if there is no more components in there
+        parentGroup.items.splice(parentItemIndex, 1)
+        canvasRegistry.delete(parentItem.id)
+      }
+    } else {
+      if (parent.components.length === 0) {
+        prevComponent = parent.parent
+      }
+    }
+  } else if (fragmentId != null) {
+    const fragmentToRemove = canvasRegistry.get(fragmentId).element
+    const parent = fragmentToRemove.parent
+
+    if (fragmentToRemove.mode === 'component') {
+      fragmentToRemove.components.forEach((innerComp) => {
+        removeComponentOrFragmentInDesign({
+          design,
+          componentId: innerComp.id
+        })
+      })
+    } else if (fragmentToRemove.mode === 'inline') {
+      fragmentToRemove.fragments.values().forEach((innerFragment) => {
+        removeComponentOrFragmentInDesign({
+          design,
+          fragmentId: innerFragment.id
+        })
+      })
+    }
+
+    parent.fragments.delete(fragmentToRemove.name)
+
+    if (!canvasRegistry.has(fragmentToRemove.id)) {
       return
     }
 
-    canvasRegistry.delete(fragment.id)
-  })
-
-  // first updating component indexes that are next of the removed component
-  for (let i = componentToRemoveIndex + 1, last = parent.components.length - 1; i <= last; i++) {
-    let componentToUpdate = parent.components[i]
-    canvasRegistry.get(componentToUpdate.id).index = canvasRegistry.get(componentToUpdate.id).index - 1
-  }
-
-  // removing the component
-  parent.components.splice(componentToRemoveIndex, 1)
-  canvasRegistry.delete(componentId)
-
-  if (parent.elementType !== 'fragment') {
-    let parentItem = parent
-    let parentItemIndex = canvasRegistry.get(parentItem.id).index
-    let parentGroup = parentItem.parent
-    let nextItem
-
-    if (parentItemIndex < parentGroup.items.length - 1) {
-      nextItem = parentGroup.items[parentItemIndex + 1]
-    }
-
-    // if item is left empty then we should remove it
-    if (parentItem.components.length === 0) {
-      if (nextItem) {
-        // since we will remove the item we need to
-        // re-calculate the leftSpace of next item
-        nextItem.leftSpace = nextItem.leftSpace == null ? 0 : nextItem.leftSpace
-        nextItem.leftSpace += parentItem.space
-        nextItem.leftSpace += parentItem.leftSpace == null ? 0 : parentItem.leftSpace
-      }
-
-      // before removing the item we need to update the
-      // indexes of the items that are next
-      for (let i = parentItemIndex + 1, last = parentGroup.items.length - 1; i <= last; i++) {
-        let itemToUpdate = parentGroup.items[i]
-        canvasRegistry.get(itemToUpdate.id).index = canvasRegistry.get(itemToUpdate.id).index - 1
-      }
-
-      // removing the item if there is no more components in there
-      parentGroup.items.splice(parentItemIndex, 1)
-      canvasRegistry.delete(parentItem.id)
-    }
-  } else {
-    if (parent.components.length === 0) {
-      prevComponent = parent.parent
-    }
+    canvasRegistry.delete(fragmentToRemove.id)
   }
 
   return {
@@ -1225,7 +1293,7 @@ export { findProjectedFilledAreaInGridWhenResizing }
 export { findMarkedArea }
 export { addComponentToDesign }
 export { addFragmentInstanceToComponentInDesign }
-export { removeComponentInDesign }
+export { removeComponentOrFragmentInDesign }
 export { updateComponentInDesign }
 export { importComponentOrFragment }
 export { updateItemSize }

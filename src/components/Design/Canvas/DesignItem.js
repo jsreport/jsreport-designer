@@ -115,11 +115,17 @@ class DesignItem extends Component {
 
     // when backspace or del key is pressed remove the component
     if (ev.keyCode === 8 || ev.keyCode === 46) {
-      removeComponent(
-        design.id,
-        design.selection[design.selection.length - 1],
-        { select: true }
-      )
+      const targetId = design.selection[design.selection.length - 1]
+      const component = design.canvasRegistry.get(targetId)
+
+      // only remove from a key press if target is a component
+      if (component && component.element.elementType === 'component') {
+        removeComponent(
+          design.id,
+          targetId,
+          { select: true }
+        )
+      }
     }
   }
 
