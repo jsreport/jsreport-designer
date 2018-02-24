@@ -56,3 +56,13 @@
 .designFragmentComponent {
   position: relative;
 }
+
+.designFragmentComponent:before,
+.designFragmentComponent:after {
+  content: " ";
+  display: table;
+}
+
+.designFragmentComponent:after {
+  clear: both;
+}
